@@ -2,37 +2,26 @@
 
 .. _ux-limitations:
 
-UX Limitations
+قيود تجربة المستخدم
 ==============
 
-torch.func, like `JAX <https://github.com/google/jax>`_, has restrictions around
-what can be transformed. In general, JAX’s limitations are that transforms
-only work with pure functions: that is, functions where the output is completely
-determined by the input and that do not involve side effects (like mutation).
+يحتوي torch.func، مثل `JAX <https://github.com/google/jax>`_، على قيود حول ما يمكن تحويله. بشكل عام، تتمثل قيود JAX في أن التحويلات تعمل فقط مع الوظائف البحتة: أي الوظائف التي يتم تحديدها تمامًا بواسطة الإدخال والتي لا تنطوي على تأثيرات جانبية (مثل الطفرة).
 
-We have a similar guarantee: our transforms work well with pure functions.
-However, we do support certain in-place operations. On one hand, writing code
-compatible with function transforms may involve changing how you write PyTorch
-code, on the other hand, you may find that our transforms let you express things
-that were previously difficult to express in PyTorch.
+لدينا ضمان مشابه: تعمل تحويلاتنا بشكل جيد مع الوظائف البحتة. ومع ذلك، فإننا ندعم بعض العمليات في المكان. من ناحية، قد يتضمن كتابة التعليمات البرمجية المتوافقة مع تحويلات الوظائف تغيير طريقة كتابة التعليمات البرمجية لـ PyTorch، ومن ناحية أخرى، قد تجد أن تحويلاتنا تسمح لك بالتعبير عن أشياء كان من الصعب التعبير عنها سابقًا في PyTorch.
 
-General limitations
--------------------
+القيود العامة
+---------
 
-All torch.func transforms share a limitation in that a function should not
-assign to global variables. Instead, all outputs to a function must be returned
-from the function. This restriction comes from how torch.func is implemented:
-each transform wraps Tensor inputs in special torch.func Tensor subclasses
-that facilitate the transform.
+تشترك جميع تحويلات torch.func في القيد المتمثل في أنه لا ينبغي للوظيفة تعيين متغيرات عالمية. بدلاً من ذلك، يجب إرجاع جميع المخرجات من الدالة من الدالة. يأتي هذا القيد من كيفية تنفيذ torch.func: يقوم كل تحويل بتغليف إدخالات Tensor في فئات فرعية خاصة لـ Tensor torch.func التي تسهل التحويل.
 
-So, instead of the following:
+لذلك، بدلاً من التالي:
 
 ::
 
   import torch
   from torch.func import grad
 
-  # Don't do this
+  # لا تفعل هذا
   intermediate = None
 
   def f(x):
@@ -44,7 +33,7 @@ So, instead of the following:
   x = torch.randn([])
   grad_x = grad(f)(x)
 
-Please rewrite ``f`` to return ``intermediate``:
+أعد كتابة ``f`` لإرجاع ``intermediate``:
 
 ::
 
@@ -55,47 +44,35 @@ Please rewrite ``f`` to return ``intermediate``:
 
   grad_x, intermediate = grad(f, has_aux=True)(x)
 
-torch.autograd APIs
--------------------
+واجهات برمجة التطبيقات torch.autograd
+------------------------------------
 
-If you are trying to use a ``torch.autograd`` API like ``torch.autograd.grad``
-or ``torch.autograd.backward`` inside of a function being transformed by
-:func:`vmap` or one of torch.func's AD transforms (:func:`vjp`, :func:`jvp`,
-:func:`jacrev`, :func:`jacfwd`), the transform may not be able to transform over it.
-If it is unable to do so, you'll receive an error message.
+إذا كنت تحاول استخدام واجهة برمجة تطبيقات ``torch.autograd`` مثل ``torch.autograd.grad`` أو ``torch.autograd.backward`` داخل دالة يتم تحويلها بواسطة :func:`vmap` أو أحد تحويلات AD في torch.func (:func:`vjp`، :func:`jvp`، :func:`jacrev`، :func:`jacfwd`)، فقد لا يتمكن التحويل من التحويل عليه. إذا لم يتمكن من ذلك، فستتلقى رسالة خطأ.
 
-This is a fundamental design limitation in how PyTorch's AD support is implemented
-and the reason why we designed the torch.func library. Please instead use the torch.func
-equivalents of the ``torch.autograd`` APIs:
-- ``torch.autograd.grad``, ``Tensor.backward`` -> ``torch.func.vjp`` or ``torch.func.grad``
+هذا قيد تصميم أساسي في كيفية تنفيذ دعم AD في PyTorch والسبب في تصميم مكتبة torch.func. يرجى استخدام مكافئات torch.func لواجهات برمجة تطبيقات ``torch.autograd`` بدلاً من ذلك:
+- ``torch.autograd.grad``، ``Tensor.backward`` -> ``torch.func.vjp`` أو ``torch.func.grad``
 - ``torch.autograd.functional.jvp`` -> ``torch.func.jvp``
-- ``torch.autograd.functional.jacobian`` -> ``torch.func.jacrev`` or ``torch.func.jacfwd``
+- ``torch.autograd.functional.jacobian`` -> ``torch.func.jacrev`` أو ``torch.func.jacfwd``
 - ``torch.autograd.functional.hessian`` -> ``torch.func.hessian``
 
-vmap limitations
-----------------
+قيود vmap
+---------
 
 .. note::
-  :func:`vmap` is our most restrictive transform.
-  The grad-related transforms (:func:`grad`, :func:`vjp`, :func:`jvp`) do not
-  have these limitations. :func:`jacfwd` (and :func:`hessian`, which is
-  implemented with :func:`jacfwd`) is a composition of :func:`vmap` and
-  :func:`jvp` so it also has these limitations.
+  :func:`vmap` هو أكثر تحويلاتنا تقييدًا.
+  لا تحتوي التحويلات المتعلقة بـ grad (:func:`grad`، :func:`vjp`، :func:`jvp`) على هذه القيود. :func:`jacfwd` (و :func:`hessian`، والذي يتم تنفيذه باستخدام :func:`jacfwd`) هو تركيبة من :func:`vmap` و:func:`jvp` لذلك فهو يحتوي أيضًا على هذه القيود.
 
-``vmap(func)`` is a transform that returns a function that maps ``func`` over
-some new dimension of each input Tensor. The mental model for vmap is that it is
-like running a for-loop: for pure functions (i.e. in the absence of side
-effects), ``vmap(f)(x)`` is equivalent to:
+``vmap(func)`` هو تحويل يعيد دالة تقوم بتعيين ``func`` عبر بعض الأبعاد الجديدة لكل إدخال Tensor. نموذج التفكير لـ vmap هو أنه يشبه تشغيل حلقة for: بالنسبة للوظائف البحتة (أي في غياب التأثيرات الجانبية)، ``vmap(f)(x)`` مكافئ لما يلي:
 
 ::
 
   torch.stack([f(x_i) for x_i in x.unbind(0)])
 
-Mutation: Arbitrary mutation of Python data structures
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+الطفرة: طفرة تعسفية لهياكل البيانات Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the presence of side effects, :func:`vmap` no longer acts like it is running
-a for-loop. For example, the following function:
+في وجود التأثيرات الجانبية، :func:`vmap` لم يعد يتصرف كما لو كان يقوم بتشغيل
+حلقة for. على سبيل المثال، ستطبع الدالة التالية:
 
 ::
 
@@ -109,26 +86,16 @@ a for-loop. For example, the following function:
 
   result = vmap(f, in_dims=(0, None))(x, lst)
 
-will print "hello!" once and pop only one element from ``lst``.
+"مرحبًا!" مرة واحدة فقط وستقوم بإلغاء عنصر واحد فقط من ``lst``.
 
+:func:`vmap` ينفذ ``f`` مرة واحدة، لذلك تحدث جميع التأثيرات الجانبية مرة واحدة فقط.
 
-:func:`vmap` executes ``f`` a single time, so all side effects only happen once.
+هذا نتيجة لكيفية تنفيذ vmap. يحتوي torch.func على فئة BatchedTensor داخلية خاصة. ``vmap(f)(*inputs)`` يأخذ جميع إدخالات Tensor، ويحولها إلى BatchedTensors، وينادي ``f(*batched_tensor_inputs)``. يلغي BatchedTensor واجهة برمجة تطبيقات PyTorch لإنتاج سلوك معالج بالدفعات (أي معالج متجهي) لكل مشغل PyTorch.
 
-This is a consequence of how vmap is implemented. torch.func has a special,
-internal BatchedTensor class. ``vmap(f)(*inputs)`` takes all Tensor inputs,
-turns them into BatchedTensors, and calls ``f(*batched_tensor_inputs)``.
-BatchedTensor overrides the PyTorch API to produce batched (i.e. vectorized)
-behavior for each PyTorch operator.
+الطفرة: عمليات PyTorch في المكان
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
-Mutation: in-place PyTorch Operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You might be here due to receiving an error about vmap-incompatible in-place
-operations. :func:`vmap` will raise an error if it encounters an unsupported PyTorch
-in-place operation and it will succeed otherwise. Unsupported operations
-are those that would cause a Tensor with more elements to be written to a
-Tensor with fewer elements. Here's an example of how this can occur:
+قد تكون هنا بسبب تلقي خطأ حول عمليات في المكان غير المتوافقة مع vmap. :func:`vmap` سيرفع خطأ إذا واجه عملية في المكان غير مدعومة في PyTorch وسيتمكن من ذلك بخلاف ذلك. العمليات غير المدعومة هي تلك التي من شأنها أن تتسبب في كتابة Tensor بمزيد من العناصر إلى Tensor بعدد أقل من العناصر. فيما يلي مثال على كيفية حدوث ذلك:
 
 ::
 
@@ -137,18 +104,18 @@ Tensor with fewer elements. Here's an example of how this can occur:
     return x
 
   x = torch.randn(1)
-  y = torch.randn(3, 1)  # When vmapped over, looks like it has shape [1]
+  y = torch.randn(3, 1)  # عند vmapped فوق، يبدو أنه له الشكل [1]
 
-  # Raises an error because `x` has fewer elements than `y`.
+  # يرفع خطأ لأن 'x' لديه عدد أقل من العناصر من 'y'.
   vmap(f, in_dims=(None, 0))(x, y)
 
-``x`` is a Tensor with one element, ``y`` is a Tensor with three elements.
-``x + y`` has three elements (due to broadcasting), but attempting to write
-three elements back into ``x``, which only has one element, raises an error
-due to attempting to write three elements into a Tensor with a single element.
+``x`` عبارة عن Tensor بعنصر واحد، و``y`` عبارة عن Tensor بثلاثة عناصر.
+يحتوي ``x + y`` على ثلاثة عناصر (بسبب البث)، ولكن محاولة كتابة
+ثلاثة عناصر مرة أخرى في ``x``، الذي يحتوي فقط على عنصر واحد، يرفع خطأ
+بسبب محاولة كتابة ثلاثة عناصر في Tensor بعنصر واحد.
 
-There is no problem if the Tensor being written to is batched under
-:func:`~torch.vmap` (i.e. it is being vmapped over).
+لا توجد مشكلة إذا كان Tensor الذي تتم الكتابة إليه مجمعًا في
+:func:`~torch.vmap` (أي أنه يتم تشغيل vmap عليه).
 
 ::
 
@@ -160,17 +127,17 @@ There is no problem if the Tensor being written to is batched under
   y = torch.randn(3, 1)
   expected = x + y
 
-  # Does not raise an error because x is being vmapped over.
+  # لا يرفع خطأ لأن 'x' يتم تشغيل vmap عليه.
   vmap(f, in_dims=(0, 0))(x, y)
   assert torch.allclose(x, expected)
 
-One common fix for this is to replace calls to factory functions with
-their "new_*" equivalent. For example:
+هناك إصلاح شائع لهذا وهو استبدال المكالمات إلى وظائف المصنع بما يعادلها "new_*"
+على سبيل المثال:
 
-- Replace :func:`torch.zeros` with :meth:`Tensor.new_zeros`
-- Replace :func:`torch.empty` with :meth:`Tensor.new_empty`
+- استبدل :func:`torch.zeros` بـ :meth:`Tensor.new_zeros`
+- استبدل :func:`torch.empty` بـ :meth:`Tensor.new_empty`
 
-To see why this helps, consider the following.
+ولرؤية سبب ذلك، ضع في اعتبارك ما يلي.
 
 ::
 
@@ -185,11 +152,11 @@ To see why this helps, consider the following.
   # RuntimeError: vmap: inplace arithmetic(self, *extra_args) is not possible ...
   vmap(diag_embed)(vecs)
 
-Inside of :func:`~torch.vmap`, ``result`` is a Tensor of shape [3, 3].
-However, although ``vec`` looks like it has shape [3], ``vec`` actually has
-underlying shape [2, 3].
-It is not possible to copy ``vec`` into ``result.diagonal()``, which has
-shape [3], because it has too many elements.
+داخل :func:`~torch.vmap`، ``result`` عبارة عن Tensor من الشكل [3، 3].
+ومع ذلك، على الرغم من أن ``vec`` يبدو أنه له الشكل [3]، فإن ``vec`` يحتوي
+في الواقع على الشكل الأساسي [2، 3].
+من غير الممكن نسخ ``vec`` إلى ``result.diagonal()``، الذي له
+شكل [3]، لأنه يحتوي على عناصر كثيرة جدًا.
 
 ::
 
@@ -202,25 +169,21 @@ shape [3], because it has too many elements.
   vecs = torch.tensor([[0., 1, 2], [3., 4, 5]])
   vmap(diag_embed)(vecs)
 
-Replacing :func:`torch.zeros` with :meth:`Tensor.new_zeros` makes it so that
-``result`` has an underlying Tensor of shape [2, 3, 3], so it is now possible
-to copy ``vec``, which has underlying shape [2, 3], into ``result.diagonal()``.
+يؤدي استبدال :func:`torch.zeros` بـ :meth:`Tensor.new_zeros` إلى أن يكون لـ ``result``
+Tensor أساسي من الشكل [2، 3، 3]، لذلك من الممكن الآن
+لنسخ ``vec``، الذي له شكل أساسي [2، 3]، في ``result.diagonal()``.
 
+الطفرة: عمليات PyTorch باستخدام out=
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`vmap` لا يدعم وسيط ``out=`` في عمليات PyTorch.
+سيؤدي إلى خطأ بشكل أنيق إذا واجه ذلك في التعليمات البرمجية الخاصة بك.
 
-Mutation: out= PyTorch Operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:func:`vmap` doesn't support the ``out=`` keyword argument in PyTorch operations.
-It will error out gracefully if it encounters that in your code.
+هذا ليس قيدًا أساسيًا؛ يمكننا من الناحية النظرية دعم هذا في
+المستقبل ولكننا اخترنا عدم القيام بذلك الآن.
 
-This is not a fundamental limitation; we could theoretically support this in the
-future but we have chosen not to for now.
-
-Data-dependent Python control flow
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-We don't yet support ``vmap`` over data-dependent control flow. Data-dependent
-control flow is when the condition of an if-statement, while-loop, or
-for-loop is a Tensor that is being ``vmap``'ed over. For example, the
-following will raise an error message:
+تدفق التحكم المعتمد على البيانات في Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+لا ندعم بعد تشغيل ``vmap`` عبر تدفق التحكم المعتمد على البيانات. تدفق التحكم المعتمد على البيانات هو عندما يكون شرط عبارة if أو حلقة while أو for عبارة Tensor التي يتم تشغيل vmap عليها. على سبيل المثال، سيرفع ما يلي رسالة خطأ:
 
 ::
 
@@ -232,8 +195,8 @@ following will raise an error message:
   x = torch.randn(3)
   vmap(relu)(x)
 
-However, any control flow that is not dependent on the values in ``vmap``'ed
-tensors will work:
+ومع ذلك، فإن أي تدفق تحكم لا يعتمد على القيم في تنسورات "vmap"ed
+سيعمل:
 
 ::
 
@@ -245,15 +208,15 @@ tensors will work:
   x = torch.randn(3)
   vmap(custom_dot)(x)
 
-JAX supports transforming over
-`data-dependent control flow <https://jax.readthedocs.io/en/latest/jax.lax.html#control-flow-operators>`_
-using special control flow operators (e.g. ``jax.lax.cond``, ``jax.lax.while_loop``).
-We're investigating adding equivalents of those to PyTorch.
+تدعم JAX تحويل
+`تدفق التحكم المعتمد على البيانات <https://jax.readthedocs.io/en/latest/jax.lax.html#control-flow-operators>`_
+باستخدام مشغلي تدفق تحكم خاصين (مثل ``jax.lax.cond``، ``jax.lax.while_loop``).
+نحن نحقق في إضافة مكافئات لتلك الموجودة في PyTorch.
 
-Data-dependent operations (.item())
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-We do not (and will not) support vmap over a user-defined function that calls
-``.item()`` on a Tensor. For example, the following will raise an error message:
+العمليات المعتمدة على البيانات (.item())
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+لا ندعم (ولن ندعم) تشغيل vmap عبر دالة معرفة من قبل المستخدم تستدعي
+``.item()`` على Tensor. على سبيل المثال، سيرفع ما يلي رسالة خطأ:
 
 ::
 
@@ -263,77 +226,73 @@ We do not (and will not) support vmap over a user-defined function that calls
   x = torch.randn(3)
   vmap(f)(x)
 
-Please try to rewrite your code to not use ``.item()`` calls.
+يرجى محاولة إعادة كتابة التعليمات البرمجية الخاصة بك لعدم استخدام مكالمات ``.item()``.
 
-You may also encounter an error message about using ``.item()`` but you might
-not have used it. In those cases, it is possible that PyTorch internally is
-calling ``.item()`` -- please file an issue on GitHub and we'll fix
-PyTorch internals.
+قد تواجه أيضًا رسالة خطأ حول استخدام ``.item()`` ولكن قد
+لم تستخدمها. في تلك الحالات، من الممكن أن PyTorch داخليًا
+استدعاء ``.item()`` - يرجى إرسال مشكلة على GitHub وسنقوم بإصلاح
+داخليات PyTorch.
 
-Dynamic shape operations (nonzero and friends)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``vmap(f)`` requires that ``f`` applied to every "example" in your input
-returns a Tensor with the same shape. Operations such as ``torch.nonzero``,
-``torch.is_nonzero`` are not supported and will error as a result.
+عمليات الشكل الديناميكي (nonzero وما شابه)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+يتطلب ``vmap(f)`` أن تقوم ``f`` بتطبيق كل "مثال" في الإدخال الخاص بك
+إرجاع Tensor بنفس الشكل. لا يتم دعم العمليات مثل ``torch.nonzero``،
+``torch.is_nonzero`` وسينتج عنها خطأ نتيجة لذلك.
 
-To see why, consider the following example:
+ولرؤية السبب، ضع في اعتبارك المثال التالي:
 
 ::
 
-  xs = torch.tensor([[0, 1, 2], [0, 0, 3]])
+  xs = torch.tensor([[0, 1, 2]، [0، 0، 3]])
   vmap(torch.nonzero)(xs)
 
-``torch.nonzero(xs[0])`` returns a Tensor of shape 2;
-but ``torch.nonzero(xs[1])`` returns a Tensor of shape 1.
-We are unable to construct a single Tensor as an output;
-the output would need to be a ragged Tensor (and PyTorch does not yet have
-the concept of a ragged Tensor).
+``torch.nonzero(xs[0])`` يعيد Tensor من الشكل 2؛
+لكن ``torch.nonzero(xs[1])`` يعيد Tensor من الشكل 1.
+نحن غير قادرين على بناء Tensor واحد كإخراج؛
+ستحتاج الإخراج إلى Tensor متفرق (ولم يتم بعد مفهوم PyTorch
+من Tensor متفرق).
 
+العشوائية
+------
+يمكن أن تكون نية المستخدم عند استدعاء عملية عشوائية غير واضحة. على وجه التحديد، قد يريد بعض المستخدمين
+أن يكون السلوك العشوائي هو نفسه عبر الدفعات في حين قد يريدها آخرون أن يختلفوا عبر الدفعات.
+للتصدي لهذا، يأخذ "vmap" علم العشوائية.
 
-Randomness
-----------
-The user's intention when calling a random operation can be unclear. Specifically, some users may want
-the random behavior to be the same across batches while others may want it to differ across batches.
-To address this, ``vmap`` takes a randomness flag.
+يمكن تمرير العلم فقط إلى vmap ويمكن أن يأخذ 3 قيم، "error" أو "different" أو "same"، افتراضيًا
+إلى الخطأ. في وضع "الخطأ"، ستؤدي أي مكالمة إلى دالة عشوائية إلى حدوث خطأ يطلب من المستخدم استخدام
+واحدة من العلامتين الأخريين بناءً على حالة الاستخدام الخاصة بهم.
 
-The flag can only be passed to vmap and can take on 3 values, "error," "different," or "same," defaulting
-to error. Under "error" mode, any call to a random function will produce an error asking the user to use
-one of the other two flags based on their use case.
-
-Under "different" randomness, elements in a batch produce different random values. For instance,
-
-::
-
-  def add_noise(x):
-    y = torch.randn(())  # y will be different across the batch
-    return x + y
-
-  x = torch.ones(3)
-  result = vmap(add_noise, randomness="different")(x)  # we get 3 different values
-
-Under "same" randomness, elements in a batch produce same random values. For instance,
+في ظل العشوائية "المختلفة"، تنتج العناصر في الدفعة قيمًا عشوائية مختلفة. على سبيل المثال،
 
 ::
 
   def add_noise(x):
-    y = torch.randn(())  # y will be the same across the batch
+    y = torch.randn(())  # ستكون y مختلفة عبر الدفعة
     return x + y
 
   x = torch.ones(3)
-  result = vmap(add_noise, randomness="same")(x)  # we get the same value, repeated 3 times
+  result = vmap(add_noise، randomness="different")(x)  # نحصل على 3 قيم مختلفة
 
+في ظل العشوائية "نفس"، تنتج العناصر في الدفعة نفس القيم العشوائية. على سبيل المثال،
+
+::
+
+  def add_noise(x):
+    y = torch.randn(())  # ستكون y هي نفسها عبر الدفعة
+    return x + y
+
+  x = torch.ones(3)
+  result = vmap(add_noise، randomness="same")(x)  # نحصل على نفس القيمة، مكررة 3 مرات
 
 .. warning::
-    Our system only determine the randomness behavior of PyTorch operators and cannot control the
-    behavior of other libraries, like numpy. This is similar to JAX's limitations with their solutions
+    لا يحدد نظامنا سوى سلوك العشوائية لمشغلي PyTorch ولا يمكنه التحكم في
+    سلوك المكتبات الأخرى، مثل numpy. هذا مشابه لقيود JAX مع حلولهم
 
 .. note::
-    Multiple vmap calls using either type of supported randomness will not produce
-    the same results. Like with standard PyTorch, a user can get randomness reproducibility through
-    either using ``torch.manual_seed()`` outside of vmap or by using generators.
+    لن تنتج مكالمات vmap المتعددة باستخدام أي من نوعي العشوائية المدعومة
+    نفس النتائج. مثل PyTorch القياسي، يمكن للمستخدم الحصول على قابلية تكرار العشوائية من خلال
+    إما استخدام ``torch.manual_seed()`` خارج vmap أو باستخدام المولدات.
 
 .. note::
-    Finally, our randomness differs from JAX because we aren't using a stateless PRNG, in part because PyTorch
-    doesn't have full support for a stateless PRNG. Instead, we've introduced a flag system to allow for the
-    most common forms of randomness that we see. If your use case does not fit these forms of randomness, please
-    file an issue.
+    وأخيرًا، تختلف العشوائية لدينا عن JAX لأننا لا نستخدم PRNG عديم الحالة، جزئيًا لأن PyTorch
+    لا يدعم PRNG عديم الحالة بالكامل. بدلاً من ذلك، لقد قدمنا نظامًا للعلامات للسماح بأشكال العشوائية الأكثر شيوعًا التي نراها. إذا لم تتناسب حالة الاستخدام الخاصة بك مع أشكال العشوائية هذه، فيرجى إرسال مشكلة.
