@@ -1,30 +1,31 @@
 .. _modules:
 
-Modules
-=======
+الوحدات
+-----
+يستخدم PyTorch الوحدات النمطية لتمثيل الشبكات العصبية. الوحدات النمطية هي:
 
-PyTorch uses modules to represent neural networks. Modules are:
+* **لبنات البناء للحساب ذي الحالة.**
+   يوفر PyTorch مكتبة قوية من الوحدات النمطية ويجعل من السهل تحديد وحدات نمطية مخصصة جديدة، مما يسمح
+   ببناء شبكات عصبية معقدة ومتعددة الطبقات بسهولة.
 
-* **Building blocks of stateful computation.**
-  PyTorch provides a robust library of modules and makes it simple to define new custom modules, allowing for
-  easy construction of elaborate, multi-layer neural networks.
-* **Tightly integrated with PyTorch's**
+* **مدمجة بإحكام مع نظام PyTorch**
   `autograd <https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html>`_
-  **system.** Modules make it simple to specify learnable parameters for PyTorch's Optimizers to update.
-* **Easy to work with and transform.** Modules are straightforward to save and restore, transfer between
-  CPU / GPU / TPU devices, prune, quantize, and more.
+  **.** تجعل الوحدات النمطية من السهل تحديد المعلمات القابلة للتعلم لتحديثها بواسطة محسنات PyTorch.
 
-This note describes modules, and is intended for all PyTorch users. Since modules are so fundamental to PyTorch,
-many topics in this note are elaborated on in other notes or tutorials, and links to many of those documents
-are provided here as well.
+* **سهلة العمل والتحويل.** من السهل حفظ الوحدات النمطية واستعادتها ونقلها بين
+  أجهزة وحدة المعالجة المركزية / وحدة معالجة الرسومات / وحدة معالجة المصفوفات، وتشذيبها، وتحديد كمياتها، والمزيد.
+
+تصف هذه الملاحظة الوحدات النمطية، وهي مخصصة لجميع مستخدمي PyTorch. نظرًا لأن الوحدات النمطية أساسية جدًا في PyTorch،
+  يتم تناول العديد من الموضوعات في هذه الملاحظة بالتفصيل في ملاحظات أو تعليمات برمجية أخرى، ويتم أيضًا توفير روابط للعديد من تلك المستندات
+  هنا.
 
 .. contents:: :local:
 
-A Simple Custom Module
+وحدة نمطية مخصصة بسيطة
 ----------------------
 
-To get started, let's look at a simpler, custom version of PyTorch's :class:`~torch.nn.Linear` module.
-This module applies an affine transformation to its input.
+لتبدأ، دعنا نلقي نظرة على إصدار مخصص أبسط لوحدة PyTorch النمطية :class: `~ torch.nn.Linear`.
+تطبق هذه الوحدة تحويلًا أفينيًا على مدخلاتها.
 
 .. code-block:: python
 
@@ -40,24 +41,24 @@ This module applies an affine transformation to its input.
      def forward(self, input):
        return (input @ self.weight) + self.bias
 
-This simple module has the following fundamental characteristics of modules:
+تتمتع هذه الوحدة النمطية البسيطة بالخصائص الأساسية التالية للوحدات النمطية:
 
-* **It inherits from the base Module class.**
-  All modules should subclass :class:`~torch.nn.Module` for composability with other modules.
-* **It defines some "state" that is used in computation.**
-  Here, the state consists of randomly-initialized ``weight`` and ``bias`` tensors that define the affine
-  transformation. Because each of these is defined as a :class:`~torch.nn.parameter.Parameter`, they are
-  *registered* for the module and will automatically be tracked and returned from calls
-  to :func:`~torch.nn.Module.parameters`. Parameters can be
-  considered the "learnable" aspects of the module's computation (more on this later). Note that modules
-  are not required to have state, and can also be stateless.
-* **It defines a forward() function that performs the computation.** For this affine transformation module, the input
-  is matrix-multiplied with the ``weight`` parameter (using the ``@`` short-hand notation) and added to the ``bias``
-  parameter to produce the output. More generally, the ``forward()`` implementation for a module can perform arbitrary
-  computation involving any number of inputs and outputs.
+* **يرث من فئة الوحدة النمطية الأساسية.**
+  يجب أن تكون جميع الوحدات النمطية فئة فرعية من :class: `~ torch.nn.Module` لسهولة التركيب مع الوحدات النمطية الأخرى.
 
-This simple module demonstrates how modules package state and computation together. Instances of this module can be
-constructed and called:
+* **تحدد بعض "الحالة" التي تستخدم في الحساب.**
+  هنا، تتكون الحالة من وزن عشوائي ومتجهات "انحياز" تحدد التحويل الأفيني. نظرًا لأن كل منهما معرف
+  كـ :class: `~ torch.nn.parameter.Parameter`، يتم
+  *تسجيلها* للوحدة النمطية وسيتم تتبعها تلقائيًا وإرجاعها من الاستدعاءات
+  إلى :func: `~ torch.nn.Module.parameters`. يمكن اعتبار المعلمات الجوانب "القابلة للتعلم" لحساب الوحدة النمطية (سنتحدث عن هذا لاحقًا). لاحظ أن الوحدات النمطية
+  غير مطلوبة للحالة، ويمكن أن تكون أيضًا بدون حالة.
+
+* **تحدد دالة forward() التي تؤدي الحساب.** بالنسبة لهذه الوحدة النمطية للتحويل الأفيني، يتم ضرب الإدخال
+  بالمصفوفة مع معلمة "الوزن" (باستخدام التدوين المختصر "@") وإضافته إلى معلمة "الانحياز"
+  لإنتاج الإخراج. بشكل أكثر عمومية، يمكن لتنفيذ "forward()" للوحدة النمطية إجراء حسابات عشوائية
+  تنطوي على أي عدد من المدخلات والمخرجات.
+
+توضح هذه الوحدة النمطية البسيطة كيف تقوم الوحدات النمطية بتغليف الحالة والحساب معًا. يمكن إنشاء مثيلات هذه الوحدة النمطية واستدعاؤها:
 
 .. code-block:: python
 
@@ -66,19 +67,18 @@ constructed and called:
    m(sample_input)
    : tensor([-0.3037, -1.0413, -4.2057], grad_fn=<AddBackward0>)
 
-Note that the module itself is callable, and that calling it invokes its ``forward()`` function.
-This name is in reference to the concepts of "forward pass" and "backward pass", which apply to each module.
-The "forward pass" is responsible for applying the computation represented by the module
-to the given input(s) (as shown in the above snippet). The "backward pass" computes gradients of
-module outputs with respect to its inputs, which can be used for "training" parameters through gradient
-descent methods. PyTorch's autograd system automatically takes care of this backward pass computation, so it
-is not required to manually implement a ``backward()`` function for each module. The process of training
-module parameters through successive forward / backward passes is covered in detail in
-:ref:`Neural Network Training with Modules`.
+لاحظ أن الوحدة النمطية نفسها قابلة للاستدعاء، وأن استدعاءها يستدعي دالتها "forward()".
+يشير هذا الاسم إلى مفاهيم "التمرير للأمام" و"التمرير للخلف"، والتي تنطبق على كل وحدة نمطية.
+"التمرير للأمام" مسؤول عن تطبيق الحساب الذي تمثله الوحدة النمطية
+  على الإدخال (الإدخالات) المعطاة (كما هو موضح في المقتطف أعلاه). يحسب "التمرير للخلف" تدرجات
+  إخراج الوحدة النمطية فيما يتعلق بمدخلاتها، والتي يمكن استخدامها "لتدريب" المعلمات من خلال أساليب الانحدار التدريجي. يعتني نظام autograd في PyTorch تلقائيًا بحساب التمرير للخلف، لذلك
+  لا يلزم تنفيذ دالة "backward()" يدويًا لكل وحدة نمطية. تتم تغطية عملية تدريب
+  معلمات الوحدة النمطية من خلال التمريرات الأمامية / الخلفية المتعاقبة بالتفصيل في
+  :ref: `Neural Network Training with Modules`.
 
-The full set of parameters registered by the module can be iterated through via a call to
-:func:`~torch.nn.Module.parameters` or :func:`~torch.nn.Module.named_parameters`,
-where the latter includes each parameter's name:
+يمكن إجراء تكرار لمجموعة المعلمات الكاملة التي سجلتها الوحدة النمطية من خلال استدعاء
+:func: `~ torch.nn.Module.parameters` أو :func: `~ torch.nn.Module.named_parameters`،
+والذي يتضمن الأخير اسم كل معلمة:
 
 .. code-block:: python
 
@@ -92,16 +92,15 @@ where the latter includes each parameter's name:
    ('bias', Parameter containing:
    tensor([ 0.3634,  0.2015, -0.8525], requires_grad=True))
 
-In general, the parameters registered by a module are aspects of the module's computation that should be
-"learned". A later section of this note shows how to update these parameters using one of PyTorch's Optimizers.
-Before we get to that, however, let's first examine how modules can be composed with one another.
+بشكل عام، تكون المعلمات التي تسجلها الوحدة النمطية جوانب من حساب الوحدة النمطية التي يجب
+"التعلم منها". يوضح قسم لاحق من هذه الملاحظة كيفية تحديث هذه المعلمات باستخدام إحدى محسنات PyTorch.
+ولكن قبل أن نصل إلى ذلك، دعنا نلقي نظرة أولاً على كيفية تركيب الوحدات النمطية مع بعضها البعض.
 
-Modules as Building Blocks
+الوحدات النمطية كلبنات بناء
 --------------------------
 
-Modules can contain other modules, making them useful building blocks for developing more elaborate functionality.
-The simplest way to do this is using the :class:`~torch.nn.Sequential` module. It allows us to chain together
-multiple modules:
+يمكن أن تحتوي الوحدات النمطية على وحدات نمطية أخرى، مما يجعلها لبنات بناء مفيدة لتطوير وظائف أكثر تعقيدًا.
+أبسط طريقة للقيام بذلك هي استخدام الوحدة النمطية :class: `~ torch.nn.Sequential`. يتيح لنا ذلك ربط عدة وحدات نمطية معًا:
 
 .. code-block:: python
 
@@ -115,14 +114,13 @@ multiple modules:
    net(sample_input)
    : tensor([-0.6749], grad_fn=<AddBackward0>)
 
-Note that :class:`~torch.nn.Sequential` automatically feeds the output of the first ``MyLinear`` module as input
-into the :class:`~torch.nn.ReLU`, and the output of that as input into the second ``MyLinear`` module. As
-shown, it is limited to in-order chaining of modules with a single input and output.
+لاحظ أن :class: `~ torch.nn.Sequential` يقوم تلقائيًا بإدخال إخراج أول وحدة "MyLinear" كإدخال
+في :class: `~ torch.nn.ReLU`، وإخراج ذلك كإدخال في وحدة "MyLinear" الثانية. كما هو موضح، فإنه يقتصر على التسلسل في ترتيب الوحدات النمطية ذات الإدخال والإخراج الفرديين.
 
-In general, it is recommended to define a custom module for anything beyond the simplest use cases, as this gives
-full flexibility on how submodules are used for a module's computation.
+بشكل عام، يوصى بتعريف وحدة نمطية مخصصة لأي شيء يتجاوز أبسط حالات الاستخدام، حيث يمنح ذلك
+مرونة كاملة في كيفية استخدام الوحدات الفرعية لحساب الوحدة النمطية.
 
-For example, here's a simple neural network implemented as a custom module:
+على سبيل المثال، إليك شبكة عصبية بسيطة تم تنفيذها كوحدة نمطية مخصصة:
 
 .. code-block:: python
 
@@ -139,10 +137,9 @@ For example, here's a simple neural network implemented as a custom module:
        x = self.l1(x)
        return x
 
-This module is composed of two "children" or "submodules" (\ ``l0`` and ``l1``\ ) that define the layers of
-the neural network and are utilized for computation within the module's ``forward()`` method. Immediate
-children of a module can be iterated through via a call to :func:`~torch.nn.Module.children` or
-:func:`~torch.nn.Module.named_children`:
+تتكون هذه الوحدة النمطية من "أطفال" أو "وحدات فرعية" (\ ``l0`` و ``l1``\ ) تحدد طبقات
+الشبكة العصبية وتستخدم للحساب داخل طريقة "forward()" للوحدة النمطية. يمكن إجراء تكرار للأطفال المباشرين لوحدة نمطية عبر استدعاء :func: `~ torch.nn.Module.children` أو
+:func: `~ torch.nn.Module.named_children`:
 
 .. code-block:: python
 
@@ -152,8 +149,8 @@ children of a module can be iterated through via a call to :func:`~torch.nn.Modu
    : ('l0', MyLinear())
    ('l1', MyLinear())
 
-To go deeper than just the immediate children, :func:`~torch.nn.Module.modules` and
-:func:`~torch.nn.Module.named_modules` *recursively* iterate through a module and its child modules:
+للتعمق أكثر من مجرد الأطفال المباشرين، تقوم الدالتان :func: `~ torch.nn.Module.modules` و
+:func: `~ torch.nn.Module.named_modules` بالتنقل بشكل *متكرر* خلال الوحدة النمطية ووحداتها الفرعية:
 
 .. code-block:: python
 
@@ -183,9 +180,9 @@ To go deeper than just the immediate children, :func:`~torch.nn.Module.modules` 
    ('net.l0', MyLinear())
    ('net.l1', MyLinear())
 
-Sometimes, it's necessary for a module to dynamically define submodules.
-The :class:`~torch.nn.ModuleList` and :class:`~torch.nn.ModuleDict` modules are useful here; they
-register submodules from a list or dict:
+في بعض الأحيان، يكون من الضروري أن تقوم الوحدة النمطية بتحديد وحدات فرعية ديناميكيًا.
+الوحدتان النمطيتان :class: `~ torch.nn.ModuleList` و :class: `~ torch.nn.ModuleDict` مفيدتان هنا؛ حيث تقومان
+بتسجيل الوحدات الفرعية من قائمة أو قاموس:
 
 .. code-block:: python
 
@@ -210,9 +207,9 @@ register submodules from a list or dict:
    sample_input = torch.randn(4)
    output = dynamic_net(sample_input, 'relu')
 
-For any given module, its parameters consist of its direct parameters as well as the parameters of all submodules.
-This means that calls to :func:`~torch.nn.Module.parameters` and :func:`~torch.nn.Module.named_parameters` will
-recursively include child parameters, allowing for convenient optimization of all parameters within the network:
+بالنسبة لأي وحدة نمطية معينة، تتكون معلماتها من معلماتها المباشرة بالإضافة إلى معلمات جميع الوحدات الفرعية.
+هذا يعني أن الاستدعاءات إلى :func: `~ torch.nn.Module.parameters` و :func: `~ torch.nn.Module.named_parameters` ستتضمن
+بشكل متكرر معلمات الطفل، مما يسمح بتحسين ملائم لجميع المعلمات داخل الشبكة:
 
 .. code-block:: python
 
@@ -244,8 +241,8 @@ recursively include child parameters, allowing for convenient optimization of al
    ('final.bias', Parameter containing:
    tensor([0.3381], requires_grad=True))
 
-It's also easy to move all parameters to a different device or change their precision using
-:func:`~torch.nn.Module.to`:
+من السهل أيضًا نقل جميع المعلمات إلى جهاز مختلف أو تغيير دقتها باستخدام
+:func: `~ torch.nn.Module.to`:
 
 .. code-block:: python
 
@@ -258,9 +255,9 @@ It's also easy to move all parameters to a different device or change their prec
    dynamic_net(torch.randn(5, device='cuda', dtype=torch.float64))
    : tensor([6.5166], device='cuda:0', dtype=torch.float64, grad_fn=<AddBackward0>)
 
-More generally, an arbitrary function can be applied to a module and its submodules recursively by
-using the :func:`~torch.nn.Module.apply` function. For example, to apply custom initialization to parameters
-of a module and its submodules:
+وبشكل أكثر عمومية، يمكن تطبيق دالة تعسفية على وحدة نمطية ووحداتها الفرعية بشكل متكرر باستخدام
+دالة :func: `~ torch.nn.Module.apply`. على سبيل المثال، لتطبيق التهيئة المخصصة على معلمات
+وحدة نمطية ووحداتها الفرعية:
 
 .. code-block:: python
 
@@ -275,34 +272,28 @@ of a module and its submodules:
    # Apply the function recursively on the module and its submodules.
    dynamic_net.apply(init_weights)
 
-These examples show how elaborate neural networks can be formed through module composition and conveniently
-manipulated. To allow for quick and easy construction of neural networks with minimal boilerplate, PyTorch
-provides a large library of performant modules within the :mod:`torch.nn` namespace that perform common neural
-network operations like pooling, convolutions, loss functions, etc.
+توضح هذه الأمثلة كيف يمكن تشكيل شبكات عصبية معقدة من خلال تركيب الوحدات النمطية والتعامل معها بسهولة. للسماح بإنشاء شبكات عصبية سريعًا وبسهولة مع الحد الأدنى من التعليمات البرمجية، يوفر PyTorch مكتبة كبيرة من الوحدات النمطية عالية الأداء داخل مساحة الاسم :mod: `torch.nn` التي تقوم بعمليات الشبكة العصبية الشائعة مثل التجميع، والتحويلات، ووظائف الخسارة، وما إلى ذلك.
 
-In the next section, we give a full example of training a neural network.
+في القسم التالي، نقدم مثالًا كاملًا على تدريب شبكة عصبية.
 
-For more information, check out:
+لمزيد من المعلومات، راجع:
 
-* Library of PyTorch-provided modules: `torch.nn <https://pytorch.org/docs/stable/nn.html>`_
-* Defining neural net modules: https://pytorch.org/tutorials/beginner/examples_nn/polynomial_module.html
+* مكتبة الوحدات النمطية التي يوفرها PyTorch: `torch.nn <https://pytorch.org/docs/stable/nn.html>`_
+* تحديد وحدات الشبكة العصبية النمطية: https://pytorch.org/tutorials/beginner/examples_nn/polynomial_module.html
 
 .. _Neural Network Training with Modules:
 
-Neural Network Training with Modules
-------------------------------------
-
-Once a network is built, it has to be trained, and its parameters can be easily optimized with one of PyTorch’s
-Optimizers from :mod:`torch.optim`:
+تدريب الشبكة العصبية باستخدام الوحدات النمطية
+بعد بناء الشبكة، يجب تدريبها، ويمكن تحسين معلماتها بسهولة باستخدام إحدى خوارزميات التحسين (Optimizers) من وحدة PyTorch: ``torch.optim``:
 
 .. code-block:: python
 
-   # Create the network (from previous section) and optimizer
+   # إنشاء الشبكة (من القسم السابق) وخوارزمية التحسين
    net = Net()
    optimizer = torch.optim.SGD(net.parameters(), lr=1e-4, weight_decay=1e-2, momentum=0.9)
 
-   # Run a sample training loop that "teaches" the network
-   # to output the constant zero function
+   # تشغيل حلقة تدريبية تجريبية "تُعلم" الشبكة
+   # لإخراج دالة الصفر الثابتة
    for _ in range(10000):
      input = torch.randn(4)
      output = net(input)
@@ -311,29 +302,25 @@ Optimizers from :mod:`torch.optim`:
      loss.backward()
      optimizer.step()
 
-   # After training, switch the module to eval mode to do inference, compute performance metrics, etc.
-   # (see discussion below for a description of training and evaluation modes)
+   # بعد التدريب، قم بتبديل وضعية الوحدة إلى الوضع التقييمي لإجراء الاستنتاج، وحساب مقاييس الأداء، وما إلى ذلك.
+   # (انظر المناقشة أدناه لوصف أوضاع التدريب والتقييم)
    ...
    net.eval()
    ...
 
-In this simplified example, the network learns to simply output zero, as any non-zero output is "penalized" according
-to its absolute value by employing :func:`torch.abs` as a loss function. While this is not a very interesting task, the
-key parts of training are present:
+في هذا المثال المبسط، تتعلم الشبكة ببساطة إخراج الصفر، حيث يتم "معاقبة" أي إخراج غير صفري وفقاً لقيمته المطلقة عن طريق استخدام ``torch.abs`` كدالة خسارة. وعلى الرغم من أن هذه ليست مهمة مثيرة للاهتمام، إلا أن الأجزاء الرئيسية من التدريب موجودة:
 
-* A network is created.
-* An optimizer (in this case, a stochastic gradient descent optimizer) is created, and the network’s
-  parameters are associated with it.
-* A training loop...
-    * acquires an input,
-    * runs the network,
-    * computes a loss,
-    * zeros the network’s parameters’ gradients,
-    * calls loss.backward() to update the parameters’ gradients,
-    * calls optimizer.step() to apply the gradients to the parameters.
+* يتم إنشاء شبكة.
+* يتم إنشاء خوارزمية تحسين (في هذه الحالة، خوارزمية النسبية المتوافقة)، ويتم ربط معلمات الشبكة بها.
+* حلقة تدريب...
+    * تحصل على إدخال،
+    * تشغل الشبكة،
+    * تحسب الخسارة،
+    * تصفير تدرجات معلمات الشبكة،
+    * تستدعي ``loss.backward()`` لتحديث تدرجات المعلمات،
+    * تستدعي ``optimizer.step()`` لتطبيق التدرجات على المعلمات.
 
-After the above snippet has been run, note that the network's parameters have changed. In particular, examining the
-value of ``l1``\ 's ``weight`` parameter shows that its values are now much closer to 0 (as may be expected):
+بعد تشغيل الشفرة أعلاه، لاحظ أن معلمات الشبكة قد تغيرت. على وجه الخصوص، عند فحص قيمة معلمة "الوزن" (weight) للطبقة ``l1``، نجد أن قيمها أصبحت الآن أقرب بكثير من الصفر (كما هو متوقع):
 
 .. code-block:: python
 
@@ -343,13 +330,7 @@ value of ``l1``\ 's ``weight`` parameter shows that its values are now much clos
            [ 0.0030],
            [-0.0008]], requires_grad=True)
 
-Note that the above process is done entirely while the network module is in "training mode". Modules default to
-training mode and can be switched between training and evaluation modes using :func:`~torch.nn.Module.train` and
-:func:`~torch.nn.Module.eval`. They can behave differently depending on which mode they are in. For example, the
-:class:`~torch.nn.BatchNorm` module maintains a running mean and variance during training that are not updated
-when the module is in evaluation mode. In general, modules should be in training mode during training
-and only switched to evaluation mode for inference or evaluation. Below is an example of a custom module
-that behaves differently between the two modes:
+لاحظ أن العملية أعلاه تتم بالكامل أثناء وجود وحدة الشبكة في "وضع التدريب". الوحدات الافتراضية تكون في وضع التدريب ويمكن التبديل بين أوضاع التدريب والتقييم باستخدام ``torch.nn.Module.train`` و ``torch.nn.Module.eval``. ويمكن أن تتصرف الوحدات بشكل مختلف حسب الوضع الذي تكون فيه. على سبيل المثال، تحتفظ وحدة ``torch.nn.BatchNorm`` بمتوسط متحرك وانحراف معياري أثناء التدريب لا يتم تحديثهما عندما تكون الوحدة في وضع التقييم. بشكل عام، يجب أن تكون الوحدات في وضع التدريب أثناء التدريب، ولا يتم التبديل إلى وضع التقييم إلا للاستنتاج أو التقييم. وفيما يلي مثال على وحدة مخصصة تتصرف بشكل مختلف بين الوضعين:
 
 .. code-block:: python
 
@@ -359,7 +340,7 @@ that behaves differently between the two modes:
 
      def forward(self, x):
        if self.training:
-         # Add a constant only in training mode.
+         # إضافة ثابت فقط في وضع التدريب
          return x + 1.
        else:
          return x
@@ -375,45 +356,38 @@ that behaves differently between the two modes:
    print('evaluation mode output: {}'.format(m(x)))
    : tensor([ 0.6614,  0.2669,  0.0617,  0.6213, -0.4519])
 
-Training neural networks can often be tricky. For more information, check out:
+يمكن أن يكون تدريب الشبكات العصبية أمراً صعباً في كثير من الأحيان. لمزيد من المعلومات، يمكنك الاطلاع على:
 
-* Using Optimizers: https://pytorch.org/tutorials/beginner/examples_nn/two_layer_net_optim.html.
-* Neural network training: https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
-* Introduction to autograd: https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html
+* استخدام خوارزميات التحسين: https://pytorch.org/tutorials/beginner/examples_nn/two_layer_net_optim.html.
+* تدريب الشبكات العصبية: https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
+* مقدمة إلى autograd: https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html
 
-Module State
+حالة الوحدة
 ------------
 
-In the previous section, we demonstrated training a module's "parameters", or learnable aspects of computation.
-Now, if we want to save the trained model to disk, we can do so by saving its ``state_dict`` (i.e. "state dictionary"):
+في القسم السابق، قمنا بتدريب "معلمات" الوحدة، أو الجوانب القابلة للتعلم من الحساب. الآن، إذا أردنا حفظ النموذج المدرب على القرص، فيمكننا القيام بذلك عن طريق حفظ ``state_dict`` الخاص به (أي "قاموس الحالة"):
 
 .. code-block:: python
 
-   # Save the module
+   # حفظ الوحدة
    torch.save(net.state_dict(), 'net.pt')
 
    ...
 
-   # Load the module later on
+   # تحميل الوحدة لاحقاً
    new_net = Net()
    new_net.load_state_dict(torch.load('net.pt'))
    : <All keys matched successfully>
 
-A module's ``state_dict`` contains state that affects its computation. This includes, but is not limited to, the
-module's parameters. For some modules, it may be useful to have state beyond parameters that affects module
-computation but is not learnable. For such cases, PyTorch provides the concept of "buffers", both "persistent"
-and "non-persistent". Following is an overview of the various types of state a module can have:
+يحتوي ``state_dict`` للوحدة على الحالة التي تؤثر على حساباتها. وهذا يشمل، على سبيل المثال لا الحصر، معلمات الوحدة. بالنسبة لبعض الوحدات، قد يكون من المفيد وجود حالة تتجاوز المعلمات تؤثر على حسابات الوحدة ولكنها غير قابلة للتعلم. بالنسبة لهذه الحالات، يوفر PyTorch مفهوم "المخازن المؤقتة" (buffers)، سواء "المستمرة" (persistent) أو "غير المستمرة" (non-persistent). فيما يلي نظرة عامة على مختلف أنواع الحالات التي يمكن أن تحتويها الوحدة:
 
-* **Parameters**\ : learnable aspects of computation; contained within the ``state_dict``
-* **Buffers**\ : non-learnable aspects of computation
+* **المعلمات**: الجوانب القابلة للتعلم من الحساب؛ موجودة ضمن ``state_dict``.
+* **المخازن المؤقتة**: الجوانب غير القابلة للتعلم من الحساب
 
-  * **Persistent** buffers: contained within the ``state_dict`` (i.e. serialized when saving & loading)
-  * **Non-persistent** buffers: not contained within the ``state_dict`` (i.e. left out of serialization)
+  * **المخازن المؤقتة المستمرة**: موجودة ضمن ``state_dict`` (أي تتم تسويتها عند الحفظ والتحميل)
+  * **المخازن المؤقتة غير المستمرة**: غير موجودة ضمن ``state_dict`` (أي يتم استبعادها من التسوية)
 
-As a motivating example for the use of buffers, consider a simple module that maintains a running mean. We want
-the current value of the running mean to be considered part of the module's ``state_dict`` so that it will be
-restored when loading a serialized form of the module, but we don't want it to be learnable.
-This snippet shows how to use :func:`~torch.nn.Module.register_buffer` to accomplish this:
+كمثال محفز لاستخدام المخازن المؤقتة، ضع في اعتبارك وحدة بسيطة تحتفظ بمتوسط متحرك. نريد أن تكون القيمة الحالية للمتوسط المتحرك جزءاً من ``state_dict`` للوحدة بحيث يتم استعادتها عند تحميل الشكل المسلسل للوحدة، ولكننا لا نريد أن تكون قابلة للتعلم. يوضح هذا المقتطف كيفية استخدام ``torch.nn.Module.register_buffer`` لتحقيق ذلك:
 
 .. code-block:: python
 
@@ -426,8 +400,7 @@ This snippet shows how to use :func:`~torch.nn.Module.register_buffer` to accomp
        self.mean = self.momentum * self.mean + (1.0 - self.momentum) * x
        return self.mean
 
-Now, the current value of the running mean is considered part of the module's ``state_dict``
-and will be properly restored when loading the module from disk:
+الآن، تعتبر القيمة الحالية للمتوسط المتحرك جزءاً من ``state_dict`` للوحدة وسيتم استعادتها بشكل صحيح عند تحميل الوحدة من القرص:
 
 .. code-block:: python
 
@@ -439,84 +412,81 @@ and will be properly restored when loading the module from disk:
    print(m.state_dict())
    : OrderedDict([('mean', tensor([ 0.1041, -0.1113, -0.0647,  0.1515]))]))
 
-   # Serialized form will contain the 'mean' tensor
+   # سيحتوي الشكل المسلسل على مصفوفة 'mean'
    torch.save(m.state_dict(), 'mean.pt')
 
    m_loaded = RunningMean(4)
    m_loaded.load_state_dict(torch.load('mean.pt'))
    assert(torch.all(m.mean == m_loaded.mean))
 
-As mentioned previously, buffers can be left out of the module's ``state_dict`` by marking them as non-persistent:
+كما ذكرنا سابقاً، يمكن استبعاد المخازن المؤقتة من ``state_dict`` للوحدة عن طريق وضع علامة عليها كمخازن مؤقتة غير مستمرة:
 
 .. code-block:: python
 
    self.register_buffer('unserialized_thing', torch.randn(5), persistent=False)
 
-Both persistent and non-persistent buffers are affected by model-wide device / dtype changes applied with
-:func:`~torch.nn.Module.to`:
+تتأثر كل من المخازن المؤقتة المستمرة وغير المستمرة بالتغييرات على مستوى الوحدة في الجهاز/نوع البيانات المطبقة باستخدام ``torch.nn.Module.to``:
 
 .. code-block:: python
 
-   # Moves all module parameters and buffers to the specified device / dtype
+   # ينقل جميع معلمات الوحدة ومخازنها المؤقتة إلى الجهاز/نوع البيانات المحدد
    m.to(device='cuda', dtype=torch.float64)
 
-Buffers of a module can be iterated over using :func:`~torch.nn.Module.buffers` or
-:func:`~torch.nn.Module.named_buffers`.
+يمكن تكرار المخازن المؤقتة للوحدة باستخدام ``torch.nn.Module.buffers`` أو ``torch.nn.Module.named_buffers``.
 
 .. code-block:: python
 
    for buffer in m.named_buffers():
      print(buffer)
 
-The following class demonstrates the various ways of registering parameters and buffers within a module:
+توضح الفئة التالية الطرق المختلفة لتسجيل المعلمات والمخازن المؤقتة داخل الوحدة:
 
 .. code-block:: python
 
    class StatefulModule(nn.Module):
      def __init__(self):
        super().__init__()
-       # Setting a nn.Parameter as an attribute of the module automatically registers the tensor
-       # as a parameter of the module.
+       # تعيين معلمة nn.Parameter كسمة للوحدة يسجل تلقائياً المصفوفة كمعلمة للوحدة.
        self.param1 = nn.Parameter(torch.randn(2))
 
-       # Alternative string-based way to register a parameter.
+       # طريقة بديلة قائمة على النصوص لتسجيل معلمة.
        self.register_parameter('param2', nn.Parameter(torch.randn(3)))
 
-       # Reserves the "param3" attribute as a parameter, preventing it from being set to anything
-       # except a parameter. "None" entries like this will not be present in the module's state_dict.
+       # يحجز "param3" كمعلمة، مما يمنع تعيينه لأي شيء
+       # باستثناء معلمة. لن تكون الإدخالات "null" مثل هذه موجودة في قاموس حالة الوحدة.
        self.register_parameter('param3', None)
 
-       # Registers a list of parameters.
+       # يسجل قائمة من المعلمات.
        self.param_list = nn.ParameterList([nn.Parameter(torch.randn(2)) for i in range(3)])
 
-       # Registers a dictionary of parameters.
+       # يسجل قاموس من المعلمات.
        self.param_dict = nn.ParameterDict({
          'foo': nn.Parameter(torch.randn(3)),
          'bar': nn.Parameter(torch.randn(4))
        })
 
-       # Registers a persistent buffer (one that appears in the module's state_dict).
+       # يسجل مخزناً مؤقتاً مستمراً (مخزناً مؤقتاً يظهر في قاموس حالة الوحدة).
        self.register_buffer('buffer1', torch.randn(4), persistent=True)
 
-       # Registers a non-persistent buffer (one that does not appear in the module's state_dict).
+       # يسجل مخزناً مؤقتاً غير مستمر (مخزناً مؤقتاً لا يظهر في قاموس حالة الوحدة).
        self.register_buffer('buffer2', torch.randn(5), persistent=False)
 
-       # Reserves the "buffer3" attribute as a buffer, preventing it from being set to anything
-       # except a buffer. "None" entries like this will not be present in the module's state_dict.
+       # يحجز "buffer3" كمخزن مؤقت، مما يمنع تعيينه لأي شيء
+       # باستثناء مخزن مؤقت. لن تكون الإدخالات "null" مثل هذه موجودة في قاموس حالة الوحدة.
        self.register_buffer('buffer3', None)
 
-       # Adding a submodule registers its parameters as parameters of the module.
+       # إضافة وحدة فرعية يسجل معلماتها كمعلمات للوحدة.
        self.linear = nn.Linear(2, 3)
 
    m = StatefulModule()
 
-   # Save and load state_dict.
+   # حفظ وتحميل قاموس الحالة.
    torch.save(m.state_dict(), 'state.pt')
    m_loaded = StatefulModule()
    m_loaded.load_state_dict(torch.load('state.pt'))
 
-   # Note that non-persistent buffer "buffer2" and reserved attributes "param3" and "buffer3" do
-   # not appear in the state_dict.
+   # لاحظ أن المخزن المؤقت غير المستمر "buffer2" والسمات المحجوزة "param3" و "buffer3" لا
+   # تظهر في قاموس الحالة.
    print(m_loaded.state_dict())
    : OrderedDict([('param1', tensor([-0.0322,  0.9066])),
                   ('param2', tensor([-0.4472,  0.1409,  0.4852])),
@@ -531,36 +501,33 @@ The following class demonstrates the various ways of registering parameters and 
                                             [ 0.4452, -0.2843]])),
                   ('linear.bias', tensor([-0.3710, -0.0795, -0.3947]))])
 
-For more information, check out:
+لمزيد من المعلومات، يمكنك الاطلاع على:
 
-* Saving and loading: https://pytorch.org/tutorials/beginner/saving_loading_models.html
-* Serialization semantics: https://pytorch.org/docs/main/notes/serialization.html
-* What is a state dict? https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html
+* الحفظ والتحميل: https://pytorch.org/tutorials/beginner/saving_loading_models.html
+* دلالات التسلسل: https://pytorch.org/docs/main/notes/serialization.html
+* ما هو قاموس الحالة؟ https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html
 
-Module Initialization
----------------------
+تهيئة الوحدة
+--------
+.. default-domain:: torch
 
-By default, parameters and floating-point buffers for modules provided by :mod:`torch.nn` are initialized during
-module instantiation as 32-bit floating point values on the CPU using an initialization scheme determined to
-perform well historically for the module type. For certain use cases, it may be desired to initialize with a different
-dtype, device (e.g. GPU), or initialization technique.
+بشكل افتراضي، يتم تهيئة المعلمات وذاكرات التخزين العشوائي ذات النقطة العائمة للوحدات النمطية التي يوفرها :mod:`torch.nn` أثناء إنشاء الوحدة النمطية كقيم ذات نقطة عائمة 32 بت على وحدة المعالجة المركزية باستخدام مخطط تهيئة تم تحديده لأداء جيد تاريخيًا لنوع الوحدة النمطية. في بعض حالات الاستخدام، قد يكون من المستحسن إجراء التهيئة باستخدام نوع بيانات مختلف أو جهاز مختلف (مثل وحدة معالجة الرسومات) أو تقنية تهيئة مختلفة.
 
-Examples:
+أمثلة:
 
 .. code-block:: python
 
-   # Initialize module directly onto GPU.
+   # تهيئة الوحدة النمطية مباشرة على وحدة معالجة الرسومات.
    m = nn.Linear(5, 3, device='cuda')
 
-   # Initialize module with 16-bit floating point parameters.
+   # تهيئة الوحدة النمطية بمعلمات ذات دقة نصفية.
    m = nn.Linear(5, 3, dtype=torch.half)
 
-   # Skip default parameter initialization and perform custom (e.g. orthogonal) initialization.
+   # تخطي تهيئة المعلمات الافتراضية وإجراء التهيئة المخصصة (مثل التهيئة المتعامدة).
    m = torch.nn.utils.skip_init(nn.Linear, 5, 3)
    nn.init.orthogonal_(m.weight)
 
-Note that the device and dtype options demonstrated above also apply to any floating-point buffers registered
-for the module:
+لاحظ أن خيارات الجهاز ونوع البيانات الموضحة أعلاه تنطبق أيضًا على أي ذاكرات تخزين عشوائي ذات نقطة عائمة مسجلة للوحدة النمطية:
 
 .. code-block:: python
 
@@ -568,116 +535,96 @@ for the module:
    print(m.running_mean)
    : tensor([0., 0., 0.], dtype=torch.float16)
 
-While module writers can use any device or dtype to initialize parameters in their custom modules, good practice is
-to use ``dtype=torch.float`` and ``device='cpu'`` by default as well. Optionally, you can provide full flexibility
-in these areas for your custom module by conforming to the convention demonstrated above that all
-:mod:`torch.nn` modules follow:
+بينما يمكن لمؤلفي الوحدات النمطية استخدام أي جهاز أو نوع بيانات لتهيئة المعلمات في وحداتهم النمطية المخصصة، فإن الممارسة الجيدة هي استخدام ``dtype=torch.float`` و ``device='cpu'`` بشكل افتراضي أيضًا. يمكنك أيضًا توفير المرونة الكاملة في هذه المجالات لوحدتك النمطية المخصصة عن طريق الالتزام بالاتفاقية الموضحة أعلاه والتي تتبعها جميع وحدات :mod:`torch.nn` النمطية:
 
-* Provide a ``device`` constructor kwarg that applies to any parameters / buffers registered by the module.
-* Provide a ``dtype`` constructor kwarg that applies to any parameters / floating-point buffers registered by
-  the module.
-* Only use initialization functions (i.e. functions from :mod:`torch.nn.init`) on parameters and buffers within the
-  module's constructor. Note that this is only required to use :func:`~torch.nn.utils.skip_init`; see
-  `this page <https://pytorch.org/tutorials/prototype/skip_param_init.html#updating-modules-to-support-skipping-initialization>`_ for an explanation.
+* توفير وسيط ``device`` للمنشئ الذي ينطبق على أي معلمات / ذاكرات تخزين مسجلة بواسطة الوحدة النمطية.
+* توفير وسيط ``dtype`` للمنشئ الذي ينطبق على أي معلمات / ذاكرات تخزين عشوائي ذات نقطة عائمة مسجلة بواسطة الوحدة النمطية.
+* استخدم فقط دالات التهيئة (أي الدالات من :mod:`torch.nn.init`) على المعلمات وذاكرات التخزين داخل منشئ الوحدة النمطية. لاحظ أن هذا مطلوب فقط لاستخدام :func:`~torch.nn.utils.skip_init`؛ راجع `هذه الصفحة <https://pytorch.org/tutorials/prototype/skip_param_init.html#updating-modules-to-support-skipping-initialization>`_ للحصول على تفسير.
 
-For more information, check out:
+لمزيد من المعلومات، راجع:
 
-* Skipping module parameter initialization: https://pytorch.org/tutorials/prototype/skip_param_init.html
+* تخطي تهيئة معلمات الوحدة النمطية: https://pytorch.org/tutorials/prototype/skip_param_init.html
 
-Module Hooks
-------------
+خطافات الوحدة النمطية
+----------------
 
-In :ref:`Neural Network Training with Modules`, we demonstrated the training process for a module, which iteratively
-performs forward and backward passes, updating module parameters each iteration. For more control
-over this process, PyTorch provides "hooks" that can perform arbitrary computation during a forward or backward
-pass, even modifying how the pass is done if desired. Some useful examples for this functionality include
-debugging, visualizing activations, examining gradients in-depth, etc. Hooks can be added to modules
-you haven't written yourself, meaning this functionality can be applied to third-party or PyTorch-provided modules.
+في :ref:`تدريب الشبكة العصبية باستخدام الوحدات النمطية <neural-network-training-with-modules>`، قمنا بتوضيح عملية التدريب للوحدة النمطية، والتي تقوم بشكل تكراري بتنفيذ التمريرات الأمامية والخلفية، وتحديث معلمات الوحدة النمطية في كل تكرار. لمزيد من التحكم في هذه العملية، يوفر PyTorch "خطافات" يمكنها تنفيذ حسابات تعسفية أثناء التمرير الأمامي أو الخلفي، وحتى تعديل كيفية إجراء التمرير إذا لزم الأمر. بعض الأمثلة المفيدة لهذه الوظيفة تشمل التصحيح، وتصوير التنشيط، وفحص التدرجات بعمق، وما إلى ذلك. يمكن إضافة الخطافات إلى الوحدات النمطية التي لم تكتبها بنفسك، مما يعني أن هذه الوظيفة يمكن تطبيقها على الوحدات النمطية التابعة لجهات خارجية أو التي يوفرها PyTorch.
 
-PyTorch provides two types of hooks for modules:
+يوفر PyTorch نوعين من الخطافات للوحدات النمطية:
 
-* **Forward hooks** are called during the forward pass. They can be installed for a given module with
-  :func:`~torch.nn.Module.register_forward_pre_hook` and :func:`~torch.nn.Module.register_forward_hook`.
-  These hooks will be called respectively just before the forward function is called and just after it is called.
-  Alternatively, these hooks can be installed globally for all modules with the analogous
-  :func:`~torch.nn.modules.module.register_module_forward_pre_hook` and
-  :func:`~torch.nn.modules.module.register_module_forward_hook` functions.
-* **Backward hooks** are called during the backward pass. They can be installed with
-  :func:`~torch.nn.Module.register_full_backward_pre_hook` and :func:`~torch.nn.Module.register_full_backward_hook`.
-  These hooks will be called when the backward for this Module has been computed.
-  :func:`~torch.nn.Module.register_full_backward_pre_hook` will allow the user to access the gradients for outputs
-  while :func:`~torch.nn.Module.register_full_backward_hook` will allow the user to access the gradients
-  both the inputs and outputs. Alternatively, they can be installed globally for all modules with
-  :func:`~torch.nn.modules.module.register_module_full_backward_hook` and
-  :func:`~torch.nn.modules.module.register_module_full_backward_pre_hook`.
+* يتم استدعاء **خطافات التمرير الأمامي** أثناء التمرير الأمامي. يمكن تثبيتها لوحدة نمطية معينة باستخدام :func:`~torch.nn.Module.register_forward_pre_hook` و :func:`~torch.nn.Module.register_forward_hook`.
+  سيتم استدعاء هذه الخطافات على التوالي مباشرة قبل استدعاء دالة التمرير الأمامي وبعدها مباشرة.
+  بدلاً من ذلك، يمكن تثبيت هذه الخطافات عالميًا لجميع الوحدات النمطية باستخدام الدالتين المماثلتين :func:`~torch.nn.modules.module.register_module_forward_pre_hook` و :func:`~torch.nn.modules.module.register_module_forward_hook`.
+* يتم استدعاء **خطافات التمرير الخلفي** أثناء التمرير الخلفي. يمكن تثبيتها باستخدام :func:`~torch.nn.Module.register_full_backward_pre_hook` و :func:`~torch.nn.Module.register_full_backward_hook`.
+  سيتم استدعاء هذه الخطافات عندما يتم حساب التمرير الخلفي لهذه الوحدة النمطية.
+  يسمح :func:`~torch.nn.Module.register_full_backward_pre_hook` للمستخدم بالوصول إلى تدرجات المخرجات في حين أن :func:`~torch.nn.Module.register_full_backward_hook` يسمح للمستخدم بالوصول إلى التدرجات لكل من المدخلات والمخرجات. بدلاً من ذلك، يمكن تثبيتها عالميًا لجميع الوحدات النمطية باستخدام :func:`~torch.nn.modules.module.register_module_full_backward_hook` و :func:`~torch.nn.modules.module.register_module_full_backward_pre_hook`.
 
-All hooks allow the user to return an updated value that will be used throughout the remaining computation.
-Thus, these hooks can be used to either execute arbitrary code along the regular module forward/backward or
-modify some inputs/outputs without having to change the module's ``forward()`` function.
+تسمح جميع الخطافات للمستخدم بإرجاع قيمة محدّثة سيتم استخدامها في بقية الحساب.
+وبالتالي، يمكن استخدام هذه الخطافات لتنفيذ تعليمات برمجية تعسفية إما مع التمرير الأمامي/الخلفي المنتظم للوحدة النمطية أو لتعديل بعض المدخلات/المخرجات دون الحاجة إلى تغيير دالة ``forward()`` للوحدة النمطية.
 
-Below is an example demonstrating usage of forward and backward hooks:
+فيما يلي مثال يوضح استخدام خطافات التمرير الأمامي والخلفي:
 
 .. code-block:: python
 
    torch.manual_seed(1)
 
    def forward_pre_hook(m, inputs):
-     # Allows for examination and modification of the input before the forward pass.
-     # Note that inputs are always wrapped in a tuple.
+     # يسمح بفحص وتعديل الإدخال قبل التمرير الأمامي.
+     # لاحظ أن المدخلات ملفوفة دائمًا في مجموعة.
      input = inputs[0]
      return input + 1.
 
    def forward_hook(m, inputs, output):
-     # Allows for examination of inputs / outputs and modification of the outputs
-     # after the forward pass. Note that inputs are always wrapped in a tuple while outputs
-     # are passed as-is.
+     # يسمح بفحص الإدخالات / المخرجات وتعديل المخرجات
+     # بعد التمرير الأمامي. لاحظ أن المدخلات ملفوفة دائمًا في مجموعة في حين يتم تمرير المخرجات
+     # كما هي.
 
-     # Residual computation a la ResNet.
+     # حساب بقايا على غرار ResNet.
      return output + inputs[0]
 
    def backward_hook(m, grad_inputs, grad_outputs):
-     # Allows for examination of grad_inputs / grad_outputs and modification of
-     # grad_inputs used in the rest of the backwards pass. Note that grad_inputs and
-     # grad_outputs are always wrapped in tuples.
+     # يسمح بفحص grad_inputs / grad_outputs وتعديل
+     # grad_inputs المستخدمة في بقية التمرير الخلفي. لاحظ أن grad_inputs و
+     # يتم دائمًا لف grad_outputs في tuples.
      new_grad_inputs = [torch.ones_like(gi) * 42. for gi in grad_inputs]
      return new_grad_inputs
 
-   # Create sample module & input.
+   # إنشاء وحدة نمطية ومدخلات عينة.
    m = nn.Linear(3, 3)
    x = torch.randn(2, 3, requires_grad=True)
 
-   # ==== Demonstrate forward hooks. ====
-   # Run input through module before and after adding hooks.
+   # ==== توضيح خطافات التمرير الأمامي. ====
+   # تشغيل الإدخال من خلال الوحدة النمطية قبل وبعد إضافة الخطافات.
    print('output with no forward hooks: {}'.format(m(x)))
    : output with no forward hooks: tensor([[-0.5059, -0.8158,  0.2390],
                                            [-0.0043,  0.4724, -0.1714]], grad_fn=<AddmmBackward>)
 
-   # Note that the modified input results in a different output.
+   # لاحظ أن الإدخال المعدل يؤدي إلى إخراج مختلف.
    forward_pre_hook_handle = m.register_forward_pre_hook(forward_pre_hook)
    print('output with forward pre hook: {}'.format(m(x)))
    : output with forward pre hook: tensor([[-0.5752, -0.7421,  0.4942],
                                            [-0.0736,  0.5461,  0.0838]], grad_fn=<AddmmBackward>)
 
-   # Note the modified output.
+   # لاحظ الإخراج المعدل.
    forward_hook_handle = m.register_forward_hook(forward_hook)
    print('output with both forward hooks: {}'.format(m(x)))
    : output with both forward hooks: tensor([[-1.0980,  0.6396,  0.4666],
                                              [ 0.3634,  0.6538,  1.0256]], grad_fn=<AddBackward0>)
 
-   # Remove hooks; note that the output here matches the output before adding hooks.
+   # إزالة الخطافات؛ لاحظ أن الإخراج هنا يتطابق مع الإخراج قبل إضافة الخطافات.
    forward_pre_hook_handle.remove()
    forward_hook_handle.remove()
    print('output after removing forward hooks: {}'.format(m(x)))
    : output after removing forward hooks: tensor([[-0.5059, -0.8158,  0.2390],
                                                   [-0.0043,  0.4724, -0.1714]], grad_fn=<AddmmBackward>)
 
-   # ==== Demonstrate backward hooks. ====
+   # ==== توضيح خطافات التمرير الخلفي. ====
    m(x).sum().backward()
    print('x.grad with no backwards hook: {}'.format(x.grad))
    : x.grad with no backwards hook: tensor([[ 0.4497, -0.5046,  0.3146],
                                             [ 0.4497, -0.5046,  0.3146]])
 
-   # Clear gradients before running backward pass again.
+   # مسح التدرجات قبل تشغيل التمرير الخلفي مرة أخرى.
    m.zero_grad()
    x.grad.zero_()
 
@@ -687,57 +634,40 @@ Below is an example demonstrating usage of forward and backward hooks:
    : x.grad with backwards hook: tensor([[42., 42., 42.],
                                          [42., 42., 42.]])
 
-Advanced Features
------------------
+ميزات متقدمة
+----------
 
-PyTorch also provides several more advanced features that are designed to work with modules. All these functionalities
-are available for custom-written modules, with the small caveat that certain features may require modules to conform
-to particular constraints in order to be supported. In-depth discussion of these features and the corresponding
-requirements can be found in the links below.
+يوفر PyTorch أيضًا العديد من الميزات المتقدمة المصممة للعمل مع الوحدات النمطية. جميع هذه الوظائف متاحة للوحدات النمطية المكتوبة مخصصًا، مع التحذير الصغير الذي قد يتطلب من الوحدات النمطية الالتزام بقيود معينة من أجل دعمها. يمكن العثور على مناقشة متعمقة لهذه الميزات والمتطلبات المقابلة لها في الروابط أدناه.
 
-Distributed Training
+التدريب الموزع
+***********
+
+توجد طرق مختلفة للتدريب الموزع داخل PyTorch، لكل من التدريب على نطاق واسع باستخدام وحدات معالجة الرسومات المتعددة وكذلك التدريب عبر أجهزة متعددة. اطلع على صفحة
+`نظرة عامة على التدريب الموزع <https://pytorch.org/tutorials/beginner/dist_overview.html>`_ للحصول على معلومات مفصلة حول كيفية استخدامها.
+
+تحليل أداء التوصيف
+***************
+
+يمكن أن يكون `محلل أداء PyTorch <https://pytorch.org/tutorials/beginner/profiler.html>`_ مفيدًا لتحديد الاختناقات في الأداء داخل نماذج الخاصة بك. فهو يقيس ويخرج خصائص الأداء لكل من استخدام الذاكرة والوقت المستغرق.
+
+تحسين الأداء باستخدام التقريب
 ********************
 
-Various methods for distributed training exist within PyTorch, both for scaling up training using multiple GPUs
-as well as training across multiple machines. Check out the
-`distributed training overview page <https://pytorch.org/tutorials/beginner/dist_overview.html>`_ for
-detailed information on how to utilize these.
+يمكن لتحسين الأداء واستخدام الذاكرة باستخدام تقنيات التقريب للوحدات النمطية باستخدام عرض بت أقل من دقة النقطة العائمة. تحقق من آليات التقريب المختلفة التي يوفرها PyTorch
+`هنا <https://pytorch.org/docs/stable/quantization.html>`_.
 
-Profiling Performance
+تحسين استخدام الذاكرة بالتشذيب
 *********************
 
-The `PyTorch Profiler <https://pytorch.org/tutorials/beginner/profiler.html>`_ can be useful for identifying
-performance bottlenecks within your models. It measures and outputs performance characteristics for
-both memory usage and time spent.
+غالبًا ما تكون نماذج التعلم العميق كبيرة الحجم مفرطة في المعلمات، مما يؤدي إلى ارتفاع استخدام الذاكرة. لمكافحة ذلك، يوفر PyTorch آليات لتشذيب النماذج، والتي يمكن أن تساعد في تقليل استخدام الذاكرة مع الحفاظ على دقة المهمة. يصف
+`التدريب على التشذيب <https://pytorch.org/tutorials/intermediate/pruning_tutorial.html>`_ كيفية استخدام تقنيات التشذيب التي يوفرها PyTorch أو تحديد تقنيات التشذيب المخصصة حسب الحاجة.
 
-Improving Performance with Quantization
-***************************************
+المعلمات
+*******
 
-Applying quantization techniques to modules can improve performance and memory usage by utilizing lower
-bitwidths than floating-point precision. Check out the various PyTorch-provided mechanisms for quantization
-`here <https://pytorch.org/docs/stable/quantization.html>`_.
+بالنسبة لبعض التطبيقات، قد يكون من المفيد تقييد مساحة المعلمات أثناء تدريب النموذج. على سبيل المثال، يمكن أن يؤدي فرض تقييد متعامد للمعلمات التي يتم تعلمها إلى تحسين التقارب لشبكات RNN. يوفر PyTorch آلية لتطبيق `المعلمات <https://pytorch.org/tutorials/intermediate/parametrizations.html>`_ مثل هذا، كما يسمح بتعريف قيود مخصصة.
 
-Improving Memory Usage with Pruning
-***********************************
-
-Large deep learning models are often over-parametrized, resulting in high memory usage. To combat this, PyTorch
-provides mechanisms for model pruning, which can help reduce memory usage while maintaining task accuracy. The
-`Pruning tutorial <https://pytorch.org/tutorials/intermediate/pruning_tutorial.html>`_ describes how to utilize
-the pruning techniques PyTorch provides or define custom pruning techniques as necessary.
-
-Parametrizations
-****************
-
-For certain applications, it can be beneficial to constrain the parameter space during model training. For example,
-enforcing orthogonality of the learned parameters can improve convergence for RNNs. PyTorch provides a mechanism for
-applying `parametrizations <https://pytorch.org/tutorials/intermediate/parametrizations.html>`_ such as this, and
-further allows for custom constraints to be defined.
-
-Transforming Modules with FX
+تحويل الوحدات النمطية باستخدام FX
 ****************************
 
-The `FX <https://pytorch.org/docs/stable/fx.html>`_ component of PyTorch provides a flexible way to transform
-modules by operating directly on module computation graphs. This can be used to programmatically generate or
-manipulate modules for a broad array of use cases. To explore FX, check out these examples of using FX for
-`convolution + batch norm fusion <https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html>`_ and
-`CPU performance analysis <https://pytorch.org/tutorials/intermediate/fx_profiling_tutorial.html>`_.
+يوفر مكون `FX <https://pytorch.org/docs/stable/fx.html>`_ في PyTorch طريقة مرنة لتحويل الوحدات النمطية عن طريق العمل مباشرة على مخططات حسابات الوحدات النمطية. يمكن استخدامه لإنشاء أو معالجة وحدات نمطية برمجيًا لمجموعة واسعة من حالات الاستخدام. لاستكشاف FX، تحقق من هذه الأمثلة لاستخدام FX للاندماج `التقريبي + معيار الدفعة <https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html>`_ و `تحليل أداء وحدة المعالجة المركزية <https://pytorch.org/tutorials/intermediate/fx_profiling_tutorial.html>`_.
