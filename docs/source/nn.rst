@@ -1,21 +1,126 @@
 .. role:: hidden
     :class: hidden-section
 
-torch.nn
+:hidden:`torch.nn`
+*******************
+
+يحتوي هذا النص على واجهة برمجة تطبيقات الشبكة العصبية في PyTorch.
+
+.. currentmodule:: torch.nn
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    BatchNorm1d
+    BatchNorm2d
+    BatchNorm3d
+    SyncBatchNorm
+    LayerNorm
+    InstanceNorm1d
+    InstanceNorm2d
+    InstanceNorm3d
+    GroupNorm
+    LocalResponseNorm
+    CrossMapLRN2d
+    Dropout
+    Dropout2d
+    Dropout3d
+    AlphaDropout
+    FeatureAlphaDropout
+    DropoutLayer
+    GaussianDropout
+    Identity
+    ELU
+    SELU
+    GELU
+    SiLU
+    Mish
+    Hardswish
+    Hardshrink
+    LeakyReLU
+    LogSigmoid
+    PReLU
+    ReLU
+    ReLU6
+    RReLU
+    Softplus
+    Softshrink
+    Tanh
+    Tanhshrink
+    Threshold
+    Softmin
+    Softmax
+    Softmax2d
+    LogSoftmax
+    AdaptiveLogSoftmaxWithLoss
+    NLLLoss
+    BCEWithLogitsLoss
+    BCELoss
+    BCELoss
+    MarginRankingLoss
+    HingeEmbeddingLoss
+    MultiLabelMarginLoss
+    MultiLabelSoftMarginLoss
+    CosineEmbeddingLoss
+    MultiMarginLoss
+    TripletMarginLoss
+    L1Loss
+    MSELoss
+    SmoothL1Loss
+    KLDivLoss
+    HubberLoss
+    MultiLabelSoftMarginLoss
+    CTCLoss
+    PoissonNLLLoss
+    L1Loss
+    NLLLoss2d
+    SmoothL1Loss
+    CrossEntropyLoss
+    CTCLoss
+    NTXentLoss
+    TransformerLoss
+    CTCLoss
+    CTMultiplier
+    CosineSimilarity
+    PairwiseDistance
+    L1Loss
+    MSELoss
+    MarginRankingLoss
+    MultiLabelMarginLoss
+    MultiMarginLoss
+    MultiLabelSoftMarginLoss
+    TripletMarginLoss
+    CosineEmbeddingLoss
+    CosineSimilarity
+    TripletMarginWithDistanceLoss
+    MultiLabelSoftMarginLoss
+    SmoothL1Loss
+    SoftMarginLoss
+    MultiLabelMarginLoss
+    MultiLabelSoftMarginLoss
+    FocalLoss
+    ClassBalancedLoss
+    LovaszSoftmax
+    LovaszHinge
+    FocalCosineLoss
+    FocalLoss
+    CircleLoss
+    TripletLoss
+
+
 ===================================
 .. automodule:: torch.nn
 .. automodule:: torch.nn.modules
 
-These are the basic building blocks for graphs:
+هذه هي اللبنات الأساسية للرسوم البيانية:
 
 .. contents:: torch.nn
     :depth: 2
     :local:
-    :backlinks: top
-
+    :backlinks: أعلى
 
 .. currentmodule:: torch.nn
-
 
 .. autosummary::
     :toctree: generated
@@ -27,7 +132,7 @@ These are the basic building blocks for graphs:
     ~parameter.UninitializedParameter
     ~parameter.UninitializedBuffer
 
-Containers
+الحاويات
 ----------------------------------
 
 .. autosummary::
@@ -42,7 +147,7 @@ Containers
     ParameterList
     ParameterDict
 
-Global Hooks For Module
+خطافات عالمية للوحدة
 
 .. currentmodule:: torch.nn.modules.module
 .. autosummary::
@@ -60,7 +165,7 @@ Global Hooks For Module
 
 .. currentmodule:: torch
 
-Convolution Layers
+طبقات التجزئة
 ----------------------------------
 
 .. autosummary::
@@ -83,7 +188,7 @@ Convolution Layers
     nn.Unfold
     nn.Fold
 
-Pooling layers
+طبقات التجميع
 ----------------------------------
 
 .. autosummary::
@@ -112,7 +217,7 @@ Pooling layers
     nn.AdaptiveAvgPool2d
     nn.AdaptiveAvgPool3d
 
-Padding Layers
+طبقات الحشو
 --------------
 
 .. autosummary::
@@ -136,7 +241,7 @@ Padding Layers
     nn.CircularPad2d
     nn.CircularPad3d
 
-Non-linear Activations (weighted sum, nonlinearity)
+التنشيطات غير الخطية (المجموع المرجح، اللانخطية)
 ---------------------------------------------------
 
 .. autosummary::
@@ -170,7 +275,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     nn.Threshold
     nn.GLU
 
-Non-linear Activations (other)
+التنشيطات غير الخطية (أخرى)
 ------------------------------
 
 .. autosummary::
@@ -184,7 +289,7 @@ Non-linear Activations (other)
     nn.LogSoftmax
     nn.AdaptiveLogSoftmaxWithLoss
 
-Normalization Layers
+طبقات التوحيد القياسي
 ----------------------------------
 
 .. autosummary::
@@ -210,7 +315,7 @@ Normalization Layers
     nn.LocalResponseNorm
     nn.RMSNorm
 
-Recurrent Layers
+الطبقات المتكررة
 ----------------
 
 .. autosummary::
@@ -226,7 +331,7 @@ Recurrent Layers
     nn.LSTMCell
     nn.GRUCell
 
-Transformer Layers
+طبقات المحول
 ----------------------------------
 
 .. autosummary::
@@ -240,7 +345,7 @@ Transformer Layers
     nn.TransformerEncoderLayer
     nn.TransformerDecoderLayer
 
-Linear Layers
+الطبقات الخطية
 ----------------------------------
 
 .. autosummary::
@@ -253,7 +358,7 @@ Linear Layers
     nn.Bilinear
     nn.LazyLinear
 
-Dropout Layers
+طبقات التوقف
 --------------
 
 .. autosummary::
@@ -268,7 +373,7 @@ Dropout Layers
     nn.AlphaDropout
     nn.FeatureAlphaDropout
 
-Sparse Layers
+الطبقات المتناثرة
 -------------
 
 .. autosummary::
@@ -279,7 +384,7 @@ Sparse Layers
     nn.Embedding
     nn.EmbeddingBag
 
-Distance Functions
+وظائف المسافة
 ------------------
 
 .. autosummary::
@@ -290,7 +395,7 @@ Distance Functions
     nn.CosineSimilarity
     nn.PairwiseDistance
 
-Loss Functions
+وظائف الخسارة
 --------------
 
 .. autosummary::
@@ -320,7 +425,7 @@ Loss Functions
     nn.TripletMarginLoss
     nn.TripletMarginWithDistanceLoss
 
-Vision Layers
+طبقات الرؤية
 ----------------
 
 .. autosummary::
@@ -334,7 +439,7 @@ Vision Layers
     nn.UpsamplingNearest2d
     nn.UpsamplingBilinear2d
 
-Shuffle Layers
+طبقات الخلط
 ----------------
 
 .. autosummary::
@@ -344,7 +449,7 @@ Shuffle Layers
 
     nn.ChannelShuffle
 
-DataParallel Layers (multi-GPU, distributed)
+طبقات DataParallel (متعددة GPU، موزعة)
 --------------------------------------------
 .. automodule:: torch.nn.parallel
 .. currentmodule:: torch
@@ -357,13 +462,13 @@ DataParallel Layers (multi-GPU, distributed)
     nn.DataParallel
     nn.parallel.DistributedDataParallel
 
-Utilities
+الأدوات المساعدة
 ---------
 .. automodule:: torch.nn.utils
 
-From the ``torch.nn.utils`` module:
+من وحدة "torch.nn.utils":
 
-Utility functions to clip parameter gradients.
+وظائف الأدوات المساعدة لتقليم تدرجات المعلمات.
 
 .. currentmodule:: torch.nn.utils
 .. autosummary::
@@ -374,7 +479,7 @@ Utility functions to clip parameter gradients.
     clip_grad_norm
     clip_grad_value_
 
-Utility functions to flatten and unflatten Module parameters to and from a single vector.
+وظائف الأدوات المساعدة لتقطيع وتسطيح معلمات الوحدة إلى ناقل واحد ومنه.
 
 .. autosummary::
     :toctree: generated
@@ -383,7 +488,7 @@ Utility functions to flatten and unflatten Module parameters to and from a singl
     parameters_to_vector
     vector_to_parameters
 
-Utility functions to fuse Modules with BatchNorm modules.
+وظائف الأدوات المساعدة لدمج الوحدات مع وحدات BatchNorm.
 
 .. autosummary::
     :toctree: generated
@@ -394,7 +499,7 @@ Utility functions to fuse Modules with BatchNorm modules.
     fuse_linear_bn_eval
     fuse_linear_bn_weights
 
-Utility functions to convert Module parameter memory formats.
+وظائف الأدوات المساعدة لتحويل تنسيق ذاكرة معلمات الوحدة.
 
 .. autosummary::
     :toctree: generated
@@ -403,7 +508,7 @@ Utility functions to convert Module parameter memory formats.
     convert_conv2d_weight_memory_format
     convert_conv3d_weight_memory_format
 
-Utility functions to apply and remove weight normalization from Module parameters.
+وظائف الأدوات المساعدة لتطبيق وإزالة التوحيد الوزني لمعلمات الوحدة.
 
 .. autosummary::
     :toctree: generated
@@ -414,7 +519,7 @@ Utility functions to apply and remove weight normalization from Module parameter
     spectral_norm
     remove_spectral_norm
 
-Utility functions for initializing Module parameters.
+وظائف الأدوات المساعدة لتهيئة معلمات الوحدة.
 
 .. autosummary::
     :toctree: generated
@@ -422,7 +527,7 @@ Utility functions for initializing Module parameters.
 
     skip_init
 
-Utility classes and functions for pruning Module parameters.
+فئات ووظائف الأدوات المساعدة لتشذيب معلمات الوحدة.
 
 .. autosummary::
     :toctree: generated
@@ -446,8 +551,8 @@ Utility classes and functions for pruning Module parameters.
     prune.remove
     prune.is_pruned
 
-Parametrizations implemented using the new parametrization functionality
-in :func:`torch.nn.utils.parameterize.register_parametrization`.
+التمثيلات المنفذة باستخدام وظيفة التمثيل الجديدة
+في: func: torch.nn.utils.parameterize.register_parametrization `.
 
 .. autosummary::
     :toctree: generated
@@ -457,13 +562,12 @@ in :func:`torch.nn.utils.parameterize.register_parametrization`.
     parametrizations.weight_norm
     parametrizations.spectral_norm
 
-Utility functions to parametrize Tensors on existing Modules.
-Note that these functions can be used to parametrize a given Parameter
-or Buffer given a specific function that maps from an input space to the
-parametrized space. They are not parameterizations that would transform
-an object into a parameter. See the
-`Parametrizations tutorial <https://pytorch.org/tutorials/intermediate/parametrizations.html>`_
-for more information on how to implement your own parametrizations.
+وظائف الأدوات المساعدة لتمثيل المتوترات على الوحدات الموجودة.
+يرجى ملاحظة أن هذه الوظائف يمكن استخدامها لتمثيل معلمة أو عازل معين
+نظرًا لوظيفة محددة تقوم بالتعيين من مساحة الإدخال إلى مساحة التمثيل. إنها ليست تمثيلات
+من شأنها أن تحول كائنًا إلى معلمة. راجع
+`تمثيل البرنامج التعليمي <https://pytorch.org/tutorials/intermediate/parametrizations.html>`_
+لمزيد من المعلومات حول كيفية تنفيذ التمثيلات الخاصة بك.
 
 .. autosummary::
     :toctree: generated
@@ -481,7 +585,7 @@ for more information on how to implement your own parametrizations.
 
     parametrize.ParametrizationList
 
-Utility functions to call a given Module in a stateless manner.
+وظائف الأدوات المساعدة لاستدعاء وحدة معينة بطريقة غير حالية.
 
 .. autosummary::
     :toctree: generated
@@ -489,7 +593,7 @@ Utility functions to call a given Module in a stateless manner.
 
     stateless.functional_call
 
-Utility functions in other modules
+وظائف الأدوات المساعدة في الوحدات الأخرى
 
 .. currentmodule:: torch
 .. autosummary::
@@ -512,13 +616,17 @@ Utility functions in other modules
     nn.Flatten
     nn.Unflatten
 
-Quantized Functions
+الوظائف الكمية
 --------------------
 
-Quantization refers to techniques for performing computations and storing tensors at lower bitwidths than
-floating point precision. PyTorch supports both per tensor and per channel asymmetric linear quantization. To learn more how to use quantized functions in PyTorch, please refer to the :ref:`quantization-doc` documentation.
+يشير التكميم إلى تقنيات لأداء الحسابات وتخزين المتوترات عند عرض بت أقل من
+دقة النقطة العائمة. تدعم PyTorch كل من التكميم الخطي غير المتماثل لكل تنس و
+التكميم الخطي غير المتماثل لكل قناة. لمعرفة المزيد حول كيفية استخدام الوظائف الكمية في PyTorch، يرجى الرجوع إلى
+:ref:`quantization-doc` الوثائق.
 
-Lazy Modules Initialization
+تهيئة الوحدات الكسولة
+بالتأكيد! هذا هو النص المترجم إلى اللغة العربية بتنسيق ReStructuredText:
+
 ---------------------------
 
 .. currentmodule:: torch
@@ -529,10 +637,10 @@ Lazy Modules Initialization
 
     nn.modules.lazy.LazyModuleMixin
 
-Aliases
-_______
+المترادفات
+-----------
 
-The following are aliases to their counterparts in ``torch.nn``:
+ما يلي هي مرادفات لنظيراتها في ``torch.nn``:
 
 .. currentmodule:: torch
 .. autosummary::
@@ -542,8 +650,8 @@ The following are aliases to their counterparts in ``torch.nn``:
 
     nn.modules.normalization.RMSNorm
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. يتم إضافتها هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.nn.backends
 .. py:module:: torch.nn.utils.stateless
 .. py:module:: torch.nn.backends.thnn
