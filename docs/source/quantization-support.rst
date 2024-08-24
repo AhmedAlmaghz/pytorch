@@ -1,59 +1,58 @@
-Quantization API Reference
--------------------------------
-
+:العربية:
+مرجع واجهة برمجة التطبيقات الكمّية
 torch.ao.quantization
 ~~~~~~~~~~~~~~~~~~~~~
 
-This module contains Eager mode quantization APIs.
+يحتوي هذا النموذج على واجهات برمجة التطبيقات (APIs) لوضع التهيئة Eager mode.
 
 .. currentmodule:: torch.ao.quantization
 
-Top level APIs
-^^^^^^^^^^^^^^
+واجهات برمجة التطبيقات (APIs) عالية المستوى
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: generated
     :nosignatures:
     :template: classtemplate.rst
 
-    quantize
-    quantize_dynamic
-    quantize_qat
-    prepare
-    prepare_qat
-    convert
+    التهيئة
+    التهيئة_ديناميكية
+    التهيئة_qat
+    الإعداد
+    الإعداد_qat
+    التحويل
 
-Preparing model for quantization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+إعداد النموذج للتهيئة
+^^^^^^^^^^^^^^^
 
 .. autosummary::
     :toctree: generated
     :nosignatures:
     :template: classtemplate.rst
 
-    fuse_modules.fuse_modules
+    دمج_الوحدات.دمج_الوحدات
     QuantStub
     DeQuantStub
     QuantWrapper
-    add_quant_dequant
+    إضافة_التهيئة_إلغاء_التهيئة
 
-Utility functions
-^^^^^^^^^^^^^^^^^
+وظائف المنفعة
+^^^^^^^^^^^
 
 .. autosummary::
     :toctree: generated
     :nosignatures:
     :template: classtemplate.rst
 
-    swap_module
-    propagate_qconfig_
-    default_eval_fn
+    تبديل_الوحدة
+    انتشار_qconfig_
+    وظيفة_التقييم_الافتراضية
 
 
 torch.ao.quantization.quantize_fx
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains FX graph mode quantization APIs (prototype).
+يحتوي هذا النموذج على واجهات برمجة التطبيقات (APIs) لوضع الرسم البياني FX (النموذج الأولي).
 
 .. currentmodule:: torch.ao.quantization.quantize_fx
 
@@ -62,15 +61,15 @@ This module contains FX graph mode quantization APIs (prototype).
     :nosignatures:
     :template: classtemplate.rst
 
-    prepare_fx
-    prepare_qat_fx
-    convert_fx
-    fuse_fx
+    الإعداد_fx
+    الإعداد_qat_fx
+    التحويل_fx
+    دمج_fx
 
 torch.ao.quantization.qconfig_mapping
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains QConfigMapping for configuring FX graph mode quantization.
+يحتوي هذا النموذج على QConfigMapping لتهيئة وضع الرسم البياني FX.
 
 .. currentmodule:: torch.ao.quantization.qconfig_mapping
 
@@ -80,15 +79,15 @@ This module contains QConfigMapping for configuring FX graph mode quantization.
     :template: classtemplate.rst
 
     QConfigMapping
-    get_default_qconfig_mapping
-    get_default_qat_qconfig_mapping
+    الحصول_على_تهيئة_qconfig_افتراضية
+    الحصول_على_تهيئة_qat_qconfig_افتراضية
 
 torch.ao.quantization.backend_config
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains BackendConfig, a config object that defines how quantization is supported
-in a backend. Currently only used by FX Graph Mode Quantization, but we may extend Eager Mode
-Quantization to work with this as well.
+يحتوي هذا النموذج على BackendConfig، وهو كائن تهيئة يحدد كيفية دعم التهيئة
+في backend. يستخدم حاليًا فقط بواسطة وضع الرسم البياني FX Quantization، ولكن قد نقوم بتوسيع وضع التهيئة Eager
+للعمل مع هذا أيضًا.
 
 .. currentmodule:: torch.ao.quantization.backend_config
 
@@ -106,7 +105,7 @@ Quantization to work with this as well.
 torch.ao.quantization.fx.custom_config
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains a few CustomConfig classes that's used in both eager mode and FX graph mode quantization
+يحتوي هذا النموذج على بعض فئات CustomConfig التي تستخدم في كل من وضع التهيئة Eager ووضع الرسم البياني FX.
 
 
 .. currentmodule:: torch.ao.quantization.fx.custom_config
@@ -126,14 +125,14 @@ torch.ao.quantization.quantizer
 
 .. automodule:: torch.ao.quantization.quantizer
 
-torch.ao.quantization.pt2e (quantization in pytorch 2.0 export implementation)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+torch.ao.quantization.pt2e (تنفيذ التهيئة في تصدير pytorch 2.0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: torch.ao.quantization.pt2e
 .. automodule:: torch.ao.quantization.pt2e.representation
 
 torch.ao.quantization.pt2e.export_utils
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: torch.ao.quantization.pt2e.export_utils
 
@@ -142,7 +141,7 @@ torch.ao.quantization.pt2e.export_utils
     :nosignatures:
     :template: classtemplate.rst
 
-    model_is_exported
+    النموذج_المصدر
 
 .. currentmodule:: torch.ao.quantization
 
@@ -153,16 +152,16 @@ PT2 Export (pt2e) Numeric Debugger
     :nosignatures:
     :template: classtemplate.rst
 
-    generate_numeric_debug_handle
+    إنشاء_مُعالج_التصحيح_الرقمي
     NUMERIC_DEBUG_HANDLE_KEY
-    prepare_for_propagation_comparison
-    extract_results_from_loggers
-    compare_results
+    الإعداد_لـ_مقارنة_الانتشار
+    استخراج_النتائج_من_سجلات_النشاط
+    مقارنة_النتائج
 
-torch (quantization related functions)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+torch (وظائف متعلقة بالتهيئة)
+~~~~~~~~~~~~~~~~~~~~~
 
-This describes the quantization related functions of the `torch` namespace.
+يصف هذا القسم وظائف التهيئة ذات الصلة في مساحة الاسم "torch".
 
 .. currentmodule:: torch
 
@@ -171,15 +170,15 @@ This describes the quantization related functions of the `torch` namespace.
     :nosignatures:
     :template: classtemplate.rst
 
-    quantize_per_tensor
-    quantize_per_channel
-    dequantize
+    التهيئة_لكل_موتر
+    التهيئة_لكل_قناة
+    إلغاء_التهيئة
 
-torch.Tensor (quantization related methods)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+torch.Tensor (أساليب متعلقة بالتهيئة)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Quantized Tensors support a limited subset of data manipulation methods of the
-regular full-precision tensor.
+تدعم المتوترات الكمية مجموعة فرعية محدودة من أساليب معالجة البيانات للمتوتر
+العادي عالي الدقة.
 
 .. currentmodule:: torch.Tensor
 
@@ -211,340 +210,11 @@ regular full-precision tensor.
     q_zero_point
     q_per_channel_scales
     q_per_channel_zero_points
-    q_per_channel_axis
-    resize_
-    sort
-    topk
-
-
-torch.ao.quantization.observer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This module contains observers which are used to collect statistics about
-the values observed during calibration (PTQ) or training (QAT).
-
-.. currentmodule:: torch.ao.quantization.observer
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    ObserverBase
-    MinMaxObserver
-    MovingAverageMinMaxObserver
-    PerChannelMinMaxObserver
-    MovingAveragePerChannelMinMaxObserver
-    HistogramObserver
-    PlaceholderObserver
-    RecordingObserver
-    NoopObserver
-    get_observer_state_dict
-    load_observer_state_dict
-    default_observer
-    default_placeholder_observer
-    default_debug_observer
-    default_weight_observer
-    default_histogram_observer
-    default_per_channel_weight_observer
-    default_dynamic_quant_observer
-    default_float_qparams_observer
-
-torch.ao.quantization.fake_quantize
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This module implements modules which are used to perform fake quantization
-during QAT.
-
-.. currentmodule:: torch.ao.quantization.fake_quantize
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    FakeQuantizeBase
-    FakeQuantize
-    FixedQParamsFakeQuantize
-    FusedMovingAvgObsFakeQuantize
-    default_fake_quant
-    default_weight_fake_quant
-    default_per_channel_weight_fake_quant
-    default_histogram_fake_quant
-    default_fused_act_fake_quant
-    default_fused_wt_fake_quant
-    default_fused_per_channel_wt_fake_quant
-    disable_fake_quant
-    enable_fake_quant
-    disable_observer
-    enable_observer
-
-torch.ao.quantization.qconfig
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This module defines `QConfig` objects which are used
-to configure quantization settings for individual ops.
-
-.. currentmodule:: torch.ao.quantization.qconfig
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    QConfig
-    default_qconfig
-    default_debug_qconfig
-    default_per_channel_qconfig
-    default_dynamic_qconfig
-    float16_dynamic_qconfig
-    float16_static_qconfig
-    per_channel_dynamic_qconfig
-    float_qparams_weight_only_qconfig
-    default_qat_qconfig
-    default_weight_only_qconfig
-    default_activation_only_qconfig
-    default_qat_qconfig_v2
-
-torch.ao.nn.intrinsic
-~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.intrinsic
-.. automodule:: torch.ao.nn.intrinsic.modules
-
-This module implements the combined (fused) modules conv + relu which can
-then be quantized.
-
-.. currentmodule:: torch.ao.nn.intrinsic
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    ConvReLU1d
-    ConvReLU2d
-    ConvReLU3d
-    LinearReLU
-    ConvBn1d
-    ConvBn2d
-    ConvBn3d
-    ConvBnReLU1d
-    ConvBnReLU2d
-    ConvBnReLU3d
-    BNReLU2d
-    BNReLU3d
-
-torch.ao.nn.intrinsic.qat
-~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.intrinsic.qat
-.. automodule:: torch.ao.nn.intrinsic.qat.modules
-
-
-This module implements the versions of those fused operations needed for
-quantization aware training.
-
-.. currentmodule:: torch.ao.nn.intrinsic.qat
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    LinearReLU
-    ConvBn1d
-    ConvBnReLU1d
-    ConvBn2d
-    ConvBnReLU2d
-    ConvReLU2d
-    ConvBn3d
-    ConvBnReLU3d
-    ConvReLU3d
-    update_bn_stats
-    freeze_bn_stats
-
-torch.ao.nn.intrinsic.quantized
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.intrinsic.quantized
-.. automodule:: torch.ao.nn.intrinsic.quantized.modules
-
-
-This module implements the quantized implementations of fused operations
-like conv + relu. No BatchNorm variants as it's usually folded into convolution
-for inference.
-
-.. currentmodule:: torch.ao.nn.intrinsic.quantized
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    BNReLU2d
-    BNReLU3d
-    ConvReLU1d
-    ConvReLU2d
-    ConvReLU3d
-    LinearReLU
-
-torch.ao.nn.intrinsic.quantized.dynamic
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.intrinsic.quantized.dynamic
-.. automodule:: torch.ao.nn.intrinsic.quantized.dynamic.modules
-
-This module implements the quantized dynamic implementations of fused operations
-like linear + relu.
-
-.. currentmodule:: torch.ao.nn.intrinsic.quantized.dynamic
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    LinearReLU
-
-torch.ao.nn.qat
-~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.qat
-.. automodule:: torch.ao.nn.qat.modules
-
-This module implements versions of the key nn modules **Conv2d()** and
-**Linear()** which run in FP32 but with rounding applied to simulate the
-effect of INT8 quantization.
-
-.. currentmodule:: torch.ao.nn.qat
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    Conv2d
-    Conv3d
-    Linear
-
-torch.ao.nn.qat.dynamic
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.qat.dynamic
-.. automodule:: torch.ao.nn.qat.dynamic.modules
-
-This module implements versions of the key nn modules such as **Linear()**
-which run in FP32 but with rounding applied to simulate the effect of INT8
-quantization and will be dynamically quantized during inference.
-
-.. currentmodule:: torch.ao.nn.qat.dynamic
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    Linear
-
-torch.ao.nn.quantized
-~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.quantized
-   :noindex:
-.. automodule:: torch.ao.nn.quantized.modules
-
-This module implements the quantized versions of the nn layers such as
-~`torch.nn.Conv2d` and `torch.nn.ReLU`.
-
-.. currentmodule:: torch.ao.nn.quantized
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    ReLU6
-    Hardswish
-    ELU
-    LeakyReLU
-    Sigmoid
-    BatchNorm2d
-    BatchNorm3d
-    Conv1d
-    Conv2d
-    Conv3d
-    ConvTranspose1d
-    ConvTranspose2d
-    ConvTranspose3d
-    Embedding
-    EmbeddingBag
-    FloatFunctional
-    FXFloatFunctional
-    QFunctional
-    Linear
-    LayerNorm
-    GroupNorm
-    InstanceNorm1d
-    InstanceNorm2d
-    InstanceNorm3d
-
-torch.ao.nn.quantized.functional
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.quantized.functional
-
-This module implements the quantized versions of the functional layers such as
-~`torch.nn.functional.conv2d` and `torch.nn.functional.relu`. Note:
-:meth:`~torch.nn.functional.relu` supports quantized inputs.
-
-.. currentmodule:: torch.ao.nn.quantized.functional
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    avg_pool2d
-    avg_pool3d
-    adaptive_avg_pool2d
-    adaptive_avg_pool3d
-    conv1d
-    conv2d
-    conv3d
-    interpolate
-    linear
-    max_pool1d
-    max_pool2d
-    celu
-    leaky_relu
-    hardtanh
-    hardswish
-    threshold
-    elu
-    hardsigmoid
-    clamp
-    upsample
-    upsample_bilinear
-    upsample_nearest
-
-torch.ao.nn.quantizable
-~~~~~~~~~~~~~~~~~~~~~~~
-
-This module implements the quantizable versions of some of the nn layers.
-These modules can be used in conjunction with the custom module mechanism,
-by providing the ``custom_module_config`` argument to both prepare and convert.
-
-.. currentmodule:: torch.ao.nn.quantizable
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: classtemplate.rst
-
-    LSTM
-    MultiheadAttention
-
-
-torch.ao.nn.quantized.dynamic
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: torch.ao.nn.quantized.dynamic
-.. automodule:: torch.ao.nn.quantized.dynamic.modules
-
-Dynamically quantized :class:`~torch.nn.Linear`, :class:`~torch.nn.LSTM`,
-:class:`~torch.nn.LSTMCell`, :class:`~torch.nn.GRUCell`, and
+    q_perِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِِ
+هذا هو النص المترجم إلى اللغة العربية بتنسيق ReStructuredText:
+
+تمت معايرة الكميات الديناميكية لـ :class:`~torch.nn.Linear`، و :class:`~torch.nn.LSTM`،
+و :class:`~torch.nn.LSTMCell`، و :class:`~torch.nn.GRUCell`، و
 :class:`~torch.nn.RNNCell`.
 
 .. currentmodule:: torch.ao.nn.quantized.dynamic
@@ -561,14 +231,12 @@ Dynamically quantized :class:`~torch.nn.Linear`, :class:`~torch.nn.LSTM`,
     LSTMCell
     GRUCell
 
-Quantized dtypes and quantization schemes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+أنواع البيانات المكمية ومخططات الكم
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-Note that operator implementations currently only
-support per channel quantization for weights of the **conv** and **linear**
-operators. Furthermore, the input data is
-mapped linearly to the quantized data and vice versa
-as follows:
+لاحظ أن تطبيقات المشغل تدعم حاليًا الكميات لكل قناة لأوزان المشغلين **conv** و **linear** فقط. علاوة على ذلك، يتم
+تعيين بيانات الإدخال بشكل خطي إلى البيانات المكمية والعكس صحيح
+كما يلي:
 
     .. math::
 
@@ -579,9 +247,8 @@ as follows:
             &x_\text{out} = (Q_\text{input}-z)*s
         \end{aligned}
 
-where :math:`\text{clamp}(.)` is the same as :func:`~torch.clamp` while the
-scale :math:`s` and zero point :math:`z` are then computed
-as described in :class:`~torch.ao.quantization.observer.MinMaxObserver`, specifically:
+حيث :math:`\text{clamp}(.)` هو نفسه :func:`~torch.clamp` بينما
+يتم حساب المقياس :math:`s` ونقطة الصفر :math:`z` كما هو موضح في :class:`~torch.ao.quantization.observer.MinMaxObserver`، على وجه التحديد:
 
     .. math::
 
@@ -599,31 +266,31 @@ as described in :class:`~torch.ao.quantization.observer.MinMaxObserver`, specifi
                 &z = Q_\text{min} - \text{round}(x_\text{min} / s)
         \end{aligned}
 
-where :math:`[x_\text{min}, x_\text{max}]` denotes the range of the input data while
-:math:`Q_\text{min}` and :math:`Q_\text{max}` are respectively the minimum and maximum values of the quantized dtype.
+حيث :math:`[x_\text{min}, x_\text{max}]` يمثل نطاق بيانات الإدخال في حين
+:math:`Q_\text{min}` و :math:`Q_\text{max}` هما على التوالي الحد الأدنى والحد الأقصى للقيم لنوع البيانات المكمية.
 
-Note that the choice of :math:`s` and :math:`z` implies that zero is represented with no quantization error whenever zero is within
-the range of the input data or symmetric quantization is being used.
+لاحظ أن اختيار :math:`s` و :math:`z` يعني أن الصفر يتم تمثيله بدون خطأ في الكميات كلما كان الصفر ضمن
+نطاق بيانات الإدخال أو كان الكم المتماثل قيد الاستخدام.
 
-Additional data types and quantization schemes can be implemented through
-the `custom operator mechanism <https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html>`_.
+يمكن تنفيذ أنواع بيانات ومخططات كميات إضافية من خلال
+آلية المشغل المخصص <https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html>`_.
 
-* :attr:`torch.qscheme` — Type to describe the quantization scheme of a tensor.
-  Supported types:
+* :attr:`torch.qscheme` — نوع لوصف مخطط الكميات لموتر.
+  الأنواع المدعومة:
 
-  * :attr:`torch.per_tensor_affine` — per tensor, asymmetric
-  * :attr:`torch.per_channel_affine` — per channel, asymmetric
-  * :attr:`torch.per_tensor_symmetric` — per tensor, symmetric
-  * :attr:`torch.per_channel_symmetric` — per channel, symmetric
+  * :attr:`torch.per_tensor_affine` — لكل موتر، غير متماثل
+  * :attr:`torch.per_channel_affine` — لكل قناة، غير متماثل
+  * :attr:`torch.per_tensor_symmetric` — لكل موتر، متماثل
+  * :attr:`torch.per_channel_symmetric` — لكل قناة، متماثل
 
-* ``torch.dtype`` — Type to describe the data. Supported types:
+* ``torch.dtype`` — نوع لوصف البيانات. الأنواع المدعومة:
 
-  * :attr:`torch.quint8` — 8-bit unsigned integer
-  * :attr:`torch.qint8` — 8-bit signed integer
-  * :attr:`torch.qint32` — 32-bit signed integer
+  * :attr:`torch.quint8` — عدد صحيح غير موقع 8 بت
+  * :attr:`torch.qint8` — عدد صحيح موقع 8 بت
+  * :attr:`torch.qint32` — عدد صحيح موقع 32 بت
 
 
-.. These modules are missing docs. Adding them here only for tracking
+.. تفتقر هذه الوحدات إلى الوثائق. نقوم بإضافتها هنا فقط للمتابعة
 .. automodule:: torch.ao.nn.quantizable.modules
    :noindex:
 .. automodule:: torch.ao.nn.quantized.reference
