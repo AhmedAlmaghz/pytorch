@@ -1,60 +1,26 @@
 .. _autograd-mechanics:
 
-Autograd mechanics
-==================
+آلية حساب المشتقات التلقائي
+=================
+هذه الملاحظة ستقدم نظرة عامة على كيفية عمل Autograd وتسجيل العمليات. ليس من الضروري تمامًا فهم كل هذا، ولكننا نوصي بالتعرف عليه، حيث سيساعدك ذلك في كتابة برامج أكثر كفاءة ونظافة، ويمكن أن يساعدك في تصحيح الأخطاء.
 
-This note will present an overview of how autograd works and records the
-operations. It's not strictly necessary to understand all this, but we recommend
-getting familiar with it, as it will help you write more efficient, cleaner
-programs, and can aid you in debugging.
+كيف يقوم Autograd بتشفير التاريخ
+----------------------------
 
-.. _how-autograd-encodes-history:
+Autograd هو نظام تفاضل تلقائي عكسي. من الناحية النظرية، يسجل Autograd رسمًا بيانيًا يسجل جميع العمليات التي أنشأت البيانات أثناء تنفيذ العمليات، مما يمنحك رسمًا بيانيًا موجّهًا غير دوري تكون أوراقه هي تنسيقات الإدخال وجذوره هي تنسيقات الإخراج. من خلال تتبع هذا الرسم البياني من الجذور إلى الأوراق، يمكنك تلقائيًا حساب المشتقات باستخدام قاعدة السلسلة.
 
-How autograd encodes the history
---------------------------------
+داخليا، يمثل Autograd هذا الرسم البياني على أنه رسم بياني لـ :class:`Function` الكائنات (التعبيرات حقًا)، والتي يمكن :meth:`~torch.autograd.Function.apply` حسابه لحساب نتيجة تقييم الرسم البياني. عند إجراء عملية الحساب للأمام، يقوم Autograd في نفس الوقت بإجراء الحسابات المطلوبة وبناء رسم بياني يمثل الدالة التي تحسب المشتق (``.grad_fn`` الخاصية لكل فئة :class:`torch.Tensor` هي نقطة دخول إلى هذا الرسم البياني). عندما يتم الانتهاء من عملية الحساب للأمام، نقوم بتقييم هذا الرسم البياني في عملية الحساب للخلف لحساب المشتقات.
 
-Autograd is a reverse automatic differentiation system.  Conceptually,
-autograd records a graph recording all of the operations that created
-the data as you execute operations, giving you a directed acyclic graph
-whose leaves are the input tensors and roots are the output tensors.
-By tracing this graph from roots to leaves, you can automatically
-compute the gradients using the chain rule.
+من المهم ملاحظة أن الرسم البياني يتم إعادة إنشائه من الصفر في كل تكرار، وهذا بالضبط ما يسمح باستخدام عبارات التحكم في تدفق Python التعسفي، والتي يمكن أن تغير الشكل والحجم الإجمالي للرسم البياني في كل تكرار. لا يتعين عليك تشفير جميع المسارات الممكنة قبل بدء التدريب - ما تقوم بتشغيله هو ما تقوم بالتفاضل عليه.
 
-Internally, autograd represents this graph as a graph of
-:class:`Function` objects (really expressions), which can be
-:meth:`~torch.autograd.Function.apply` ed to compute the result of
-evaluating the graph.  When computing the forward pass, autograd
-simultaneously performs the requested computations and builds up a graph
-representing the function that computes the gradient (the ``.grad_fn``
-attribute of each :class:`torch.Tensor` is an entry point into this graph).
-When the forward pass is completed, we evaluate this graph in the
-backwards pass to compute the gradients.
+التنسيقات المحفوظة
+^^^^^^^^^^^^^^^^
 
-An important thing to note is that the graph is recreated from scratch at every
-iteration, and this is exactly what allows for using arbitrary Python control
-flow statements, that can change the overall shape and size of the graph at
-every iteration. You don't have to encode all possible paths before you
-launch the training - what you run is what you differentiate.
+تحتاج بعض العمليات إلى نتائج وسيطة ليتم حفظها أثناء عملية الحساب للأمام من أجل تنفيذ عملية الحساب للخلف. على سبيل المثال، تقوم الدالة :math:`x\mapsto x^2` بحفظ الإدخال :math:`x` لحساب المشتق.
 
-.. _saved-tensors-doc:
+عند تحديد دالة Python مخصصة لـ :class:`~torch.autograd.Function`، يمكنك استخدام :func:`~torch.autograd.function._ContextMethodMixin.save_for_backward` لحفظ التنسيقات أثناء عملية الحساب للأمام و :attr:`~torch.autograd.function.Function.saved_tensors` لاسترجاعها أثناء عملية الحساب للخلف. راجع :doc:`/notes/extending` لمزيد من المعلومات.
 
-Saved tensors
-^^^^^^^^^^^^^
-
-Some operations need intermediary results to be saved during the forward pass
-in order to execute the backward pass. For example, the function
-:math:`x\mapsto x^2` saves the input :math:`x` to compute the gradient.
-
-When defining a custom Python :class:`~torch.autograd.Function`, you can use
-:func:`~torch.autograd.function._ContextMethodMixin.save_for_backward` to save
-tensors during the forward pass and
-:attr:`~torch.autograd.function.Function.saved_tensors` to retrieve them
-during the backward pass. See :doc:`/notes/extending` for more information.
-
-For operations that PyTorch defines (e.g. :func:`torch.pow`), tensors are
-automatically saved as needed. You can explore (for educational or debugging
-purposes) which tensors are saved by a certain ``grad_fn`` by looking for its
-attributes starting with the prefix ``_saved``.
+بالنسبة للعمليات التي تحددها PyTorch (على سبيل المثال :func:`torch.pow`)، يتم حفظ التنسيقات تلقائيًا حسب الحاجة. يمكنك استكشاف (لأغراض تعليمية أو لأغراض التصحيح) التنسيقات التي يتم حفظها بواسطة ``grad_fn`` معين عن طريق البحث عن سماته التي تبدأ بالبادئة ``_saved``.
 
 .. code::
 
@@ -64,8 +30,8 @@ attributes starting with the prefix ``_saved``.
     print(x is y.grad_fn._saved_self)  # True
 
 
-In the previous code, ``y.grad_fn._saved_self`` refers to the same Tensor object as `x`.
-But that may not always be the case. For instance:
+في الكود السابق، يشير ``y.grad_fn._saved_self`` إلى نفس كائن Tensor مثل `x`.
+ولكن قد لا يكون هذا هو الحال دائمًا. على سبيل المثال:
 
 .. code::
 
@@ -75,271 +41,241 @@ But that may not always be the case. For instance:
     print(y is y.grad_fn._saved_result)  # False
 
 
-Under the hood, to prevent reference cycles, PyTorch has *packed* the tensor
-upon saving and *unpacked* it into a different tensor for reading. Here, the
-tensor you get from accessing ``y.grad_fn._saved_result`` is a different tensor
-object than ``y`` (but they still share the same storage).
+تحت الغطاء، لمنع دورات المرجع، قامت PyTorch بتغليف التنسيق عند الحفظ وفك تغليفه إلى تنسيق مختلف للقراءة. هنا، فإن التنسيق الذي تحصل عليه من خلال الوصول إلى ``y.grad_fn._saved_result`` هو كائن تنسيق مختلف عن ``y`` (ولكنهما لا يزالان يتشاركان نفس التخزين).
 
-Whether a tensor will be packed into a different tensor object depends on
-whether it is an output of its own `grad_fn`, which is an implementation detail
-subject to change and that users should not rely on.
+ما إذا كان سيتم تغليف التنسيق في كائن تنسيق مختلف يعتمد على ما إذا كان إخراج ``grad_fn`` الخاص به، والذي يعد تفاصيل تنفيذ عرضة للتغيير ولا يجب أن يعتمد عليها المستخدمون.
 
-You can control how PyTorch does packing / unpacking with :ref:`saved-tensors-hooks-doc`.
+يمكنك التحكم في كيفية قيام PyTorch بالتغليف / فك التغليف باستخدام :ref:`saved-tensors-hooks-doc`.
 
+المشتقات للوظائف غير القابلة للاشتقاق
+-------------------------
 
-.. _non-differentiable-func-grad:
+حساب المشتق باستخدام التفاضل التلقائي صالح فقط عندما تكون كل دالة ابتدائية مستخدمة قابلة للاشتقاق.
+لسوء الحظ، فإن العديد من الدوال التي نستخدمها في الممارسة العملية لا تمتلك هذه الخاصية (على سبيل المثال ``relu`` أو ``sqrt`` عند ``0``).
+للمحاولة والحد من تأثير الدوال غير القابلة للاشتقاق، نقوم بتعريف مشتقات العمليات الابتدائية عن طريق تطبيق القواعد التالية بالترتيب:
 
-Gradients for non-differentiable functions
-------------------------------------------
-
-The gradient computation using Automatic Differentiation is only valid when each elementary function being used is differentiable.
-Unfortunately many of the functions we use in practice do not have this property (``relu`` or ``sqrt`` at ``0``, for example).
-To try and reduce the impact of functions that are non-differentiable, we define the gradients of the elementary operations by applying the following rules in order:
-
-#. If the function is differentiable and thus a gradient exists at the current point, use it.
-#. If the function is convex (at least locally), use the sub-gradient of minimum norm (it is the steepest descent direction).
-#. If the function is concave (at least locally), use the super-gradient of minimum norm (consider `-f(x)` and apply the previous point).
-#. If the function is defined, define the gradient at the current point by continuity (note that ``inf`` is possible here, for example for ``sqrt(0)``). If multiple values are possible, pick one arbitrarily.
-#. If the function is not defined (``sqrt(-1)``, ``log(-1)`` or most functions when the input is ``NaN``, for example) then the value used as the gradient is arbitrary (we might also raise an error but that is not guaranteed). Most functions will use ``NaN`` as the gradient, but for performance reasons, some functions will use other values (``log(-1)``, for example).
-#. If the function is not a deterministic mapping (i.e. it is not a `mathematical function`_), it will be marked as non-differentiable. This will make it error out in the backward if used on tensors that require grad outside of a ``no_grad`` environment.
+1. إذا كانت الدالة قابلة للاشتقاق وبالتالي فإن المشتق موجود في النقطة الحالية، فاستخدمه.
+2. إذا كانت الدالة محدبة (على الأقل محليًا)، فاستخدم المشتق الفرعي لقاعدة القيمة الدنيا (فهو اتجاه الانحدار الأشد).
+3. إذا كانت الدالة مقعرة (على الأقل محليًا)، فاستخدم المشتق الفائق لقاعدة القيمة الدنيا (ضع في اعتبارك `-f(x)` وقم بتطبيق النقطة السابقة).
+4. إذا كانت الدالة محددة، فحدد المشتق في النقطة الحالية بالاستمرارية (لاحظ أن ``inf`` ممكن هنا، على سبيل المثال لـ ``sqrt(0)``). إذا كانت هناك عدة قيم ممكنة، فاختر واحدة بشكل تعسفي.
+5. إذا كانت الدالة غير محددة (على سبيل المثال ``sqrt(-1)``، ``log(-1)`` أو معظم الدوال عندما يكون الإدخال ``NaN``)، فإن القيمة المستخدمة كمشتق تعسفي (قد نرفع أيضًا خطأً ولكن هذا غير مضمون). ستستخدم معظم الدوال ``NaN`` كمشتق، ولكن لأسباب تتعلق بالأداء، ستستخدم بعض الدوال قيمًا أخرى (على سبيل المثال ``log(-1)``).
+6. إذا لم تكن الدالة عبارة عن خريطة محددة (أي أنها ليست `دالة رياضية`_)، فسيتم تمييزها على أنها غير قابلة للاشتقاق. سيؤدي هذا إلى حدوث خطأ في الخلف إذا تم استخدامه على تنسيقات تتطلب تدرجًا خارج بيئة ``no_grad``.
 
 .. _mathematical function: https://en.wikipedia.org/wiki/Function_(mathematics)
 
 .. _locally-disable-grad-doc:
 
-Locally disabling gradient computation
---------------------------------------
+تعطيل حساب المشتق محليًا
+-------------------
 
-There are several mechanisms available from Python to locally disable gradient
-computation:
+هناك العديد من الآليات المتاحة في بايثون لإيقاف حساب المشتق المحلي:
 
-To disable gradients across entire blocks of code, there are context managers
-like no-grad mode and inference mode.
-For more fine-grained exclusion of subgraphs from gradient computation,
-there is setting the ``requires_grad`` field of a tensor.
+لإيقاف حساب المشتق عبر كتل كاملة من التعليمات البرمجية، هناك برامج إدارة السياق مثل وضع عدم حساب المشتق ووضع الاستنتاج.
+لاستبعاد أكثر دقة للرسوم البيانية الفرعية من حساب المشتق، هناك تعيين حقل "requires_grad" للمؤثر.
 
-Below, in addition to discussing the mechanisms above, we also describe
-evaluation mode (:meth:`nn.Module.eval()`), a method that is not used
-to disable gradient computation but, because of its name, is often mixed up with the three.
+فيما يلي، بالإضافة إلى مناقشة الآليات المذكورة أعلاه، نقوم أيضًا بوصف
+وضع التقييم (:meth:`nn.Module.eval()`)، وهي طريقة لا تستخدم
+لإيقاف حساب المشتق ولكن، بسبب اسمها، غالبًا ما يتم خلطها مع الثلاثة الآخرين.
 
-Setting ``requires_grad``
-^^^^^^^^^^^^^^^^^^^^^^^^^
+تعيين "requires_grad"
+^^^^^^^^^^^^^^^^^^^^^^
 
-:attr:`requires_grad` is a flag, defaulting to false *unless wrapped
-in a* ``nn.Parameter``, that allows for fine-grained exclusion of
-subgraphs from gradient computation. It takes effect in both the
-forward and backward passes:
+:attr:`requires_grad` هو علم، الافتراضي إلى false *ما لم يتم لفها
+في* ``nn.Parameter``، والذي يسمح باستبعاد دقيق لل
+الرسوم البيانية الفرعية من حساب المشتق. إنه يؤثر في كل من
+المرور الأمامي والخلفي:
 
-During the forward pass, an operation is only recorded in the backward graph if
-at least one of its input tensors require grad.
-During the backward pass (``.backward()``), only leaf tensors with
-``requires_grad=True`` will have gradients accumulated into their ``.grad``
-fields.
+أثناء المرور الأمامي، يتم تسجيل العملية في الرسم البياني الخلفي فقط إذا
+يتطلب أحد مدخلاتها على الأقل المشتق.
+أثناء المرور الخلفي (``.backward()``)، لن يتم سوى المشتقات الورقية مع
+``requires_grad=True`` سيكون لها درجات متراكمة في حقولها ``.grad``.
 
-It is important to note that even though every tensor has this flag,
-*setting* it only makes sense for leaf tensors (tensors that do not have a
-``grad_fn``, e.g., a ``nn.Module``'s parameters).
-Non-leaf tensors (tensors that do have ``grad_fn``) are tensors that have a
-backward graph associated with them. Thus their gradients will be needed
-as an intermediary result to compute the gradient for a leaf tensor that
-requires grad. From this definition, it is clear that all non-leaf tensors
-will automatically have ``require_grad=True``.
+من المهم ملاحظة أنه على الرغم من أن كل مؤثر لديه هذا العلم،
+*تعيين* له معنى فقط للمؤثرات الورقية (المؤثرات التي ليس لها "grad_fn"، على سبيل المثال،
+معلمات "nn.Module").
+المؤثرات غير الورقية (المؤثرات التي لها "grad_fn") هي مؤثرات لها
+رسم بياني خلفي مرتبط بها. وبالتالي ستكون مشتقاتها مطلوبة
+كنتيجة وسيطة لحساب المشتق لورقة مؤثر تتطلب المشتق. من هذا التعريف، من الواضح أن جميع المؤثرات غير الورقية
+سيكون لها تلقائيًا ``require_grad=True``.
 
-Setting ``requires_grad`` should be the main way you control which parts
-of the model are part of the gradient computation, for example, if you need to
-freeze parts of your pretrained model during model fine-tuning.
+يجب أن يكون تعيين "requires_grad" الطريقة الرئيسية التي تتحكم بها في أجزاء
+من النموذج الذي يشكل جزءًا من حساب المشتق، على سبيل المثال، إذا كنت بحاجة إلى
+تجميد أجزاء من نموذجك المسبق التدريب أثناء ضبط دقيق للنموذج.
 
-To freeze parts of your model, simply apply ``.requires_grad_(False)`` to
-the parameters that you don't want updated. And as described above,
-since computations that use these parameters as inputs would not be recorded in
-the forward pass, they won't have their ``.grad`` fields updated in the backward
-pass because they won't be part of the backward graph in the first place, as
-desired.
+لتجميد أجزاء من نموذجك، قم ببساطة بتطبيق ``.requires_grad_(False)`` على
+المعلمات التي لا تريد تحديثها. وكما هو موضح أعلاه،
+نظرًا لأن الحسابات التي تستخدم هذه المعلمات كمدخلات لن يتم تسجيلها في
+المرور الأمامي، فلن يتم تحديث حقولها ``.grad`` في المرور الخلفي لأنها لن تكون جزءًا من الرسم البياني الخلفي في المقام الأول، كما هو مطلوب.
 
-Because this is such a common pattern, ``requires_grad`` can also be set at
-the module level with :meth:`nn.Module.requires_grad_()`.
-When applied to a module, ``.requires_grad_()`` takes effect on all
-of the module's parameters (which have ``requires_grad=True`` by default).
+نظرًا لأن هذا النمط شائع جدًا، يمكن أيضًا تعيين "requires_grad" على
+مستوى الوحدة النمطية مع :meth:`nn.Module.requires_grad_()`.
+عند تطبيقه على وحدة نمطية، ``.requires_grad_()`` يؤثر على
+جميع
+معلمات الوحدة النمطية (التي يكون لها افتراضيًا ``requires_grad=True``).
 
-Grad Modes
+وضع المشتق
 ^^^^^^^^^^
 
-Apart from setting ``requires_grad`` there are also three grad modes that can
-be selected from Python that can affect how computations in PyTorch are
-processed by autograd internally: default mode (grad mode), no-grad mode,
-and inference mode, all of which can be togglable via context managers and
-decorators.
+بصرف النظر عن تعيين "requires_grad"، هناك أيضًا ثلاث أوضاع للمشتق يمكن
+تحديدها من بايثون والتي يمكن أن تؤثر على كيفية معالجة العمليات في PyTorch
+داخليا بواسطة autograd: الوضع الافتراضي (وضع المشتق)، ووضع عدم حساب المشتق،
+وضع الاستنتاج، وجميعها يمكن التبديل بينها عبر برامج إدارة السياق والزخارف.
 
 .. list-table::
    :widths: 50 50 50 50 50
    :header-rows: 1
 
-   * - Mode
-     - Excludes operations from being recorded in backward graph
-     - Skips additional autograd tracking overhead
-     - Tensors created while the mode is enabled can be used in grad-mode later
-     - Examples
-   * - default
+   * - الوضع
+     - يستبعد العمليات من التسجيل في الرسم البياني الخلفي
+     - يتخطى النفقات العامة الإضافية لتتبع autograd
+     - يمكن استخدام المؤثرات المُنشأة أثناء تمكين الوضع في وضع المشتق لاحقًا
+     - أمثلة
+   * - الافتراضي
      -
      -
      - ✓
-     - Forward pass
-   * - no-grad
+     - المرور الأمامي
+   * - عدم حساب المشتق
      - ✓
      -
      - ✓
-     - Optimizer updates
-   * - inference
+     - تحديثات المحسن
+   * - الاستنتاج
      - ✓
      - ✓
      -
-     - Data processing, model evaluation
+     - معالجة البيانات، تقييم النموذج
 
-Default Mode (Grad Mode)
+الوضع الافتراضي (وضع المشتق)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The "default mode" is the mode we are implicitly in when no other modes like
-no-grad and inference mode are enabled. To be contrasted with
-"no-grad mode" the default mode is also sometimes called "grad mode".
+"الوضع الافتراضي" هو الوضع الذي نكون فيه ضمنيًا عندما لا يتم تمكين أي أوضاع أخرى مثل
+عدم حساب المشتق ووضع الاستنتاج. لمقارنته
+مع "وضع عدم حساب المشتق"، يُطلق على الوضع الافتراضي أيضًا أحيانًا "وضع المشتق".
 
-The most important thing to know about the default mode is that it is the only
-mode in which ``requires_grad`` takes effect. ``requires_grad`` is always overridden
-to be ``False`` in both the two other modes.
+أهم شيء يجب معرفته حول الوضع الافتراضي هو أنه الوضع الوحيد الذي يكون فيه
+"requires_grad" ساري المفعول. يتم دائمًا تجاوز "requires_grad"
+ليكون ``False`` في كلا الوضعين الآخرين.
 
-No-grad Mode
-^^^^^^^^^^^^
+وضع عدم حساب المشتق
+^^^^^^^^^^^^^^^^^^
 
-Computations in no-grad mode behave as if none of the inputs require grad.
-In other words, computations in no-grad mode are never recorded in the backward graph
-even if there are inputs that have ``require_grad=True``.
+تتصرف الحسابات في وضع عدم حساب المشتق كما لو أن أيا من المدخلات لا تتطلب المشتق.
+بعبارة أخرى، لا يتم أبدًا تسجيل الحسابات في وضع عدم حساب المشتق في الرسم البياني الخلفي
+حتى إذا كانت هناك مدخلات لها ``require_grad=True``.
 
-Enable no-grad mode when you need to perform operations that should not be
-recorded by autograd, but you’d still like to use the outputs of these
-computations in grad mode later. This context manager makes it convenient to
-disable gradients for a block of code or function without
-having to temporarily set tensors to have ``requires_grad=False``, and then
-back to ``True``.
+قم بتمكين وضع عدم حساب المشتق عندما تحتاج إلى إجراء عمليات لا يجب أن يتم
+تسجيلها بواسطة autograd، ولكنك ما زلت ترغب في استخدام مخرجات هذه
+الحسابات في وضع المشتق لاحقًا. يجعل برنامج إدارة السياق هذا من الملائم
+تعطيل المشتقات لكتل التعليمات البرمجية أو الوظائف دون
+الاضطرار إلى تعيين المؤثرات مؤقتًا إلى أن يكون لها ``requires_grad=False``، ثم
+العودة إلى ``True``.
 
-For example, no-grad mode might be useful when writing an optimizer: when
-performing the training update you’d like to update parameters
-in-place without the update being recorded by autograd.
-You also intend to use the updated parameters for computations in
-grad mode in the next forward pass.
+على سبيل المثال، قد يكون وضع عدم حساب المشتق مفيدًا عند كتابة محسن: عند
+أداء التحديث التدريبي، تريد تحديث المعلمات
+مكانيًا دون تسجيل التحديث بواسطة autograd.
+أنت تنوي أيضًا استخدام المعلمات المحدثة لحسابات في
+وضع المشتق في المرور الأمامي التالي.
 
-The implementations in :ref:`nn-init-doc` also
-rely on no-grad mode when initializing the parameters as to avoid
-autograd tracking when updating the initialized parameters in-place.
+تعتمد التطبيقات في :ref:`nn-init-doc` أيضًا
+على وضع عدم حساب المشتق عند تهيئة المعلمات لتجنب
+تتبع autograd عند تحديث المعلمات المُهيئة في المكان.
 
-Inference Mode
-^^^^^^^^^^^^^^
+وضع الاستنتاج
+^^^^^^^^^^
 
-Inference mode is the extreme version of no-grad mode. Just like in no-grad
-mode, computations in inference mode are not recorded in the backward graph, but
-enabling inference mode will allow PyTorch to speed up your model even more.
-This better runtime comes with a drawback: tensors created in inference mode
-will not be able to be used in computations to be recorded by autograd after
-exiting inference mode.
+وضع الاستنتاج هو النسخة المتطرفة من وضع عدم حساب المشتق. تمامًا مثل وضع عدم حساب المشتق،
+لا يتم تسجيل الحسابات في وضع الاستنتاج في الرسم البياني الخلفي، ولكن
+تمكين وضع الاستنتاج سيسمح لـ PyTorch بزيادة سرعة نموذجك.
+تأتي هذه السرعة المحسنة بعيب: لن يكون المؤثرون المُنشئون في وضع الاستنتاج قادرين على
+يتم استخدامها في الحسابات التي سيتم تسجيلها بواسطة autograd بعد
+الخروج من وضع الاستنتاج.
 
-Enable inference mode when you are performing computations that don’t need
-to be recorded in the backward graph, AND you don’t plan on using the tensors
-created in inference mode in any computation that is to be recorded by autograd later.
+قم بتمكين وضع الاستنتاج عندما تقوم بأداء حسابات لا تحتاج إلى
+يتم تسجيلها في الرسم البياني الخلفي، وأنت لا تخطط لاستخدام المؤثرات
+التي تم إنشاؤها في وضع الاستنتاج في أي حساب يتم تسجيله بواسطة autograd لاحقًا.
 
-It is recommended that you try out inference mode in the parts of your code
-that do not require autograd tracking (e.g., data processing and model evaluation).
-If it works out of the box
-for your use case it’s a free performance win. If you run into errors after
-enabling inference mode, check that you are not using tensors created in
-inference mode in computations that are recorded by autograd after exiting inference
-mode. If you cannot avoid such use in your case, you can always switch back
-to no-grad mode.
+من المستحسن أن تجرب وضع الاستنتاج في أجزاء من التعليمات البرمجية الخاصة بك
+التي لا تتطلب تتبع autograd (على سبيل المثال، معالجة البيانات وتقييم النموذج).
+إذا نجح الأمر خارج الصندوق
+لحالتك الاستخدامية، فهي فوز مجاني بالأداء. إذا واجهت أخطاء بعد
+تمكين وضع الاستنتاج، تحقق من أنك لا تستخدم المؤثرات المُنشأة في
+وضع الاستنتاج في الحسابات التي يتم تسجيلها بواسطة autograd بعد الخروج من وضع الاستنتاج. إذا لم تتمكن من تجنب مثل هذا الاستخدام في حالتك، فيمكنك دائمًا التبديل مرة أخرى
+إلى وضع عدم حساب المشتق.
 
-For details on inference mode please see
-`Inference Mode <https://pytorch.org/cppdocs/notes/inference_mode.html>`_.
+للحصول على التفاصيل حول وضع الاستنتاج، يرجى الاطلاع على
+`وضع الاستنتاج <https://pytorch.org/cppdocs/notes/inference_mode.html>`_.
 
-For implementation details of inference mode see
+للحصول على تفاصيل التنفيذ حول وضع الاستنتاج، راجع
 `RFC-0011-InferenceMode <https://github.com/pytorch/rfcs/pull/17>`_.
 
-Evaluation Mode (``nn.Module.eval()``)
+وضع التقييم (``nn.Module.eval()``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Evaluation mode is not a mechanism to locally disable gradient computation.
-It is included here anyway because it is sometimes confused to be such a mechanism.
+وضع التقييم ليس آلية لإيقاف حساب المشتق محليًا.
+تم تضمينه هنا على أي حال لأنه يتم الخلط بينه أحيانًا وبين آلية من هذا القبيل.
 
-Functionally, ``module.eval()`` (or equivalently ``module.train(False)``) are completely
-orthogonal to no-grad mode and inference mode. How ``model.eval()`` affects
-your model depends entirely on the specific modules used in your model and
-whether they define any training-mode specific behavior.
+من الناحية الوظيفية، فإن ``module.eval()`` (أو ما يعادله ``module.train(False)``) تمامًا
+متعامد مع وضع عدم حساب المشتق ووضع الاستنتاج. كيف ``model.eval()`` يؤثر
+يعتمد نموذجك تمامًا على الوحدات النمطية المحددة المستخدمة في نموذجك
+وما إذا كانت تحدد أي سلوك محدد لوضع التدريب.
 
-You are responsible for calling ``model.eval()`` and ``model.train()`` if your
-model relies on modules such as :class:`torch.nn.Dropout` and
-:class:`torch.nn.BatchNorm2d` that may behave
-differently depending on training mode, for example, to avoid updating your
-BatchNorm running statistics on validation data.
+أنت مسؤول عن استدعاء ``model.eval()`` و ``model.train()`` إذا كان نموذجك يعتمد على الوحدات النمطية مثل :class:`torch.nn.Dropout` و
+:class:`torch.nn.BatchNorm2d` التي قد تتصرف
+بشكل مختلف اعتمادًا على وضع التدريب، على سبيل المثال، لتجنب تحديث إحصائيات التشغيل الخاصة بك
+متوسط ​​القيمة على بيانات التحقق.
 
-It is recommended that you always use ``model.train()`` when
-training and ``model.eval()`` when evaluating your model (validation/testing) even
-if you aren’t sure your model has training-mode specific behavior, because a
-module you are using might be updated to behave differently in training and
-eval modes.
+من المستحسن دائمًا استخدام ``model.train()`` عند
+التدريب و ``model.eval()`` عند تقييم نموذجك (التحقق من الصحة/الاختبار) حتى لو لم تكن
+تأكد من أن نموذجك لديه سلوك محدد لوضع التدريب، لأنه قد يتم تحديث وحدة نمطية تستخدمها للتصرف بشكل مختلف في وضعي التدريب والتقييم.
 
-In-place operations with autograd
----------------------------------
+العمليات في المكان مع autograd
+-------------------------
 
-Supporting in-place operations in autograd is a hard matter, and we discourage
-their use in most cases. Autograd's aggressive buffer freeing and reuse makes
-it very efficient and there are very few occasions when in-place operations
-lower memory usage by any significant amount. Unless you're operating
-under heavy memory pressure, you might never need to use them.
+إن دعم العمليات في المكان في autograd أمر صعب، ونحن لا نشجع
+استخدامها في معظم الحالات. يؤدي تحرير الذاكرة العدواني وإعادة استخدامها بواسطة autograd إلى
+جعله فعالًا للغاية، وهناك مناسبات قليلة جدًا عندما تقلل العمليات في المكان
+استخدام الذاكرة بأي مبلغ كبير. ما لم تكن تعمل
+تحت ضغط الذاكرة الشديد، فقد لا تحتاج أبدًا إلى استخدامها.
 
-There are two main reasons that limit the applicability of in-place operations:
+هناك سببان رئيسيان يحدان من قابلية تطبيق العمليات في المكان:
 
-1. In-place operations can potentially overwrite values required to compute
-   gradients.
+1. يمكن أن تقوم العمليات في المكان بمسح القيم المطلوبة لحساب المشتقات.
 
-2. Every in-place operation requires the implementation to rewrite the
-   computational graph. Out-of-place versions simply allocate new objects and
-   keep references to the old graph, while in-place operations, require
-   changing the creator of all inputs to the :class:`Function` representing
-   this operation. This can be tricky, especially if there are many Tensors
-   that reference the same storage (e.g. created by indexing or transposing),
-   and in-place functions will raise an error if the storage of
-   modified inputs is referenced by any other :class:`Tensor`.
+2. تتطلب كل عملية في المكان أن يقوم التنفيذ بإعادة كتابة
+الرسم البياني الحسابي. تُنشئ الإصدارات غير الموجودة في المكان ببساطة كائنات جديدة وتحتفظ بالإشارات إلى الرسم البياني القديم، بينما تتطلب العمليات في المكان، تغيير منشئ جميع المدخلات إلى :class:`Function` الذي يمثل
+هذه العملية. يمكن أن يكون هذا الأمر معقدًا، خاصة إذا كان هناك العديد من المؤثرات التي تشير إلى نفس التخزين (على سبيل المثال، تم إنشاؤها عن طريق الفهرسة أو التحويل)،
+وستؤدي وظائف في المكان إلى حدوث خطأ إذا كان التخزين الخاص بالمدخلات المعدلة
+تمت الإشارة إليه بواسطة أي مؤثر آخر.
 
-In-place correctness checks
+فحوصات صحة العمليات في المكان
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Every tensor keeps a version counter, that is incremented every time it is
-marked dirty in any operation. When a Function saves any tensors for backward,
-a version counter of their containing Tensor is saved as well. Once you access
-``self.saved_tensors`` it is checked, and if it is greater than the saved value
-an error is raised. This ensures that if you're using in-place
-functions and not seeing any errors, you can be sure that the computed
-gradients are correct.
+يحتفظ كل مؤثر بمؤشر إصدار، يتم زيادته كلما تم تمييزه
+قذر في أي عملية. عندما تقوم دالة بحفظ أي مؤثرات للخلف،
+يتم أيضًا حفظ مؤشر الإصدار لمؤثرها الحاوي. بمجرد الوصول إلى ``self.saved_tensors``، يتم التحقق منه، وإذا كان أكبر من القيمة المحفوظة، يتم إثارة خطأ. يضمن هذا أنه إذا كنت تستخدم وظائف في المكان
+ولا ترى أي أخطاء، فيمكنك التأكد من أن المشتقات المحسوبة صحيحة.
 
-Multithreaded Autograd
-----------------------
+Autograd متعدد الخيوط
+هذا النص يشرح كيفية استخدام محرك "أوتوجراد" (Autograd) في بيئة متعددة الخيوط، مع تسليط الضوء على بعض السلوكيات التي يجب أن يكون المستخدم على دراية بها.
 
-The autograd engine is responsible for running all the backward operations
-necessary to compute the backward pass. This section will describe all the details
-that can help you make the best use of it in a multithreaded environment. (This is
-relevant only for PyTorch 1.6+ as the behavior in previous version was different.)
+محرك "أوتوجراد" مسؤول عن تشغيل جميع العمليات الخلفية اللازمة لحساب تمرير الخلف. وسيصف هذا القسم جميع التفاصيل التي يمكن أن تساعدك على الاستفادة القصوى منه في بيئة متعددة الخيوط. (هذا مناسب فقط لـ PyTorch 1.6+ لأن السلوك في الإصدارات السابقة كان مختلفًا).
 
-User could train their model with multithreading code (e.g. Hogwild training), and
-does not block on the concurrent backward computations, example code could be:
+يمكن للمستخدم تدريب نموذجه باستخدام كود متعدد الخيوط (مثل التدريب Hogwild)، ولا يمنع الحسابات الخلفية المتزامنة، ويمكن أن يكون الكود على النحو التالي:
 
 .. code::
 
-    # Define a train function to be used in different threads
+    # تحديد دالة التدريب لاستخدامها في خيوط مختلفة
     def train_fn():
         x = torch.ones(5, 5, requires_grad=True)
         # forward
         y = (x + 3) * (x + 4) * 0.5
         # backward
         y.sum().backward()
-        # potential optimizer update
+        # تحديث المحسن المحتمل
 
 
-    # User write their own threading code to drive the train_fn
+    # يقوم المستخدم بكتابة كود الخيوط الخاص به لتشغيل train_fn
     threads = []
     for _ in range(10):
         p = threading.Thread(target=train_fn, args=())
@@ -350,133 +286,100 @@ does not block on the concurrent backward computations, example code could be:
         p.join()
 
 
-Note that some behaviors that user should be aware of:
+لاحظ أن هناك بعض السلوكيات التي يجب أن يكون المستخدم على دراية بها:
 
-Concurrency on CPU
-^^^^^^^^^^^^^^^^^^
+التزامن على وحدة المعالجة المركزية (CPU)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When you run ``backward()`` or ``grad()`` via python or C++ API in multiple
-threads on CPU, you are expecting to see extra concurrency instead of
-serializing all the backward calls in a specific order during execution
-(behavior before PyTorch 1.6).
+عند تشغيل ``backward()`` أو ``grad()`` عبر واجهة برمجة التطبيقات (API) الخاصة بـ Python أو C++ في خيوط متعددة على وحدة المعالجة المركزية (CPU)، من المتوقع أن تشاهد تزامنًا إضافيًا بدلاً من تسلسل جميع مكالمات الخلف بترتيب محدد أثناء التنفيذ (السلوك قبل PyTorch 1.6).
 
-Non-determinism
-^^^^^^^^^^^^^^^
+عدم الحتمية
+^^^^^^^^^
 
-If you are calling ``backward()`` from multiple threads concurrently and have
-shared inputs (i.e. Hogwild CPU training), then non-determinism should be expected.
-This can occur because parameters are automatically shared across threads,
-as such, multiple threads may access and try to accumulate the same ``.grad``
-attribute during gradient accumulation. This is technically not safe, and
-it might result in race condition and the result might be invalid to use.
+إذا كنت تستدعي ``backward()`` من خيوط متعددة بشكل متزامن ولديها مدخلات مشتركة (أي تدريب CPU Hogwild)، فيجب توقع عدم الحتمية. يمكن أن يحدث هذا لأن المعلمات مشتركة تلقائيًا عبر الخيوط، وبالتالي، قد تقوم خيوط متعددة بالوصول ومحاولة تراكم نفس سمة ``.grad`` أثناء تراكم التدرجات. هذا غير آمن من الناحية الفنية، وقد يؤدي إلى حالة سباق وقد تكون النتيجة غير صالحة للاستخدام.
 
-Users developing multithreaded models featuring shared parameters should have the
-threading model in mind and should understand the issues described above.
+يجب على المستخدمين الذين يطورون نماذج متعددة الخيوط ذات معلمات مشتركة أن يضعوا في اعتبارهم نموذج الخيوط وأن يفهموا المشكلات الموضحة أعلاه.
 
-The functional API :func:`torch.autograd.grad` may be used to calculate the
-gradients instead of ``backward()`` to avoid non-determinism.
+يمكن استخدام واجهة برمجة التطبيقات (API) الوظيفية :func:`torch.autograd.grad` لحساب التدرجات بدلاً من ``backward()`` لتجنب عدم الحتمية.
 
-Graph retaining
-^^^^^^^^^^^^^^^
+الاحتفاظ بالرسم البياني
+^^^^^^^^^^^^^^^^
 
-If part of the autograd graph is shared between threads, i.e. run first
-part of forward single thread, then run second part in multiple threads,
-then the first part of graph is shared. In this case different threads
-execute ``grad()`` or ``backward()`` on the same graph might have issue of
-destroying the graph on the fly of one thread, and the other thread will
-crash in this case. Autograd will error out to the user similar to what call
-``backward()`` twice with out ``retain_graph=True``, and let the user know
-they should use ``retain_graph=True``.
+إذا كان جزء من رسم بياني لـ "أوتوجراد" مشتركًا بين الخيوط، أي تشغيل الجزء الأول من التغذية الأمامية في خيط واحد، ثم تشغيل الجزء الثاني في خيوط متعددة، فإن الجزء الأول من الرسم البياني مشترك. في هذه الحالة، قد تواجه الخيوط المختلفة التي تنفذ ``grad()`` أو ``backward()`` على نفس الرسم البياني مشكلة تدمير الرسم البياني أثناء الطيران في أحد الخيوط، وسيتحطم الخيط الآخر في هذه الحالة. سوف يخطئ "أوتوجراد" للمستخدم بشكل مشابه لما يحدث عند استدعاء ``backward()`` مرتين دون ``retain_graph=True``، وإبلاغ المستخدم بأنه يجب عليهم استخدام ``retain_graph=True``.
 
-Thread Safety on Autograd Node
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+أمان الخيوط على عقدة "أوتوجراد"
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since Autograd allows the caller thread to drive its backward execution for
-potential parallelism, it's important that we ensure thread safety on CPU with
-parallel ``backward()`` calls that share part/whole of the GraphTask.
+نظرًا لأن "أوتوجراد" يسمح لخيط المتصل بتشغيل تنفيذ الخلف الخاص به من أجل إمكانية التنفيذ المتوازي، فمن المهم التأكد من أمان الخيوط على وحدة المعالجة المركزية (CPU) مع مكالمات ``backward()`` الموازية التي تشترك في جزء/كل من GraphTask.
 
-Custom Python ``autograd.Function``\s are automatically thread safe because of GIL.
-For built-in C++ Autograd Nodes (e.g. AccumulateGrad, CopySlices) and custom
-``autograd::Function``\s, the Autograd Engine uses thread mutex locking to ensure
-thread safety on autograd Nodes that might have state write/read.
+دالات Python المخصصة ``autograd.Function`` آمنة تلقائيًا للخيوط بسبب قفل التفسير العالمي (GIL).
 
-No thread safety on C++ hooks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+بالنسبة لعقد "أوتوجراد" المدمجة في C++ (مثل AccumulateGrad وCopySlices) ودالات ``autograd::Function`` المخصصة، يستخدم محرك "أوتوجراد" قفل مؤشر التزامن (mutex) للخيوط لضمان أمان الخيوط على عقد "أوتوجراد" التي قد يكون لها حالة كتابة/قراءة.
 
-Autograd relies on the user to write thread safe C++ hooks. If you want the hook
-to be correctly applied in multithreading environment, you will need to write
-proper thread locking code to ensure the hooks are thread safe.
+عدم وجود أمان للخيوط على الخطافات المكتوبة بلغة C++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+يعتمد "أوتوجراد" على المستخدم لكتابة خطافات C++ آمنة للخيوط. إذا كنت تريد تطبيق الخطاف بشكل صحيح في بيئة متعددة الخيوط، فستحتاج إلى كتابة كود قفل الخيط الصحيح لضمان أمان الخطافات للخيوط.
 
 .. _complex_autograd-doc:
 
-Autograd for Complex Numbers
-----------------------------
+"التفاضل التلقائي" للأعداد المركبة
+-----------------------
 
-The short version:
+النسخة المختصرة:
 
-- When you use PyTorch to differentiate any function :math:`f(z)` with complex domain and/or codomain,
-  the gradients are computed under the assumption that the function is a part of a larger real-valued
-  loss function :math:`g(input)=L`. The gradient computed is :math:`\frac{\partial L}{\partial z^*}`
-  (note the conjugation of z), the negative of which is precisely the direction of steepest descent
-  used in Gradient Descent algorithm. Thus, there is a viable path in making the existing optimizers
-  work out of the box with complex parameters.
-- This convention matches TensorFlow's convention for complex
-  differentiation, but is different from JAX (which computes
+- عندما تستخدم PyTorch لاشتقاق أي دالة :math:`f(z)` ذات مجال و/أو مشفرة معقدة،
+  يتم حساب المشتقات تحت افتراض أن الدالة هي جزء من دالة خسارة ذات قيمة حقيقية أكبر :math:`g(input)=L`. المشتق المحسوب هو :math:`\frac{\partial L}{\partial z^*}`
+  (لاحظ التآمر من z)، والذي يمثل بالضبط الاتجاه المعاكس للانحدار الأشد استخدامًا
+  في خوارزمية الانحدار التدريجي. وبالتالي، هناك مسار قابل للتطبيق لجعل المحسنات الحالية
+  تعمل خارج الصندوق مع المعلمات المعقدة.
+- تتطابق هذه الاتفاقية مع اتفاقية TensorFlow للتفاضل المعقد، ولكنها تختلف عن JAX (التي تحسب
   :math:`\frac{\partial L}{\partial z}`).
-- If you have a real-to-real function which internally uses complex
-  operations, the convention here doesn't matter: you will always get
-  the same result that you would have gotten if it had been implemented
-  with only real operations.
+- إذا كان لديك دالة حقيقية إلى حقيقية تستخدم داخليًا عمليات معقدة، فإن الاتفاقية هنا لا تهم: فستحصل دائمًا على
+  نفس النتيجة التي كنت ستحصل عليها إذا تم تنفيذها
+  مع عمليات حقيقية فقط.
 
-If you are curious about the mathematical details, or want to know how
-to define complex derivatives in PyTorch, read on.
+إذا كنت فضوليًا بشأن التفاصيل الرياضية، أو تريد معرفة كيفية
+تعريف المشتقات المعقدة في PyTorch، فاستمر في القراءة.
 
-What are complex derivatives?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ما هي المشتقات المعقدة؟
+^^^^^^^^^^^^^^^^^
 
-The mathematical definition of complex-differentiability takes the
-limit definition of a derivative and generalizes it to operate on
-complex numbers. Consider a function :math:`f: ℂ → ℂ`,
+يأخذ التعريف الرياضي للاشتقاق المعقد حد التعريف للاشتقاق ويعممه للعمل على
+الأرقام المعقدة. ضع في اعتبارك دالة :math:`f: ℂ → ℂ`،
 
     .. math::
         f(z=x+yj) = u(x, y) + v(x, y)j
 
-where :math:`u` and :math:`v` are two variable real valued functions
-and :math:`j` is the imaginary unit.
+حيث :math:`u` و:math:`v` هما دالتان ذواتا قيمة حقيقية
+و:math:`j` هي الوحدة التخيلية.
 
-Using the derivative definition, we can write:
+باستخدام تعريف المشتق، يمكننا الكتابة:
 
     .. math::
         f'(z) = \lim_{h \to 0, h \in C} \frac{f(z+h) - f(z)}{h}
 
-In order for this limit to exist, not only must :math:`u` and :math:`v` must be
-real differentiable, but :math:`f` must also satisfy the Cauchy-Riemann `equations
-<https://en.wikipedia.org/wiki/Cauchy%E2%80%93Riemann_equations>`_.  In
-other words: the limit computed for real and imaginary steps (:math:`h`)
-must be equal. This is a more restrictive condition.
+لكي يوجد هذا الحد، يجب ألا يكون :math:`u` و:math:`v` قابلتين للاشتقاق الحقيقي فحسب، بل يجب أن تلبي :math:`f` أيضًا معادلات كوشي-ريمان `
+<https://en.wikipedia.org/wiki/Cauchy%E2%80%93Riemann_equations>`_.  بعبارة أخرى: يجب أن يكون الحد المحسوب للخطوات الحقيقية والخيالية (:math:`h`)
+متساوية. هذا شرط أكثر تقييدًا.
 
-The complex differentiable functions are commonly known as holomorphic
-functions. They are well behaved, have all the nice properties that
-you've seen from real differentiable functions, but are practically of no
-use in the optimization world. For optimization problems, only real valued objective
-functions are used in the research community since complex numbers are not part of any
-ordered field and so having complex valued loss does not make much sense.
+تُعرف الدوال القابلة للاشتقاق المعقد باسم الدوال التحليلية.
+إنها حسنة التصرف، ولديها جميع الخصائص اللطيفة التي
+رأيتها من الدوال الحقيقية القابلة للاشتقاق، ولكنها غير مفيدة عمليًا في
+عالم التحسين. بالنسبة لمشكلات التحسين، يتم استخدام دالات الهدف ذات القيمة الحقيقية فقط في مجتمع البحث لأن الأرقام المعقدة ليست جزءًا من أي
+مجال مرتب، وبالتالي فإن وجود خسارة ذات قيمة معقدة لا معنى له.
 
-It also turns out that no interesting real-valued objective fulfill the
-Cauchy-Riemann equations. So the theory with holomorphic function cannot be
-used for optimization and most people therefore use the Wirtinger calculus.
+اتضح أيضًا أن أي دالة هدف ذات قيمة حقيقية مثيرة للاهتمام لا تفي
+بمعادلات كوشي-ريمان. لذلك لا يمكن استخدام النظرية مع الدالة التحليلية في التحسين ومعظم الأشخاص يستخدمون حساب ويرتنجر.
 
-Wirtinger Calculus comes into the picture ...
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+يدخل حساب ويرتنجر في الصورة ...
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-So, we have this great theory of complex differentiability and
-holomorphic functions, and we can’t use any of it at all, because many
-of the commonly used functions are not holomorphic. What’s a poor
-mathematician to do? Well, Wirtinger observed that even if :math:`f(z)`
-isn’t holomorphic, one could rewrite it as a two variable function
-:math:`f(z, z*)` which is always holomorphic. This is because real and
-imaginary of the components of :math:`z` can be expressed in terms of
-:math:`z` and :math:`z^*` as:
+لذلك، لدينا هذه النظرية العظيمة للاشتقاق المعقد والدوال التحليلية، ولا يمكننا استخدام أي منها على الإطلاق، لأن العديد
+من الدوال الشائعة الاستخدام ليست تحليلية. ماذا يفعل عالم الرياضيات الفقير؟ حسنًا، لاحظ ويرتنجر أنه حتى إذا لم تكن :math:`f(z)`
+تحليلية، فيمكن إعادة كتابتها كدالة ذات متغيرين
+:math:`f(z, z*)` والتي تكون دائمًا تحليلية. ويرجع ذلك إلى أنه يمكن التعبير عن الجزء الحقيقي والخيالي من
+:math:`z` من حيث :math:`z` و:math:`z^*` كما يلي:
 
     .. math::
         \begin{aligned}
@@ -484,14 +387,14 @@ imaginary of the components of :math:`z` can be expressed in terms of
             \mathrm{Im}(z) &= \frac {z - z^*}{2j}
         \end{aligned}
 
-Wirtinger calculus suggests to study :math:`f(z, z^*)` instead, which is
-guaranteed to be holomorphic if :math:`f` was real differentiable (another
-way to think of it is as a change of coordinate system, from :math:`f(x, y)`
-to :math:`f(z, z^*)`.)  This function has partial derivatives
-:math:`\frac{\partial }{\partial z}` and :math:`\frac{\partial}{\partial z^{*}}`.
-We can use the chain rule to establish a
-relationship between these partial derivatives and the partial
-derivatives w.r.t., the real and imaginary components of :math:`z`.
+يقترح حساب ويرتنجر دراسة :math:`f(z, z^*)` بدلاً من ذلك، والتي تكون
+مضمونة أن تكون تحليلية إذا كانت :math:`f` قابلة للاشتقاق الحقيقي (طريقة أخرى للتفكير فيها هي كـ
+تغيير نظام الإحداثيات، من :math:`f(x, y)`
+إلى :math:`f(z, z^*)`.)  لهذه الدالة مشتقات جزئية
+:math:`\frac{\partial }{\partial z}` و:math:`\frac{\partial}{\partial z^{*}}`.
+يمكننا استخدام قاعدة السلسلة لإنشاء
+علاقة بين هذه المشتقات الجزئية والمشتقات الجزئية.،
+بالنسبة إلى المكونات الحقيقية والخيالية لـ :math:`z`.
 
     .. math::
         \begin{aligned}
@@ -502,7 +405,7 @@ derivatives w.r.t., the real and imaginary components of :math:`z`.
                                          &= 1j * \left(\frac{\partial }{\partial z} - \frac{\partial }{\partial z^*}\right)
         \end{aligned}
 
-From the above equations, we get:
+من المعادلات أعلاه، نحصل على:
 
     .. math::
         \begin{aligned}
@@ -510,25 +413,23 @@ From the above equations, we get:
             \frac{\partial }{\partial z^*} &= 1/2 * \left(\frac{\partial }{\partial x} + 1j * \frac{\partial }{\partial y}\right)
         \end{aligned}
 
-which is the classic definition of Wirtinger calculus that you would find on `Wikipedia <https://en.wikipedia.org/wiki/Wirtinger_derivatives>`_.
+وهو التعريف الكلاسيكي لحساب ويرتنجر الذي ستجده على `Wikipedia <https://en.wikipedia.org/wiki/Wirtinger_derivatives>`_.
 
-There are a lot of beautiful consequences of this change.
+هناك الكثير من النتائج الجميلة لهذا التغيير.
 
-- For one, the Cauchy-Riemann equations translate into simply saying that :math:`\frac{\partial f}{\partial z^*} = 0` (that is to say, the function :math:`f` can be written
-  entirely in terms of :math:`z`, without making reference to :math:`z^*`).
-- Another important (and somewhat counterintuitive) result, as we’ll see later, is that when we do optimization on a real-valued loss, the step we should
-  take while making variable update is given by :math:`\frac{\partial Loss}{\partial z^*}` (not :math:`\frac{\partial Loss}{\partial z}`).
+- أولاً، تترجم معادلات كوشي-ريمان ببساطة إلى القول بأن :math:`\frac{\partial f}{\partial z^*} = 0` (أي أن الدالة :math:`f` يمكن كتابتها
+  بالكامل من حيث :math:`z`، دون الإشارة إلى :math:`z^*`).
+- النتيجة المهمة الأخرى (وغير البديهية إلى حد ما)، كما سنرى لاحقًا، هي أنه عند إجراء التحسين على دالة خسارة ذات قيمة حقيقية، فإن الخطوة التي يجب
+  اتخاذها أثناء تحديث المتغير تعطى بواسطة :math:`\frac{\partial Loss}{\partial z^*}` (وليس :math:`\frac{\partial Loss}{\partial z}`).
 
-For more reading, check out: https://arxiv.org/pdf/0906.4835.pdf
+للمزيد من القراءة، راجع: https://arxiv.org/pdf/0906.4835.pdf
 
-How is Wirtinger Calculus useful in optimization?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+كيف يكون حساب ويرتنجر مفيدًا في التحسين؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Researchers in audio and other fields, more commonly, use gradient
-descent to optimize real valued loss functions with complex variables.
-Typically, these people treat the real and imaginary values as separate
-channels that can be updated. For a step size :math:`\alpha/2` and loss
-:math:`L`, we can write the following equations in :math:`ℝ^2`:
+يستخدم الباحثون في مجال الصوت والمجالات الأخرى، بشكل أكثر شيوعًا، الانحدار التدريجي لتحسين دالة الخسارة ذات القيمة الحقيقية ذات المتغيرات المعقدة.
+عادةً، يعامل هؤلاء الأشخاص القيم الحقيقية والخيالية كقنوات منفصلة يمكن تحديثها. بالنسبة لحجم الخطوة :math:`\alpha/2` والخسارة
+:math:`L`، يمكننا كتابة المعادلات التالية في :math:`ℝ^2`:
 
     .. math::
         \begin{aligned}
@@ -536,7 +437,7 @@ channels that can be updated. For a step size :math:`\alpha/2` and loss
             y_{n+1} &= y_n - (\alpha/2) * \frac{\partial L}{\partial y}
         \end{aligned}
 
-How do these equations translate into complex space :math:`ℂ`?
+كيف تترجم هذه المعادلات إلى الفضاء المعقد :math:`ℂ`؟
 
     .. math::
         \begin{aligned}
@@ -545,41 +446,37 @@ How do these equations translate into complex space :math:`ℂ`?
                     &= z_n - \alpha * \frac{\partial L}{\partial z^*}
         \end{aligned}
 
-Something very interesting has happened: Wirtinger calculus tells us
-that we can simplify the complex variable update formula above to only
-refer to the conjugate Wirtinger derivative
-:math:`\frac{\partial L}{\partial z^*}`, giving us exactly the step we take in optimization.
+حدث شيء مثير للاهتمام: يخبرنا حساب ويرتنجر
+بأنه يمكننا تبسيط صيغة تحديث المتغيرات المعقدة أعلاه بحيث تشير فقط إلى
+مشتق ويرتنجر التآمري
+:math:`\frac{\partial L}{\partial z^*}`، مما يمنحنا الخطوة التي نتخذها بالضبط في التحسين.
 
-Because the conjugate Wirtinger derivative gives us exactly the correct step for a real valued loss function, PyTorch gives you this derivative
-when you differentiate a function with a real valued loss.
+نظرًا لأن مشتق ويرتنجر التآمري يعطينا الخطوة الصحيحة تمامًا لدالة الخسارة ذات القيمة الحقيقية، فإن PyTorch يمنحك هذا المشتق
+عندما تقوم باشتقاق دالة ذات دالة خسارة ذات قيمة حقيقية.
 
-How does PyTorch compute the conjugate Wirtinger derivative?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+كيف تحسب PyTorch مشتق ويرتنجر التآمري؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Typically, our derivative formulas take in `grad_output` as an input,
-representing the incoming Vector-Jacobian product that we’ve already
-computed, aka, :math:`\frac{\partial L}{\partial s^*}`, where :math:`L`
-is the loss of the entire computation (producing a real loss) and
-:math:`s` is the output of our function. The goal here is to compute
-:math:`\frac{\partial L}{\partial z^*}`, where :math:`z` is the input of
-the function.  It turns out that in the case of real loss, we can
-get away with *only* calculating :math:`\frac{\partial L}{\partial s^*}`,
-even though the chain rule implies that we also need to
-have access to :math:`\frac{\partial L}{\partial s}`.  If you want
-to skip this derivation, look at the last equation in this section
-and then skip to the next section.
+عادةً، تأخذ صيغ المشتقات لدينا `grad_output` كإدخال،
+تمثيل منتج المصفوفة-المشتقة الذي قمنا بحسابه بالفعل، أي :math:`\frac{\partial L}{\partial s^*}`، حيث :math:`L`
+هي خسارة الحساب بأكمله (إنتاج خسارة حقيقية)
+و:math:`s` هو إخراج دالتنا. الهدف هنا هو حساب
+:math:`\frac{\partial L}{\partial z^*}`، حيث :math:`z` هو إدخال الدالة.  اتضح أنه في حالة الخسارة الحقيقية، يمكننا
+الاستغناء عن *حساب* :math:`\frac{\partial L}{\partial s^*}` فقط،
+على الرغم من أن قاعدة السلسلة تعني أننا نحتاج أيضًا إلى
+الوصول إلى :math:`\frac{\partial L}{\partial s}`.  إذا كنت تريد
+تخطي هذا الاشتقاق، فانظر إلى المعادلة الأخيرة في هذا القسم
+ثم انتقل إلى القسم التالي.
 
-Let’s continue working with :math:`f: ℂ → ℂ` defined as
-:math:`f(z) = f(x+yj) = u(x, y) + v(x, y)j`. As discussed above,
-autograd’s gradient convention is centered around optimization for real
-valued loss functions, so let’s assume :math:`f` is a part of larger
-real valued loss function :math:`g`. Using chain rule, we can write:
+دعنا نواصل العمل مع :math:`f: ℂ → ℂ` المعرفة
+:math:`f(z) = f(x+yj) = u(x, y) + v(x, y)j`. كما نوقش أعلاه،
+تتمحور اتفاقية التدرج التلقائي حول التحسين لدالة الخسارة ذات القيمة الحقيقية، لذلك دعنا نفترض أن :math:`f` هي جزء من دالة خسارة ذات قيمة حقيقية أكبر :math:`g`. باستخدام قاعدة السلسلة، يمكننا الكتابة:
 
     .. math::
         \frac{\partial L}{\partial z^*} = \frac{\partial L}{\partial u} * \frac{\partial u}{\partial z^*} + \frac{\partial L}{\partial v} * \frac{\partial v}{\partial z^*}
         :label: [1]
 
-Now using Wirtinger derivative definition, we can write:
+الآن باستخدام تعريف مشتق ويرتنجر، يمكننا الكتابة:
 
     .. math::
         \begin{aligned}
@@ -587,26 +484,16 @@ Now using Wirtinger derivative definition, we can write:
             \frac{\partial L}{\partial s^*} = 1/2 * \left(\frac{\partial L}{\partial u} + \frac{\partial L}{\partial v} j\right)
         \end{aligned}
 
-It should be noted here that since :math:`u` and :math:`v` are real
-functions, and :math:`L` is real by our assumption that :math:`f` is a
-part of a real valued function, we have:
+يجب ملاحظة أنه نظرًا لأن :math:`u` و:math:`v` هما دالتان حقيقيتان، و:math:`L` حقيقي بافتراضنا أن :math:`f` هو
+جزء من دالة ذات قيمة حقيقية، لدينا:
 
     .. math::
         \left( \frac{\partial L}{\partial s} \right)^* = \frac{\partial L}{\partial s^*}
         :label: [2]
 
-i.e., :math:`\frac{\partial L}{\partial s}` equals to :math:`grad\_output^*`.
+أي أن :math:`\frac{\partial L}{\partial s}` يساوي :math:`grad\_output^*`.
 
-Solving the above equations for :math:`\frac{\partial L}{\partial u}` and :math:`\frac{\partial L}{\partial v}`, we get:
-
-    .. math::
-        \begin{aligned}
-            \frac{\partial L}{\partial u} = \frac{\partial L}{\partial s} + \frac{\partial L}{\partial s^*} \\
-            \frac{\partial L}{\partial v} = 1j * \left(\frac{\partial L}{\partial s} - \frac{\partial L}{\partial s^*}\right)
-        \end{aligned}
-        :label: [3]
-
-Substituting :eq:`[3]` in :eq:`[1]`, we get:
+باستبدال المعادلات أعلاه في :eq:`[1]`، نحصل على:
 
     .. math::
         \begin{aligned}
@@ -616,7 +503,7 @@ Substituting :eq:`[3]` in :eq:`[1]`, we get:
                                             &= \frac{\partial L}{\partial s} * \frac{\partial s}{\partial z^*} + \frac{\partial L}{\partial s^*} * \frac{\partial s^*}{\partial z^*}    \\
         \end{aligned}
 
-Using :eq:`[2]`, we get:
+باستخدام :eq:`[2]`، نحصل على:
 
     .. math::
         \begin{aligned}
@@ -625,27 +512,26 @@ Using :eq:`[2]`, we get:
         \end{aligned}
         :label: [4]
 
-This last equation is the important one for writing your own gradients,
-as it decomposes our derivative formula into a simpler one that is easy
-to compute by hand.
+هذه المعادلة الأخيرة هي المهمة لكتابة صيغ المشتقات الخاصة بك،
+حيث تقوم بتفكيك صيغة المشتق لدينا إلى صيغة أبسط يسهل
+حسابها يدويًا.
 
-How can I write my own derivative formula for a complex function?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+كيف يمكنني كتابة صيغة المشتق الخاصة بي لدالة معقدة؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The above boxed equation gives us the general formula for all
-derivatives on complex functions.  However, we still need to
-compute :math:`\frac{\partial s}{\partial z}` and :math:`\frac{\partial s}{\partial z^*}`.
-There are two ways you could do this:
+تعطينا المعادلة أعلاه الصيغة العامة لجميع
+المشتقات للدوال المعقدة. ومع ذلك، ما زلنا بحاجة إلى
+حساب :math:`\frac{\partial s}{\partial z}` و:math:`\frac{\partial s}{\partial z^*}`.
+هناك طريقتان يمكنك القيام بذلك:
+بالتأكيد! هذا النص مترجم إلى اللغة العربية بتنسيق ReStructuredText:
 
-    - The first way is to just use the definition of Wirtinger derivatives directly and calculate :math:`\frac{\partial s}{\partial z}` and :math:`\frac{\partial s}{\partial z^*}` by
-      using :math:`\frac{\partial s}{\partial x}` and :math:`\frac{\partial s}{\partial y}`
-      (which you can compute in the normal way).
-    - The second way is to use the change of variables trick and rewrite :math:`f(z)` as a two variable function :math:`f(z, z^*)`, and compute
-      the conjugate Wirtinger derivatives by treating :math:`z` and :math:`z^*` as independent variables. This is often easier; for example, if the function in question is holomorphic, only :math:`z` will be used (and :math:`\frac{\partial s}{\partial z^*}` will be zero).
+- تتمثل الطريقة الأولى في استخدام تعريف مشتقات ويرتنغر مباشرة وحساب :math:`\frac{\partial s}{\partial z}` و :math:`\frac{\partial s}{\partial z^*}` باستخدام :math:`\frac{\partial s}{\partial x}` و :math:`\frac{\partial s}{\partial y}` (التي يمكن حسابها بالطريقة المعتادة).
 
-Let's consider the function :math:`f(z = x + yj) = c * z = c * (x+yj)` as an example, where :math:`c \in ℝ`.
+- أما الطريقة الثانية فتتمثل في استخدام حيلة تغيير المتغيرات وإعادة كتابة :math:`f(z)` كدالة ذات متغيرين :math:`f(z، z^*)`، وحساب مشتقات ويرتنغر التآلفية من خلال التعامل مع :math:`z` و :math:`z^*` كمتغيرين مستقلين. وهذا غالبا ما يكون أسهل؛ على سبيل المثال، إذا كانت الدالة المعنية قابلة للتفاضل العقدي، فلن يتم استخدام سوى :math:`z` (وسيكون :math:`\frac{\partial s}{\partial z^*}`` صفرا).
 
-Using the first way to compute the Wirtinger derivatives, we have.
+لنأخذ دالة :math:`f(z = x + yj) = c * z = c * (x+yj)` كمثال، حيث :math:`c \in ℝ`.
+
+باستخدام الطريقة الأولى لحساب مشتقات ويرتنغر، نحصل على:
 
 .. math::
     \begin{aligned}
@@ -659,12 +545,12 @@ Using the first way to compute the Wirtinger derivatives, we have.
                                         &= 0                          \\
     \end{aligned}
 
-Using :eq:`[4]`, and `grad\_output = 1.0` (which is the default grad output value used when :func:`backward` is called on a scalar output in PyTorch), we get:
+باستخدام :eq:`[4]`، و `grad_output = 1.0` (وهي قيمة grad_output الافتراضية المستخدمة عند استدعاء :func:`backward` على إخراج قياسي في PyTorch)، نحصل على:
 
     .. math::
         \frac{\partial L}{\partial z^*} = 1 * 0 + 1 * c = c
 
-Using the second way to compute Wirtinger derivatives, we directly get:
+باستخدام الطريقة الثانية لحساب مشتقات ويرتنغر، نحصل مباشرة على:
 
     .. math::
         \begin{aligned}
@@ -674,43 +560,30 @@ Using the second way to compute Wirtinger derivatives, we directly get:
                                          &= 0
         \end{aligned}
 
-And using :eq:`[4]` again, we get :math:`\frac{\partial L}{\partial z^*} = c`. As you can see, the second way involves lesser calculations, and comes
-in more handy for faster calculations.
+وباستخدام :eq:`[4]` مرة أخرى، نحصل على :math:`\frac{\partial L}{\partial z^*} = c`. كما ترى، تتضمن الطريقة الثانية حسابات أقل، وهي أكثر فائدة للعمليات الحسابية الأسرع.
 
-What about cross-domain functions?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ماذا عن الدوال متعددة المجالات؟
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Some functions map from complex inputs to real outputs, or vice versa.
-These functions form a special case of :eq:`[4]`, which we can derive using the
-chain rule:
+تقوم بعض الدوال برسم الخرائط من المدخلات العقدية إلى المخرجات الحقيقية، أو العكس.
+تشكل هذه الدوال حالة خاصة من :eq:`[4]`، والتي يمكن اشتقاقها باستخدام قاعدة السلسلة:
 
-    - For :math:`f: ℂ → ℝ`, we get:
+- بالنسبة لـ :math:`f: ℂ → ℝ`، نحصل على:
 
-        .. math::
-            \frac{\partial L}{\partial z^*} = 2 * grad\_output * \frac{\partial s}{\partial z^{*}}
+    .. math::
+        \frac{\partial L}{\partial z^*} = 2 * grad_output * \frac{\partial s}{\partial z^{*}}
 
-    - For :math:`f: ℝ → ℂ`, we get:
+- بالنسبة لـ :math:`f: ℝ → ℂ`، نحصل على:
 
-        .. math::
-            \frac{\partial L}{\partial z^*} = 2 * \mathrm{Re}(grad\_output^* * \frac{\partial s}{\partial z^{*}})
+    .. math::
+        \frac{\partial L}{\partial z^*} = 2 * \mathrm{Re}(grad_output^* * \frac{\partial s}{\partial z^{*}})
 
 .. _saved-tensors-hooks-doc:
 
-Hooks for saved tensors
------------------------
+خطافات للموترات المحفوظة
+يمكنك التحكم في كيفية :ref: `حزم/فك حزم التنسورات المحفوظة <saved-tensors-doc>` عن طريق تحديد زوج من الخطافين ``pack_hook`` / ``unpack_hook``. يجب أن تأخذ دالة ``pack_hook`` تنسور كحجة الوحيدة لها ولكن يمكنها إرجاع أي كائن بايثون (على سبيل المثال، تنسور آخر، أو زوج، أو حتى سلسلة تحتوي على اسم ملف). يجب أن تأخذ دالة ``unpack_hook`` كحجة الوحيدة لها ناتج ``pack_hook`` ويجب أن ترجع تنسور الذي سيستخدم في تمرير الخلفي. التنسور الذي ترجعه ``unpack_hook`` يحتاج فقط إلى نفس المحتوى مثل التنسور الذي تم تمريره كإدخال إلى ``pack_hook``. على وجه الخصوص، يمكن تجاهل أي بيانات وصفية ذات صلة بـ autograd لأنها ستتم الكتابة فوقها أثناء فك الحزم.
 
-You can control :ref:`how saved tensors are packed / unpacked
-<saved-tensors-doc>` by defining a pair of ``pack_hook`` / ``unpack_hook``
-hooks.  The ``pack_hook`` function should take a tensor as its single argument
-but can return any python object (e.g. another tensor, a tuple, or even a
-string containing a filename). The ``unpack_hook`` function takes as its single
-argument the output of ``pack_hook`` and should return a tensor to be used in
-the backward pass. The tensor returned by ``unpack_hook`` only needs to have
-the same content as the tensor passed as input to ``pack_hook``. In particular,
-any autograd-related metadata can be ignored as they will be overwritten during
-unpacking.
-
-An example of such pair is:
+مثال على مثل هذا الزوج هو:
 
 .. code::
 
@@ -729,33 +602,21 @@ An example of such pair is:
     def unpack_hook(temp_file):
         return torch.load(temp_file.name)
 
-Notice that the ``unpack_hook`` should not delete the temporary file because it
-might be called multiple times: the temporary file should be alive for as long
-as the returned `SelfDeletingTempFile` object is alive.  In the above example,
-we prevent leaking the temporary file by closing it when it is no longer needed
-(on deletion of the `SelfDeletingTempFile` object).
+لاحظ أن ``unpack_hook`` يجب ألا يحذف الملف المؤقت لأنه قد يتم استدعاؤه عدة مرات: يجب أن يظل الملف المؤقت نشطًا طالما أن كائن ``SelfDeletingTempFile`` المرتجع نشطًا. في المثال أعلاه، نمنع تسرب الملف المؤقت عن طريق إغلاقه عندما لم تعد هناك حاجة إليه (عند حذف كائن ``SelfDeletingTempFile``).
 
 .. note::
 
-    We guarantee that ``pack_hook`` will only be called once but ``unpack_hook`` can
-    be called as many times as the backward pass requires it and we expect it to
-    return the same data each time.
+    نضمن أن ``pack_hook`` سيتم استدعاؤه مرة واحدة فقط ولكن يمكن استدعاء ``unpack_hook`` عدة مرات حسب ما يتطلبه تمرير الخلفي، ونتوقع أن يرجع نفس البيانات في كل مرة.
 
 .. warning::
 
-    Performing inplace operations on the input of any of the functions is forbidden
-    as they may lead to unexpected side-effects. PyTorch will throw an error if the
-    input to a pack hook is modified inplace but does not catch the case where the
-    input to an unpack hook is modified inplace.
+    يُمنع إجراء عمليات في المكان على إدخال أي من الدالتين، حيث قد يؤدي ذلك إلى حدوث تأثيرات جانبية غير متوقعة. سيرمي PyTorch خطأً إذا تم تعديل إدخال خطاف الحزم في المكان، ولكنه لا يلتقط الحالة التي يتم فيها تعديل إدخال خطاف فك الحزم في المكان.
 
 
-Registering hooks for a saved tensor
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تسجيل الخطافات لتنسور محفوظ
+^^^^^^^^^^^^^^^^^^^^^^^
 
-You can register a pair of hooks on a saved tensor by calling the
-:meth:`~torch.autograd.SavedTensor.register_hooks` method on a
-:class:`SavedTensor` object. Those objects are exposed as attributes of a
-``grad_fn`` and start with the ``_raw_saved_`` prefix.
+يمكنك تسجيل زوج من الخطافات على تنسور محفوظ عن طريق استدعاء طريقة :meth: `~ torch.autograd.SavedTensor.register_hooks` على كائن :class: `SavedTensor`. يتم عرض هذه الكائنات كسمات ل ``grad_fn`` وتبدأ بالبادئة ``_raw_saved_``.
 
 .. code::
 
@@ -763,32 +624,22 @@ You can register a pair of hooks on a saved tensor by calling the
     y = x.pow(2)
     y.grad_fn._raw_saved_self.register_hooks(pack_hook, unpack_hook)
 
-The ``pack_hook`` method is called as soon as the pair is registered.
-The ``unpack_hook`` method is called each time the saved tensor needs to be
-accessed, either by means of ``y.grad_fn._saved_self`` or during the backward
-pass.
+يتم استدعاء طريقة ``pack_hook`` بمجرد تسجيل الزوج. يتم استدعاء طريقة ``unpack_hook`` كلما كان هناك حاجة إلى الوصول إلى التنسور المحفوظ، إما عن طريق ``y.grad_fn._saved_self`` أو أثناء التمرير الخلفي.
 
 .. warning::
 
-    If you maintain a reference to a :class:`SavedTensor` after the saved
-    tensors have been released (i.e. after backward has been called), calling
-    its :meth:`~torch.autograd.SavedTensor.register_hooks` is forbidden.
-    PyTorch will throw an error most of the time but it may fail
-    to do so in some cases and undefined behavior may arise.
+    إذا كنت تحتفظ بإشارة إلى :class: `SavedTensor` بعد إطلاق التنسورات المحفوظة (أي بعد استدعاء الخلفي)، فإن استدعاء :meth: `~ torch.autograd.SavedTensor.register_hooks` الخاص به محظور. سيرمي PyTorch خطأً في معظم الأحيان ولكنه قد يفشل في القيام بذلك في بعض الحالات وقد ينشأ عنه سلوك غير محدد.
 
-Registering default hooks for saved tensors
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تسجيل الخطافات الافتراضية للتنسورات المحفوظة
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Alternatively, you can use the context-manager
-:class:`~torch.autograd.graph.saved_tensors_hooks` to register a pair of
-hooks which will be applied to *all* saved tensors that are created in
-that context.
+بدلاً من ذلك، يمكنك استخدام مدير السياق :class: `~ torch.autograd.graph.saved_tensors_hooks` لتسجيل زوج من الخطافات التي سيتم تطبيقها على *جميع* التنسورات المحفوظة التي تم إنشاؤها في ذلك السياق.
 
-Example:
+مثال:
 
 .. code::
 
-    # Only save on disk tensors that have size >= 1000
+    # احفظ على القرص فقط التنسورات التي يكون حجمها >= 1000
     SAVE_ON_DISK_THRESHOLD = 1000
 
     def pack_hook(x):
@@ -806,7 +657,7 @@ Example:
     class Model(nn.Module):
         def forward(self, x):
             with torch.autograd.graph.saved_tensors_hooks(pack_hook, unpack_hook):
-              # ... compute output
+              # ... احسب الإخراج
               output = x
             return output
 
@@ -815,21 +666,18 @@ Example:
 
 
 
-The hooks defined with this context manager are thread-local.
-Hence, the following code will not produce the desired effects because the hooks do not go
-through `DataParallel`.
+الخطافات المحددة باستخدام مدير السياق هذا محلية للخيط. وبالتالي، فإن الكود التالي لن ينتج التأثيرات المرجوة لأن الخطافات لا تمر عبر `DataParallel`.
 
 .. code::
 
-      # Example what NOT to do
+      # مثال ما لا يجب فعله
 
       net = nn.DataParallel(model)
       with torch.autograd.graph.saved_tensors_hooks(pack_hook, unpack_hook):
           output = net(input)
 
 
-Note that using those hooks disables all the optimization in place to reduce
-Tensor object creation. For example:
+لاحظ أن استخدام هذه الخطافات يعطل جميع التحسينات في المكان لتقليل إنشاء كائن التنسور. على سبيل المثال:
 
 .. code::
 
@@ -837,111 +685,59 @@ Tensor object creation. For example:
         x = torch.randn(5, requires_grad=True)
         y = x * x
 
-Without the hooks, ``x``, ``y.grad_fn._saved_self`` and
-``y.grad_fn._saved_other`` all refer to the same tensor object.
-With the hooks, PyTorch will pack and unpack `x` into two new tensor objects
-that share the same storage with the original `x` (no copy performed).
+بدون الخطافات، تشير ``x`` و ``y.grad_fn._saved_self`` و ``y.grad_fn._saved_other`` جميعها إلى نفس كائن التنسور. مع الخطافات، سيقوم PyTorch بحزم وفك حزم `x` إلى كائني تنسور جديدين يتشاركان نفس التخزين مع `x` الأصلي (بدون إجراء نسخة).
 
 .. _backward-hooks-execution:
 
-Backward Hooks execution
-------------------------
+تنفيذ الخطافات الخلفية
+-------------------
 
-This section will discuss when different hooks fire or don't fire.
-Then it will discuss the order in which they are fired.
-The hooks that will be covered are: backward hooks registered to Tensor via
-:meth:`torch.Tensor.register_hook`, post-accumulate-grad hooks registered to
-Tensor via :meth:`torch.Tensor.register_post_accumulate_grad_hook`, post-hooks
-registered to Node via :meth:`torch.autograd.graph.Node.register_hook`, and
-pre-hooks registered to Node via :meth:`torch.autograd.graph.Node.register_prehook`.
+سيناقش هذا القسم متى يتم تشغيل الخطافات المختلفة أو عدم تشغيلها. بعد ذلك، سيناقش الترتيب الذي يتم تشغيلها فيه. الخطافات التي سيتم تغطيتها هي: الخطافات الخلفية المسجلة في Tensor عبر :meth: `torch.Tensor.register_hook`، والخطافات بعد تراكم الخلفي المسجلة في Tensor عبر :meth: `torch.Tensor.register_post_accumulate_grad_hook`، والخطافات اللاحقة المسجلة في Node عبر :meth: `torch.autograd.graph.Node.register_hook`، والخطافات السابقة المسجلة في Node عبر :meth: `torch.autograd.graph.Node.register_prehook`.
 
-Whether a particular hook will be fired
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ما إذا كان سيتم تشغيل خطاف معين
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Hooks registered to a Tensor via :meth:`torch.Tensor.register_hook`
-are executed when gradients are being computed for that Tensor. (Note that this does not require
-the Tensor's grad_fn to be executed. For example, if the Tensor is passed
-as part of the ``inputs`` argument to :func:`torch.autograd.grad`,
-the Tensor's grad_fn may not be executed, but the hook register to that Tensor will always be executed.)
+يتم تنفيذ الخطافات المسجلة في Tensor عبر :meth: `torch.Tensor.register_hook` عندما يتم حساب الخرائط لتلك التنسور. (لاحظ أن هذا لا يتطلب تنفيذ grad_fn للتنسور. على سبيل المثال، إذا تم تمرير التنسور كجزء من حجة "الإدخالات" إلى :func: `torch.autograd.grad`، فقد لا يتم تنفيذ grad_fn للتنسور، ولكن سيتم دائمًا تشغيل الخطاف المسجل لهذا التنسور.)
 
-Hooks registered to a Tensor via :meth:`torch.Tensor.register_post_accumulate_grad_hook`
-are executed after the gradients have been accumulated for that Tensor, meaning the
-Tensor's grad field has been set. Whereas hooks registered via :meth:`torch.Tensor.register_hook`
-are run as gradients are being computed, hooks registered via :meth:`torch.Tensor.register_post_accumulate_grad_hook`
-are only triggered once the Tensor's grad field is updated by autograd at the end of
-the backward pass. Thus, post-accumulate-grad hooks can only be registered for leaf
-Tensors. Registering a hook via :meth:`torch.Tensor.register_post_accumulate_grad_hook`
-on a non-leaf Tensor will error, even if you call `backward(retain_graph=True)`.
+يتم تنفيذ الخطافات المسجلة في Tensor عبر :meth: `torch.Tensor.register_post_accumulate_grad_hook` بعد تراكم الخرائط للتنسور، مما يعني أنه تم تحديث حقل "التدرج" للتنسور. في حين يتم تشغيل الخطافات المسجلة عبر :meth: `torch.Tensor.register_hook` أثناء حساب الخرائط، يتم تشغيل الخطافات المسجلة عبر :meth: `torch.Tensor.register_post_accumulate_grad_hook` فقط بعد تحديث حقل "التدرج" للتنسور بواسطة autograd في نهاية التمرير الخلفي. وبالتالي، يمكن تسجيل خطافات ما بعد تراكم الخلفي فقط للتنسورات الورقية. سيؤدي تسجيل خطاف عبر :meth: `torch.Tensor.register_post_accumulate_grad_hook` على تنسور غير ورقي إلى حدوث خطأ، حتى إذا استدعيت `backward (retain_graph = True)`.
 
-Hooks registered to :class:`torch.autograd.graph.Node` using
-:meth:`torch.autograd.graph.Node.register_hook` or
-:meth:`torch.autograd.graph.Node.register_prehook` are only fired if
-the Node it was registered to is executed.
+يتم تشغيل الخطافات المسجلة في :class: `torch.autograd.graph.Node` باستخدام :meth: `torch.autograd.graph.Node.register_hook` أو :meth: `torch.autograd.graph.Node.register_prehook` فقط إذا تم تنفيذ العقدة التي تم تسجيلها.
 
-Whether a particular Node is executed may depend on whether the backward pass was called with
-:func:`torch.autograd.grad` or :func:`torch.autograd.backward`.
-Specifically, you should be aware of these differences when you register a hook on a
-Node corresponding to a Tensor that you are passing to :func:`torch.autograd.grad` or
-:func:`torch.autograd.backward` as part of the ``inputs`` argument.
+قد يعتمد ما إذا كان يتم تنفيذ عقدة معينة على ما إذا كان يتم استدعاء التمرير الخلفي باستخدام :func: `torch.autograd.grad` أو :func: `torch.autograd.backward`. على وجه التحديد، يجب أن تكون على دراية بهذه الاختلافات عند تسجيل خطاف على عقدة مطابقة لتنسور تقوم بتمريره إلى :func: `torch.autograd.grad` أو :func: `torch.autograd.backward` كجزء من حجة "الإدخالات".
 
-If you are using :func:`torch.autograd.backward`, all of the above mentioned hooks will be executed,
-whether or not you specified the ``inputs`` argument. This is because `.backward()` executes all
-Nodes, even if they correspond to a Tensor specified as an input.
-(Note that the execution of this additional Node corresponding to Tensors passed as  ``inputs``
-is usually unnecessary, but done anyway. This behavior is subject to change;
-you should not depend on it.)
+إذا كنت تستخدم :func: `torch.autograd.backward`، فسيتم تشغيل جميع الخطافات المذكورة أعلاه، سواء قمت بتحديد حجة "الإدخالات" أم لا. ويرجع ذلك إلى أن `.backward()` ينفذ جميع العقد، حتى إذا كانت تتوافق مع تنسور محدد كإدخال. (لاحظ أن تنفيذ هذه العقدة الإضافية المقابلة لتنسورات الإدخال غير ضروري عادة، ولكنه يتم على أي حال. هذا السلوك عرضة للتغيير؛ لا يجب أن تعتمد عليه.)
 
-On the other hand, if you are using :func:`torch.autograd.grad`, the backward hooks registered
-to Nodes that correspond to the Tensors passed to ``input`` may not be executed, because
-those Nodes will not be executed unless there is another input that depends on the gradient
-result of this Node.
+من ناحية أخرى، إذا كنت تستخدم :func: `torch.autograd.grad`، فقد لا يتم تشغيل الخطافات الخلفية المسجلة في العقد التي تتوافق مع التنسورات التي يتم تمريرها إلى "الإدخالات"، لأن تلك العقد لن يتم تنفيذها ما لم يكن هناك إدخال آخر يعتمد على نتيجة التدرج لهذه العقدة.
 
-The order in which the different hooks are fired
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ترتيب تشغيل الخطافات المختلفة
+^^^^^^^^^^^^^^^^^^^^^^
 
-The order in which things happen are:
+يحدث الترتيب الذي تحدث فيه الأشياء على النحو التالي:
 
-#. hooks registered to Tensor are executed
-#. pre-hooks registered to Node are executed (if Node is executed).
-#. the ``.grad`` field is updated for Tensors that retain_grad
-#. Node is executed (subject to rules above)
-#. for leaf Tensors that have ``.grad`` accumulated, post-accumulate-grad hooks are executed
-#. post-hooks registered to Node are executed (if Node is executed)
+1. يتم تنفيذ الخطافات المسجلة في Tensor
+2. يتم تنفيذ الخطافات السابقة المسجلة في العقدة (إذا تم تنفيذ العقدة).
+3. يتم تحديث حقل ".grad" للتنسورات التي تحتفظ بـ "التدرج"
+4. يتم تنفيذ العقدة (تخضع للقواعد المذكورة أعلاه)
+5. بالنسبة للتنسورات الورقية التي تم تراكم "التدرج" لها، يتم تنفيذ الخطافات بعد تراكم الخلفي
+6. يتم تنفيذ الخطافات اللاحقة المسجلة في العقدة (إذا تم تنفيذ العقدة)
 
-If multiple hooks of the same type are registered on the same Tensor or Node
-they are executed in the order in which they are registered.
-Hooks that are executed later can observe the modifications to the gradient made by
-earlier hooks.
+إذا تم تسجيل عدة خطافات من نفس النوع على نفس التنسور أو العقدة، فسيتم تنفيذها بالترتيب الذي تم تسجيلها به. يمكن للخطافات التي يتم تنفيذها لاحقًا ملاحظة التعديلات التي أجرتها الخطافات السابقة على التدرج.
 
-Special hooks
+خطافات خاصة
 ^^^^^^^^^^^^^
 
-:func:`torch.autograd.graph.register_multi_grad_hook` is implemented using hooks registered
-to Tensors. Each individual Tensor hook is fired following the Tensor hook ordering
-defined above and the registered multi-grad hook is called when the last Tensor gradient
-is computed.
+يتم تنفيذ :func: `torch.autograd.graph.register_multi_grad_hook` باستخدام الخطافات المسجلة في التنسورات. يتم تشغيل كل خطاف تنسور فردي وفقًا لترتيب خطاف التنسور المحدد أعلاه، ويتم استدعاء الخطاف متعدد الخرائط المسجل عند حساب آخر تدرج للتنسور.
 
-:meth:`torch.nn.modules.module.register_module_full_backward_hook` is implemented using hooks
-registered to Node. As the forward is computed, hooks are registered to grad_fn corresponding
-to the inputs and outputs of the module. Because a module may take multiple inputs and return
-multiple outputs, a dummy custom autograd Function is first applied to the inputs of the module
-before forward and the outputs of the module before the output of forward is returned to ensure
-that those Tensors share a single grad_fn, which we can then attach our hooks to.
+يتم تنفيذ :meth: `torch.nn.modules.module.register_module_full_backward_hook` باستخدام الخطافات المسجلة في العقدة. أثناء الحساب، يتم تسجيل الخطافات للعقدة المقابلة لـ grad_fn للإدخالات والمخرجات للوحدة. نظرًا لأن الوحدة قد تأخذ عدة إدخالات وترجع عدة مخرجات، يتم أولاً تطبيق دالة Autograd مخصصة على إدخالات الوحدة قبل الحساب وعلى مخرجات الوحدة قبل إرجاع إخراج الحساب لضمان مشاركة تلك التنسورات في دالة grad_fn واحدة، والتي يمكننا بعد ذلك إرفاق خطافاتنا بها.
 
-Behavior of Tensor hooks when Tensor is modified in-place
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+سلوك خطافات التنسور عند تعديل التنسور في المكان
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Usually hooks registered to a Tensor receive the gradient of the outputs with respect to that
-Tensor, where the value of the Tensor is taken to be its value at the time backward is computed.
+عادةً ما تتلقى الخطافات المسجلة في تنسور تدرج المخرجات فيما يتعلق بذلك التنسور، حيث يتم أخذ قيمة التنسور لتكون قيمته في الوقت الذي يتم فيه حساب الخلفي.
 
-However, if you register hooks to a Tensor, and then modify that Tensor in-place, hooks
-registered before in-place modification similarly receive gradients of the outputs with
-respect to the Tensor, but the value of the Tensor is taken to be its value before
-in-place modification.
+ومع ذلك، إذا قمت بتسجيل الخطافات في تنسور، ثم قمت بتعديل ذلك التنسور في المكان، فإن الخطافات المسجلة قبل التعديل في المكان تتلقى أيضًا تدرج المخرجات فيما يتعلق بالتنسور، ولكن يتم أخذ قيمة التنسور لتكون قيمته قبل التعديل في المكان.
 
-If you prefer the behavior in the former case,
-you should register them to the Tensor after all in-place modifications to it have been made.
-For example:
+إذا كنت تفضل السلوك في الحالة السابقة، فيجب عليك تسجيلها في التنسور بعد إجراء جميع التعديلات في المكان عليه. على سبيل المثال:
 
 .. code::
 
@@ -950,9 +746,4 @@ For example:
     t.register_hook(fn)
     t.backward()
 
-Furthermore, it can be helpful to know that under the hood,
-when hooks are registered to a Tensor, they actually become permanently bound to the grad_fn
-of that Tensor, so if that Tensor is then modified in-place,
-even though the Tensor now has a new grad_fn, hooks registered before it was
-modified in-place will continue to be associated with the old grad_fn, e.g. they will
-fire when that Tensor's old grad_fn is reached in the graph by the autograd engine.
+علاوة على ذلك، قد يكون من المفيد معرفة أنه تحت الغطاء، عندما يتم تسجيل الخطافات في تنسور، فإنها تصبح مرتبطة بشكل دائم بـ grad_fn لذلك التنسور، لذا إذا تم بعد ذلك تعديل التنسور في المكان، حتى إذا كان لدى التنسور الآن grad_fn جديد، فإن الخطافات المسجلة قبل التعديل في المكان ستظل مرتبطة بـ grad_fn القديم، على سبيل المثال، سيتم تشغيلها عندما تصل autograd engine إلى grad_fn القديم للتنسور.
