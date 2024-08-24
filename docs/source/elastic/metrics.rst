@@ -1,17 +1,16 @@
 .. _metrics-api:
 
-Metrics
+المقاييس
 =========
 
 .. automodule:: torch.distributed.elastic.metrics
 
-
-Metric Handlers
------------------
+معالجات المقاييس
+--------------
 
 .. currentmodule:: torch.distributed.elastic.metrics.api
 
-Below are the metric handlers that come included with torchelastic.
+فيما يلي معالجات المقاييس التي تأتي مضمنة مع torchelastic.
 
 .. autoclass:: MetricHandler
 
@@ -19,10 +18,8 @@ Below are the metric handlers that come included with torchelastic.
 
 .. autoclass:: NullMetricHandler
 
-
-
-Methods
-------------
+الطرق
+--------
 
 .. autofunction:: torch.distributed.elastic.metrics.configure
 
