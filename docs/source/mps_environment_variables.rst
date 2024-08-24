@@ -1,45 +1,45 @@
 .. _mps_environment_variables:
 
-MPS Environment Variables
-==========================
+متغيرات بيئة MPS
+=============
 
-**PyTorch Environment Variables**
+**متغيرات بيئة PyTorch**
 
 .. list-table::
   :header-rows: 1
 
-  * - Variable
-    - Description
+  * - المتغير
+    - الوصف
   * - ``PYTORCH_DEBUG_MPS_ALLOCATOR``
-    - If set to ``1``, set allocator logging level to verbose.
+    - إذا تم تعيينه على ``1``، قم بضبط مستوى تسجيل مخصص الذاكرة إلى مفصل.
   * - ``PYTORCH_MPS_LOG_PROFILE_INFO``
-    - Set log options bitmask to ``MPSProfiler``. See ``LogOptions`` enum in `aten/src/ATen/mps/MPSProfiler.h` for available options.
+    - قم بضبط خيارات السجل bitmask إلى ``MPSProfiler``. راجع enum ``LogOptions`` في `aten/src/ATen/mps/MPSProfiler.h` للاطلاع على الخيارات المتاحة.
   * - ``PYTORCH_MPS_TRACE_SIGNPOSTS``
-    - Set profile and signpost bitmasks to ``MPSProfiler``. See ``ProfileOptions`` and ``SignpostTypes`` enums in `aten/src/ATen/mps/MPSProfiler.h` for available options.
+    - قم بضبط خيارات الملف الشخصي bitmask وsignpost إلى ``MPSProfiler``. راجع enums ``ProfileOptions`` و ``SignpostTypes`` في `aten/src/ATen/mps/MPSProfiler.h` للاطلاع على الخيارات المتاحة.
   * - ``PYTORCH_MPS_HIGH_WATERMARK_RATIO``
-    - High watermark ratio for MPS allocator. By default, it is set to 1.7.
+    - نسبة العلامة المائية العليا لمخصص MPS. افتراضيًا، يتم تعيينه على 1.7.
   * - ``PYTORCH_MPS_LOW_WATERMARK_RATIO``
-    - Low watermark ratio for MPS allocator. By default, it is set to 1.4 if the memory is unified and set to 1.0 if the memory is discrete.
+    - نسبة العلامة المائية الدنيا لمخصص MPS. افتراضيًا، يتم تعيينه على 1.4 إذا كانت الذاكرة موحدة وعلى 1.0 إذا كانت الذاكرة منفصلة.
   * - ``PYTORCH_MPS_FAST_MATH``
-    - If set to ``1``, enable fast math for MPS metal kernels. See section 1.6.3 in https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf for precision implications.
+    - إذا تم تعيينه على ``1``، قم بتمكين العمليات الحسابية السريعة لنواة MPS المعدنية. راجع القسم 1.6.3 في https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf للاطلاع على الآثار المترتبة على الدقة.
   * - ``PYTORCH_MPS_PREFER_METAL``
-    - If set to ``1``, force using metal kernels instead of using MPS Graph APIs. For now this is only used for matmul op.
+    - إذا تم تعيينه على ``1``، قم بإجبار استخدام نوى المعدن بدلاً من استخدام MPS Graph APIs. في الوقت الحالي، يتم استخدام هذا الخيار فقط لعمليات الضرب في المصفوفات.
   * - ``PYTORCH_ENABLE_MPS_FALLBACK``
-    - If set to ``1``, full back operations to CPU when MPS does not support them.
+    - إذا تم تعيينه على ``1``، قم بإرجاع العمليات مرة أخرى إلى وحدة المعالجة المركزية عندما لا تدعمها MPS.
 
 .. note::
 
-    **high watermark ratio** is a hard limit for the total allowed allocations
+    **نسبة العلامة المائية العليا** هي حد أقصى صارم لإجمالي المخصصات المسموح بها
 
-    - `0.0` : disables high watermark limit (may cause system failure if system-wide OOM occurs)
-    - `1.0` : recommended maximum allocation size (i.e., device.recommendedMaxWorkingSetSize)
-    - `>1.0`: allows limits beyond the device.recommendedMaxWorkingSetSize
+    - `0.0` : تعطيل حد العلامة المائية العليا (قد يتسبب في فشل النظام إذا حدث عوز الذاكرة على مستوى النظام)
+    - `1.0` : الحد الأقصى الموصى به لحجم المخصصات (أي device.recommendedMaxWorkingSetSize)
+    - `>1.0`: يسمح بالحدود التي تتجاوز device.recommendedMaxWorkingSetSize
 
-    e.g., value 0.95 means we allocate up to 95% of recommended maximum
-    allocation size; beyond that, the allocations would fail with OOM error.
+    على سبيل المثال، تعني القيمة 0.95 أننا نقوم بتخصيص ما يصل إلى 95% من الحد الأقصى الموصى به
+    حجم المخصصات؛ بعد ذلك، ستفشل التخصيصات بخطأ OOM.
 
-    **low watermark ratio** is a soft limit to attempt limiting memory allocations up to the lower watermark
-    level by garbage collection or committing command buffers more frequently (a.k.a, adaptive commit).
-    Value between 0 to m_high_watermark_ratio (setting 0.0 disables adaptive commit and garbage collection)
-    e.g., value 0.9 means we 'attempt' to limit allocations up to 90% of recommended maximum
-    allocation size.
+    **نسبة العلامة المائية الدنيا** هي حد ناعم لمحاولة الحد من تخصيص الذاكرة إلى مستوى العلامة المائية المنخفضة
+    عن طريق جمع القمامة أو الالتزام بمخازن الأوامر بشكل أكثر تكرارًا (المعروف باسم الالتزام التكيفي).
+    القيمة بين 0 إلى m_high_watermark_ratio (يؤدي تعيين 0.0 إلى تعطيل الالتزام التكيفي وجمع القمامة)
+    على سبيل المثال، تعني القيمة 0.9 أننا "نحاول" الحد من التخصيصات إلى 90% من الحد الأقصى الموصى به
+    حجم المخصصات.
