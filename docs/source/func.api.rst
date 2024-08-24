@@ -1,12 +1,12 @@
-torch.func API Reference
-========================
+مرجع واجهة برمجة التطبيقات لـ torch.func
+================================
 
 .. currentmodule:: torch.func
 
 .. automodule:: torch.func
 
-Function Transforms
--------------------
+تحويلات الدالة
+----------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -22,12 +22,12 @@ Function Transforms
      hessian
      functionalize
 
-Utilities for working with torch.nn.Modules
--------------------------------------------
+مرافق للعمل مع وحدات torch.nn
+-----------------------------
 
-In general, you can transform over a function that calls a ``torch.nn.Module``.
-For example, the following is an example of computing a jacobian of a function
-that takes three values and returns three values:
+بشكل عام، يمكنك إجراء تحويل على دالة تستدعي ``torch.nn.Module``.
+على سبيل المثال، ما يلي هو مثال على حساب جاكوبي لدالة
+تأخذ ثلاث قيم وتعيد ثلاث قيم:
 
 .. code-block:: python
 
@@ -40,15 +40,14 @@ that takes three values and returns three values:
     jacobian = jacrev(f)(x)
     assert jacobian.shape == (3, 3)
 
-However, if you want to do something like compute a jacobian over the parameters
-of the model, then there needs to be a way to construct a function where the
-parameters are the inputs to the function.
-That's what :func:`functional_call` is for:
-it accepts an nn.Module, the transformed ``parameters``, and the inputs to the
-Module's forward pass. It returns the value of running the Module's forward pass
-with the replaced parameters.
+ومع ذلك، إذا كنت تريد القيام بشيء مثل حساب جاكوبي على معلمات
+النموذج، يجب أن تكون هناك طريقة لبناء دالة حيث تكون المعلمات هي المدخلات للدالة.
+هذا ما يفعله :func: `functional_call`:
+فهو يقبل nn.Module، و ``parameters`` المحولة، والمدخلات إلى
+تمرير النموذج إلى الأمام. ويعيد قيمة تشغيل تمرير النموذج إلى الأمام
+مع استبدال المعلمات.
 
-Here's how we would compute the Jacobian over the parameters
+هكذا سنحسب جاكوبي على المعلمات
 
 .. code-block:: python
 
@@ -67,10 +66,9 @@ Here's how we would compute the Jacobian over the parameters
 
     functional_call
     stack_module_state
-    replace_all_batch_norm_modules_
+    replace_all_batch_norm_modules
 
-If you're looking for information on fixing Batch Norm modules, please follow the
-guidance here
+إذا كنت تبحث عن معلومات حول إصلاح وحدات معايرة الدُفعات، يرجى اتباع الإرشادات هنا
 
 .. toctree::
    :maxdepth: 1
