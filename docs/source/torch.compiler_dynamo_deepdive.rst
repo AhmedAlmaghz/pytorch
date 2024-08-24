@@ -1,33 +1,18 @@
 .. _torch.compiler_dynamo_deepdive:
 
-Dynamo Deep-Dive
+نظرة متعمقة على دينامو
 ================
 
-TorchDynamo (or simply Dynamo) is the tracer within ``torch.compile``,
-and it is, more often than not, the one to blame for those insane
-backtraces. However, we cannot blindly blame Dynamo for these errors. In
-order to provide the user with the flexibility it does, Dynamo is given
-the arduous task of understanding any Python program. In particular,
-Dynamo has to implement a good part of the Python programming language
-internally!
+TorchDynamo (أو ببساطة "داينامو") هو المُتتبع داخل "تورتش.كومبايل" (torch.compile)، وغالبًا ما يكون هو المسؤول عن تلك الأخطاء المجنونة. ومع ذلك، لا يمكننا أن نلوم "داينامو" بشكل أعمى على هذه الأخطاء. فمن أجل تزويد المستخدم بالمرونة التي يوفرها، يُوكل إلى "داينامو" المهمة الشاقة المتمثلة في فهم أي برنامج بايثون. وعلى وجه التحديد، يجب على "داينامو" أن ينفذ جزءًا كبيرًا من لغة برمجة بايثون داخليًا!
 
-In this post, we will go over the internal design of Dynamo from the
-ground up. We will discuss the functionality it provides, and how it is
-implemented. By the end of this post, you will have a better
-understanding of what went wrong when you ``torch.compiled`` a PyTorch
-program and the compilation errored out, or succeeded but the speed-up
-was not what you expected.
+في هذا المنشور، سنستعرض التصميم الداخلي لـ "داينامو" من البداية. وسنناقش الوظائف التي يوفرها، وكيفية تنفيذها. وبنهاية هذا المنشور، ستكون لديك فكرة أفضل عن الخطأ الذي حدث عند استخدام "تورتش.كومبايل" (torch.compiled) لبرنامج بايتورتش (PyTorch) وسبب فشل عملية التجميع، أو نجاحها ولكن دون تحقيق السرعة المتوقعة.
 
-A Gentle Introduction to Dynamo
--------------------------------
+مقدمة سهلة لداينامو
+---------------
 
-Before getting our hands dirty with all the implementation details,
-let’s start by discussing what it is that Dynamo does.
+قبل أن نغوص في تفاصيل التنفيذ، دعونا نبدأ بمناقشة ما يفعله "داينامو".
 
-Dynamo is a tracer. This means, given and function and inputs to it, it
-executes the function and records a linear sequence of instructions
-(without control flow) into a graph. For example, consider the following
-program:
+"داينامو" هو مُتتبع. وهذا يعني أنه، بالنظر إلى دالة وإدخالاتها، ينفذ الدالة ويسجل تسلسلًا خطيًا من التعليمات (بدون تدفق التحكم) في رسم بياني. على سبيل المثال، لنأخذ البرنامج التالي:
 
 .. code:: python
 
@@ -42,13 +27,13 @@ program:
    y = torch.randn(200)
    mse(x, y)
 
-If we save this program into the file ``example.py`` and we run
+إذا حفظنا هذا البرنامج في ملف باسم "مثال.باي" (example.py) وقمنا بتشغيله باستخدام
 
 .. code:: bash
 
    TORCH_LOGS=graph_code python example.py
 
-we see the output that Dynamo traced
+فسنرى الإخراج الذي قام "داينامو" بتتبعه
 
 .. code:: python
 
@@ -60,19 +45,11 @@ we see the output that Dynamo traced
        sum_1 = z.sum()
        return (sum_1,)
 
-We call this a **graph (or trace) of the function for the given
-inputs**. This is represented via an `FX
-graph <https://pytorch.org/docs/main/fx.html>`__. We will simply think
-of an FX graph as a container that stores a list of function calls.
+نطلق على هذا اسم **رسم بياني (أو تتبُّع) للدالة بالنسبة للإدخالات المُعطاة**. وهذا يُمثَّل عبر رسم بياني "إف إكس" (FX graph). وسنفكر ببساطة في رسم بياني "إف إكس" على أنه حاوية تخزن قائمة من استدعاءات الدوال.
 
-The first thing we should notice is that the graph is a linear sequence
-of PyTorch operations. [1]_ Dynamo records all the PyTorch operations
-and stores them sequentially. For example, it split ``z = (x - y) ** 2``
-into its two constituting operations, ``sub = l_x_ - l_y_`` and
-``z = sub ** 2``.
+أول شيء يجب ملاحظته هو أن الرسم البياني عبارة عن تسلسل خطي من عمليات بايتورتش. [1]_ يقوم "داينامو" بتسجيل جميع عمليات بايتورتش وتخزينها بشكل تسلسلي. على سبيل المثال، فإنه يُجزئ "z = (x - y) ** 2" إلى عمليتيه المكونتين، "sub = l_x_ - l_y_" و "z = sub ** 2".
 
-When we say that the trace is linear, we mean that there is no branching
-or any control flow. To see this, consider
+عندما نقول إن التتبع خطي، فإننا نعني أنه لا يوجد تفرع أو أي تدفق للتحكم. ولرؤية ذلك، لنأخذ المثال التالي:
 
 .. code:: python
 
@@ -89,7 +66,7 @@ or any control flow. To see this, consider
    x = torch.randn(200)
    fn(x, 2)
 
-which, when executed with ``TORCH_LOGS=graph_code``, returns
+الذي، عند تنفيذه باستخدام "TORCH_LOGS=graph_code"، يعطي
 
 .. code:: python
 
@@ -100,32 +77,15 @@ which, when executed with ``TORCH_LOGS=graph_code``, returns
        mul = 3 * y
        return (mul,)
 
-We see that Dynamo completely removed the ``if`` statement from the
-trace and just recorded the operations that were executed with the
-inputs.
+نلاحظ أن "داينامو" قام بإزالة عبارة "if" تمامًا من التتبع وسجَّل فقط العمليات التي تم تنفيذها مع الإدخالات.
 
-As such, it should be clear that **the trace of a function depends on
-the inputs**. In particular, this means that the trace is not generated
-when we write ``@torch.compile``, but when we execute the function
-``fn(x, 2)`` with the actual arguments.
+وبالتالي، ينبغي أن يكون من الواضح أن **تتبع الدالة يعتمد على الإدخالات**. وهذا يعني، على وجه التحديد، أن التتبع لا يتم إنشاؤه عند كتابة "@torch.compile"، ولكن عندما يتم تنفيذ الدالة "fn(x, 2)" مع وسائط فعلية.
 
-The other interesting thing to note here is that Dynamo removed the
-second argument to the function. Instead, it treated it as a constant
-and recorded the result of the operation ``n + 1`` in the graph. This is
-another feature of Dynamo: Dynamo will treat as constant any non-tensor
-value… other than ints. Let’s see now how are ints special.
+الشيء المثير للاهتمام الآخر الذي يجب ملاحظته هنا هو أن "داينامو" قام بإزالة وسيط الدالة الثاني. وبدلاً من ذلك، عومل كقيمة ثابتة وسُجلت نتيجة العملية "n + 1" في الرسم البياني. هذه هي ميزة أخرى لـ "داينامو": سيعامل "داينامو" أي قيمة غير تنسيقية كقيمة ثابتة... باستثناء الأعداد الصحيحة. دعونا نرى الآن كيف تُعامل الأعداد الصحيحة بشكل خاص.
 
-The last defining property of Dynamo is that it knows how to handle
-dynamic shapes. Symbolic shapes refer to Dynamo’s ability of tracing
-shapes, and more generally, integers, rather than leaving them as
-constants. This allows for avoiding recompilations and deploying generic
-models that work for any size in production. The main examples of places
-where dynamic shapes appear are the batch size, where we might train a
-model with a fixed batch size but then perform inference for an
-arbitrary batch size, or the variable sequence length that one
-encounters when processing text or audio.
+الخاصية المميزة الأخيرة لـ "داينامو" هي أنه يعرف كيفية التعامل مع الأشكال الديناميكية. تشير الأشكال الرمزية إلى قدرة "داينامو" على تتبع الأشكال، وبشكل أعم، الأعداد الصحيحة، بدلاً من تركها كقيم ثابتة. يسمح ذلك بتجنب إعادة التجميع ونشر نماذج عامة تعمل لأي حجم في الإنتاج. والأمثلة الرئيسية للأماكن التي تظهر فيها الأشكال الديناميكية هي حجم الدفعة، حيث قد نقوم بتدريب نموذج بحجم دفعة ثابت ولكن بعد ذلك نؤدي الاستدلال لحجم دفعة عشوائي، أو طول التسلسل المتغير الذي يصادفه المرء عند معالجة النص أو الصوت.
 
-We can see this by executing a few more times the example above
+يمكننا أن نرى هذا عن طريق تنفيذ المثال أعلاه عدة مرات
 
 .. code:: python
 
@@ -144,7 +104,7 @@ We can see this by executing a few more times the example above
    fn(x, 3)
    fn(x, -2)
 
-In this case, ``TORCH_LOGS=graph_code`` generates two more graphs
+في هذه الحالة، يقوم "TORCH_LOGS=graph_code" بتوليد رسمين بيانيين آخرين
 
 .. code:: python
 
@@ -169,149 +129,65 @@ In this case, ``TORCH_LOGS=graph_code`` generates two more graphs
        truediv = y / l_n_
        return (truediv,)
 
-Dynamo detected that one integer changed its value after the first call
-and started tracing it. We see that these graphs are generic, and trace
-the variable ``n`` symbolically via an object of type ``SymInt``.
+اكتشف "داينامو" أن عددًا صحيحًا واحدًا قد تغيرت قيمته بعد الاستدعاء الأول وبدأ في تتبعه. نلاحظ أن هذه الرسوم البيانية عامة، وتتبع المتغير "n" بشكل رمزي عبر كائن من النوع "SymInt".
 
-If after these calls we call ``fn(x, 4)``, Dynamo would not recompile,
-but rather reuse the graph that was already traced.
+إذا قمنا، بعد هذه الاستدعاءات، باستدعاء "fn(x, 4)"، فلن يقوم "داينامو" بإعادة التجميع، بل سيُعيد استخدام الرسم البياني الذي تم تتبعه بالفعل.
 
-To summarize: 1. Dynamo is a Python tracer 2. Given some inputs, it
-returns an FX graph with the PyTorch functions that were executed 3. It
-can also trace integers if it detects that they changed between calls 4.
-It specializes any other value that is not a tensor or a scalar
+ملخص: 1. "داينامو" هو مُتتبع بايثون 2. بالنظر إلى بعض الإدخالات، فإنه يعيد رسمًا بيانيًا "إف إكس" (FX graph) مع دالات بايتورتش التي تم تنفيذها 3. يمكنه أيضًا تتبع الأعداد الصحيحة إذا اكتشف أنها تغيرت بين الاستدعاءات 4. يقوم بتخصيص أي قيمة أخرى ليست تنسورية أو عددًا صحيحًا
 
-Of course, Dynamo does many more things, like figuring out when it needs
-to retrace, rewriting the bytecode of the function, implementing graph
-breaks… To keep the introduction short, we will incrementally discuss
-all these in the sequel.
+بالطبع، يقوم "داينامو" بالعديد من المهام الأخرى، مثل معرفة متى يحتاج إلى إعادة التتبع، وإعادة كتابة بايت كود الدالة، وتنفيذ فواصل الرسم البياني... ولإبقاء المقدمة مختصرة، سنناقش جميع هذه الأمور بشكل متزايد في ما يلي.
 
-PEP 523: Adding a frame evaluation API to CPython
+PEP 523: إضافة واجهة برمجة تطبيقات لتقييم الإطار إلى CPython
 -------------------------------------------------
 
-Imagine now that we are given the task to implement Dynamo. Where would
-we even start? Rather conveniently for us, `PEP
-523 <https://peps.python.org/pep-0523/>`__ was released with Python 3.6.
-This PEP `was
-designed <https://peps.python.org/pep-0523/#a-jit-for-cpython>`__ to
-allow third parties to create JIT compilers for Python. Let’s see how.
+تخيل الآن أننا كُلفنا بمهمة تنفيذ "داينامو". من أين نبدأ؟ من الملائم لنا أن `PEP 523 <https://peps.python.org/pep-0523/>`__ تم إصداره مع بايثون 3.6. تم تصميم هذا الـ PEP `لتمكين <https://peps.python.org/pep-0523/#a-jit-for-cpython>`__ الأطراف الثالثة من إنشاء مجمعات JIT لـ بايثون. دعونا نرى كيف.
 
-**A note on CPython**: CPython is internally implemented as a `stack
-machine <https://en.wikipedia.org/wiki/Stack_machine>`__. A Python
-program is compiled into
-`bytecodes <https://en.wikipedia.org/wiki/Bytecode>`__ that then are
-executed by this interpreter. To learn more about these bytecodes, see
-the `dis module <https://docs.python.org/3/library/dis.html>`__ from the
-standard library. See also `the developer
-docs <https://devguide.python.org/internals/interpreter/>`__ for an
-introduction to CPython’s interpreter. We will assume that the reader is
-familiar with the notion of a stack machine.
+**ملاحظة حول CPython**: يتم تنفيذ CPython داخليًا كـ `آلة مكدس <https://en.wikipedia.org/wiki/Stack_machine>`__. يتم تجميع برنامج بايثون إلى `بايت كود <https://en.wikipedia.org/wiki/Bytecode>`__ يتم تنفيذه بعد ذلك بواسطة هذا المفسر. لمعرفة المزيد عن بايت كود، راجع `وحدة dis <https://docs.python.org/3/library/dis.html>`__ من المكتبة القياسية. راجع أيضًا `وثائق المطورين <https://devguide.python.org/internals/interpreter/>`__ للتعرف على مفسر CPython. سنفترض أن القارئ مُلم بمفهوم آلة المكدس.
 
-PEP 523 exposes an API where a user can add a custom per-function
-interpreter. Then, CPython will use this interpreter rather than its own
-to execute the function. In order to be able to execute the function, on
-entry, CPython provides the custom interpreter with things like - The
-bytecode of the function - The value of the arguments of the function
-(i.e., the local variables) and their names - The value of the global
-variables and their names - The builtin functions like ``abs`` or
-``print``
+يعرض PEP 523 واجهة برمجة تطبيقات حيث يمكن للمستخدم إضافة مفسر مخصص لكل دالة. بعد ذلك، سيستخدم CPython هذا المفسر بدلاً من مفسره الخاص لتنفيذ الدالة. حتى يتمكن من تنفيذ الدالة، يقوم CPython، عند الدخول، بتزويد المفسر المخصص الخاص بالمستخدم بأشياء مثل - بايت كود الدالة - قيمة وسائط الدالة (أي المتغيرات المحلية) وأسمائها - قيمة المتغيرات العالمية وأسمائها - الدوال المدمجة مثل "abs" أو "print"
 
-You can see all the fields
-`here <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L50-L59>`__. [2]_
+يمكنك الاطلاع على جميع الحقول `هنا <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L50-L59>`__. [2]_
 
-In summary, CPython provides the user’s interpreter with all the
-information necessary to execute the function. [3]_
+باختصار، يوفر CPython لمفسر المستخدم جميع المعلومات اللازمة لتنفيذ الدالة. [3]_
 
-With this API, we can implement a tracer by implementing an interpreter
-that runs the code and records in a graph all the PyTorch operations
-that occur during this execution. This is exactly what Dynamo does.
+مع واجهة برمجة التطبيقات هذه، يمكننا تنفيذ مُتتبع عن طريق تنفيذ مفسر يسجل جميع عمليات بايتورتش التي تحدث أثناء التنفيذ في رسم بياني. وهذا بالضبط ما يفعله "داينامو".
 
-Dynamo uses this CPython API to parse all these objects and packs them
-into `a Python
-structure <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L93-L108>`__.
-After it has done so… it goes back from C to python. Other than for this
-piece of code that communicates with CPython, Dynamo is fully
-implemented in Python.
+يستخدم "داينامو" واجهة برمجة تطبيقات CPython هذه لتفسير جميع هذه الكائنات وتعبئتها في `هيكل بايثون <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L93-L108>`__. وبعد أن يفعل ذلك... فإنه يعود من C إلى بايثون. وباستثناء شفرة البرنامج هذه التي تتواصل مع CPython، يتم تنفيذ "داينامو" بالكامل في بايثون.
 
-It should be clear that it is the decorator ``@torch.compile``\ ’s job
-to install the necessary scaffolding that will pass the bytecode, the
-args, global variables and so on to Dynamo when the function is called.
-Again, ``@torch.compile`` does not actually compile anything.
+ينبغي أن يكون من الواضح أن وظيفة مُزيِّن الدالة "@torch.compile" هي تثبيت السقالات اللازمة التي ستنقل بايت كود الدالة والوسائط والمتغيرات العالمية، وما إلى ذلك، إلى "داينامو" عندما يتم استدعاء الدالة. مرة أخرى، لا يقوم "@torch.compile" بتجميع أي شيء بالفعل.
 
-Implementing CPython in Python
-------------------------------
+تنفيذ CPython في بايثون
+نعود الآن إلى عالم بايثون. لدينا كود بايتكود لوظيفة ما، وجميع السياق اللازم لتنفيذها. على وجه التحديد، وصلنا إلى:
 
-So, we are back in the Python world. We have the bytecode of a function,
-and all the context necessary to execute it. In particular, we have
-landed at
 `_convert_frame_assert <https://github.com/pytorch/pytorch/blob/b6df8414601e1e086e830ca9e919e7fdc8874e71/torch/_dynamo/convert_frame.py#L272-L274>`__.
-This is the function that the decorator ``torch.compile`` returns! We
-get to this function from
+
+هذه هي الوظيفة التي يعيدها الديكور "torch.compile"! نصل إلى هذه الوظيفة من:
+
 `_dynamo.optimize <https://github.com/pytorch/pytorch/blob/b6df8414601e1e086e830ca9e919e7fdc8874e71/torch/_dynamo/eval_frame.py#L715-L727>`__.
-The decorator ``torch.compile`` is just a nice API around
-``_dynamo.optimize``.
 
-Before getting into implementing a Python interpreter, we want to define
-an `IR <https://en.wikipedia.org/wiki/Intermediate_representation>`__.
-In particular, we want to wrap all the local and global variables in our
-own internal classes. This allows us to better track these objects and
-group together objects that can be treated in the same way to the eyes
-of Dynamo.
+الديكور "torch.compile" هو مجرد واجهة برمجة تطبيقات لطيفة حول "_dynamo.optimize".
 
-The parent class of the internal class structure is ``VariableTracker``
-and represents the different objects that Dynamo understands. For
-example, ``ListVariable``, represents a ``list`` object, and keeps
-internally a `list of VariableTrackers <https://github.com/pytorch/pytorch/blob/e38a3a6079a3861b4bc9f256120ec661f34e726d/torch/_dynamo/variables/lists.py#L48-L56>`__.
-Another example of ``VariableTracker`` is
-`ConstantVariable <https://github.com/pytorch/pytorch/blob/83c0763dda1f93c6cf552ba88260a0dc7a3ecb70/torch/_dynamo/variables/constant.py#L30>`__.
-ConstantVariable wraps all the `objects considered constant by
-Dynamo <https://github.com/pytorch/pytorch/blob/83c0763dda1f93c6cf552ba88260a0dc7a3ecb70/torch/_dynamo/variables/constant.py#L98-L107>`__.
-We also have special subclasses for objects that require special
-attention, like
-`TensorVariable <https://github.com/pytorch/pytorch/blob/83c0763dda1f93c6cf552ba88260a0dc7a3ecb70/torch/_dynamo/variables/tensor.py#L68-L69>`__.
-All these internal classes are defined in the
-`torch/_dynamo/variables <https://github.com/pytorch/pytorch/tree/83c0763dda1f93c6cf552ba88260a0dc7a3ecb70/torch/_dynamo/variables>`__
-folder.
+قبل الدخول في تنفيذ مفسر بايثون، نريد أن نحدد IR (تمثيل وسيط). على وجه التحديد، نريد لف جميع المتغيرات المحلية والعالمية في فئاتنا الداخلية الخاصة. يسمح لنا هذا بتتبع هذه الكائنات بشكل أفضل وتجميع الكائنات التي يمكن معاملتها بنفس الطريقة في نظر دينامو.
 
-Python objects are wrapped into their corresponding ``VariableTracker``
-class in
-`VariableBuilder._wrap <https://github.com/pytorch/pytorch/blob/83c0763dda1f93c6cf552ba88260a0dc7a3ecb70/torch/_dynamo/variables/builder.py#L365>`__.
-This function is just a very long chain of ``elif``\ s that tries to
-recursively pattern-match the Python inputs into the appropriate type of
-``VariableTracker``.
+الفئة الأم لهيكل الفئة الداخلية هي "VariableTracker" وتمثل الكائنات المختلفة التي يفهمها دينامو. على سبيل المثال، يمثل "ListVariable" كائن "قائمة"، ويحتفظ داخليًا بـ "قائمة من VariableTrackers". مثال آخر على "VariableTracker" هو "ConstantVariable". يلف ConstantVariable جميع "الكائنات التي تعتبر ثابتة بواسطة دينامو".
 
-**Debugging tip**. When we get unexpected results from dynamo, it is
-sometimes caused by the builder. If the logic of the builder is wrong,
-sometimes Dynamo may wrap a variable in the incorrect
-``VariableTracker`` type, and this may cause issues later on. It is
-rather useful to have a look at the ``VariableTracker`` types that
-appear in the errors, and the ``VariableTracker`` method that throws the
-exception when you encounter a Dynamo error. In particular, sometimes we
-find that an object is tracked as a ``UserDefinedObjectVariable`` (this
-is Dynamo’s catch-all class), when it should have been tracked as
-something more specific. In these cases, the ``SourceBuilder.__call__``
-logic is often to blame.
+لدينا أيضًا فئات فرعية خاصة للكائنات التي تتطلب اهتمامًا خاصًا، مثل "TensorVariable". يتم تحديد جميع هذه الفئات الداخلية في المجلد "torch/_dynamo/variables".
 
-**Debugging tip**. When running a program with ``TORCH_LOGS=dynamo``,
-one of the artifacts that are printed out is lines of the form
+يتم لف كائنات بايثون في فئة "VariableTracker" المقابلة لها في "VariableBuilder._wrap". هذه الوظيفة هي مجرد سلسلة طويلة جدًا من "elif" التي تحاول مطابقة أنماط الإدخالات بايثون بشكل متكرر في نوع "VariableTracker" المناسب.
+
+**نصيحة للتصحيح**. عندما نحصل على نتائج غير متوقعة من دينامو، يكون ذلك في بعض الأحيان بسبب الباني. إذا كانت منطق الباني خاطئة، فقد يقوم دينامو بلف متغير في النوع غير الصحيح من "VariableTracker"، وقد يتسبب ذلك في حدوث مشكلات لاحقًا. من المفيد جدًا إلقاء نظرة على أنواع "VariableTracker" التي تظهر في الأخطاء، وطريقة "VariableTracker" التي تُلقي الاستثناء عند مواجهة خطأ دينامو. على وجه التحديد، نجد في بعض الأحيان أن الكائن يتم تتبعه على أنه "UserDefinedObjectVariable" (هذه هي فئة دينامو العامة)، عندما كان يجب تتبعه كشيء أكثر تحديدًا. في هذه الحالات، يكون منطق "SourceBuilder.__call__" هو غالبًا المذنب.
+
+**نصيحة للتصحيح**. عند تشغيل برنامج باستخدام "TORCH_LOGS=dynamo"، تتم طباعة أحد الآثار التي تتم طباعتها على شكل:
 
 ::
 
    TRACE LOAD_GLOBAL y [TorchInGraphFunctionVariable(<built-in method any>), TensorVariable()]
 
-This is the bytecode for the original program and the state of the stack
-at that point. This is very useful to find where an object was not
-traced into the right ``VariableTracker``.
+هذا هو كود البايتكود للبرنامج الأصلي وحالة المكدس في تلك النقطة. هذا مفيد جدًا لمعرفة المكان الذي لم يتم فيه تتبع كائن إلى النوع الصحيح من "VariableTracker".
 
-Ok, so we have an IR for our tracer, now we *just* need to reimplement
-CPython’s stack machine. This is implemented by
-`InstructorTranslatorBase <https://github.com/pytorch/pytorch/blob/69f112d5867f785a3a090a0c6d6644ae047033ac/torch/_dynamo/symbolic_convert.py#L576-L594>`__
-in
-`symbolic_convert.py <https://github.com/pytorch/pytorch/blob/69f112d5867f785a3a090a0c6d6644ae047033ac/torch/_dynamo/symbolic_convert.py>`__.
+حسنًا، لذا لدينا IR لمتتبعنا، والآن نحتاج فقط إلى إعادة تنفيذ آلة المكدس CPython. يتم تنفيذه بواسطة "InstructionTranslatorBase" في "symbolic_convert.py".
 
-``InstructionTranslatorBase`` has about 200 methods, implementing almost
-all of Python bytecodes. As an example, we can see the implementation of
-``BUILD_LIST``
+يحتوي "InstructionTranslatorBase" على حوالي 200 طريقة، تنفذ جميع بايتكودات بايثون تقريبًا. على سبيل المثال، يمكننا أن نرى تنفيذ "BUILD_LIST":
 
 .. code:: python
 
@@ -319,67 +195,31 @@ all of Python bytecodes. As an example, we can see the implementation of
        items = self.popn(inst.argval)
        self.push(ListVariable(items, mutable_local=MutableLocal()))
 
-This is the bytecode generated by constructions like ``l = [2, 3, 4]``.
-In this case, since there are three elements, the generated bytecode is
-``BUILD_LIST 3``. This means that we pop the top ``3`` elements of the
-stack and push a new list object to the top of the stack formed by these
-three elements.
+هذا هو كود البايتكود الذي تم إنشاؤه بواسطة إنشاءات مثل "l = [2، 3، 4]". في هذه الحالة، نظرًا لوجود ثلاثة عناصر، يكون كود البايتكود الذي تم إنشاؤه هو "BUILD_LIST 3". وهذا يعني أننا نخرج العناصر الثلاثة الأولى من المكدس ونضيف كائن قائمة جديدًا إلى أعلى المكدس والذي يتكون من هذه العناصر الثلاثة.
 
-Generating the Output Graph
----------------------------
+إنشاء الرسم البياني للناتج
+-------------------
 
-With a way to symbolically execute Python code, we are set to extract
-the PyTorch operations that happen during the symbolic execution of a
-program given some inputs. This is implemented in Dynamo via the
-`OutputGraph <https://github.com/pytorch/pytorch/blob/69f112d5867f785a3a090a0c6d6644ae047033ac/torch/_dynamo/output_graph.py#L221-L230>`__
-object. The ``OutputGraph`` object is `bound to an
-`InstructionTranslator object <https://github.com/pytorch/pytorch/blob/69f112d5867f785a3a090a0c6d6644ae047033ac/torch/_dynamo/symbolic_convert.py#L2060-L2071>`__
-and it tracks all the data necessary to create the FX graph which will
-be returned by Dynamo.
+مع وجود طريقة لتنفيذ رمز بايثون بشكل رمزي، يمكننا استخراج عمليات PyTorch التي تحدث أثناء التنفيذ الرمزي لبرنامج ما نظرًا لبعض الإدخالات. يتم تنفيذه في دينامو عبر كائن "OutputGraph". يتم ربط كائن "OutputGraph" بـ "InstructionTranslator object" ويقوم بتتبع جميع البيانات اللازمة لإنشاء رسم FX البياني الذي سيتم إرجاعه بواسطة دينامو.
 
-All the inputs and intermediary elements of the FX graph are
-``fx.Node``\ s. In Dynamo, ``fx.Node``\ s are wrapped in
-``fx.Proxy``\ s. ``fx.Proxy``\ s are used to build the FX graph.
-In particular, they record every PyTorch operation performed on them
-into the graph. You can can create a new operation to be added to
-the graph by calling `create_proxy <https://github.com/pytorch/pytorch/blob/fb80f05ee2e1cba17892980701bfd5dbce58349f/torch/_dynamo/output_graph.py#L430-L431>`__.
-Then, we can add it to the graph through the function
-`wrap_fx_proxy <https://github.com/pytorch/pytorch/blob/fb80f05ee2e1cba17892980701bfd5dbce58349f/torch/_dynamo/variables/builder.py#L1311>`__.
+جميع المدخلات والعناصر الوسيطة لرسم FX البياني هي "fx.Node"s. في دينامو، يتم لف "fx.Node"s في "fx.Proxy"s. يتم استخدام "fx.Proxy"s لبناء رسم FX البياني. على وجه التحديد، فإنها تسجل كل عملية PyTorch التي يتم إجراؤها عليها في الرسم البياني. يمكنك إنشاء عملية جديدة لإضافتها إلى الرسم البياني عن طريق استدعاء "create_proxy". بعد ذلك، يمكننا إضافته إلى الرسم البياني من خلال وظيفة "wrap_fx_proxy".
 
-A graph stores operations on tensors… and operations on symbolic
-integers. We will discuss symbolic integers later on, but first we will
-discuss how Dynamo addresses a rather important correctness issue.
+يحتفظ الرسم البياني بالعمليات على المصفوفات... والعمليات على الأعداد الصحيحة الرمزية. سنناقش الأعداد الصحيحة الرمزية لاحقًا، ولكننا سنناقش أولاً كيف يعالج دينامو مشكلة صحة مهمة إلى حد ما.
 
 .. _making-dynamo-sound-guards:
 
-Making Dynamo Sound: Guards
----------------------------
+جعل دينامو سليمة: الحرس
+------------------
 
-At this point, we have a way to trace programs completely disregarding control flow.
-And for that, we have reimplemented all of CPython… If this sounds like a bit of an
-overkill, that is because it is.
-`torch.jit.trace <https://pytorch.org/docs/main/generated/torch.jit.trace.html>`__
-already implements this without all this machinery, so what gives?
+في هذه المرحلة، لدينا طريقة لتتبع البرامج التي تتجاهل تدفق التحكم تمامًا. وللقيام بذلك، قمنا بإعادة تنفيذ جميع CPython... إذا كان هذا يبدو مبالغًا فيه بعض الشيء، فهو كذلك. "torch.jit.trace" ينفذ هذا بالفعل دون كل هذه الآلات، إذن ما الذي يعطيه؟
 
-The issue with ``torch.jit.trace``, as it is warned in its docs, is that
-it just works if the traced program is not data dependent. In other
-words, it will just work if the program itself is linear. This means
-writing our program without using if-elses, for-while loops, exceptions.
-Even more, none of the libraries that we use can use any control flow!
-All in all, not using control flow in a language as dynamic as Python
-is, in fact, a huge constraint.
+المشكلة مع "torch.jit.trace"، كما هو محذر في وثائقه، هي أنه يعمل فقط إذا لم يكن البرنامج المتبع يعتمد على البيانات. وبعبارة أخرى، سيعمل فقط إذا كان البرنامج نفسه خطيًا. وهذا يعني كتابة برنامجنا دون استخدام if-elses، for-while loops، exceptions. علاوة على ذلك، لا يمكن لأي من المكتبات التي نستخدمها استخدام أي تدفق تحكم! في النهاية، فإن عدم استخدام تدفق التحكم في لغة ديناميكية مثل بايثون هو في الواقع قيد كبير.
 
-JAX solves this problem by always retracing and caching the graph after
-retracing. Dynamo, on the other hand, uses guards to avoid retracing the
-whole program every time.
+يحل JAX هذه المشكلة عن طريق إعادة التتبع دائمًا وتخزين الرسم البياني في ذاكرة التخزين المؤقت بعد إعادة التتبع. من ناحية أخرى، يستخدم دينامو الحرس لتجنب إعادة تتبع البرنامج بأكمله في كل مرة.
 
-A **guard** is an assumption (a boolean expression on an input) made in
-order to specialize a frame for one set of example inputs. Reusing the
-graph is only valid if these assumptions hold on the new inputs.
+الحرس هو افتراض (تعبير منطقي على إدخال) يتم إجراؤه من أجل تخصيص إطار لمجموعة من إدخالات المثال. إعادة استخدام الرسم البياني صالحة فقط إذا كانت هذه الافتراضات صحيحة بالنسبة للإدخالات الجديدة.
 
-For example, any constant input to a function, like a string, installs a
-guard stating that that input should be of type ``str`` and equal to the
-string we passed. Running
+على سبيل المثال، يقوم أي إدخال ثابت إلى وظيفة، مثل سلسلة، بتثبيت حارس ينص على أنه يجب أن يكون نوع الإدخال "str" ويساوي السلسلة التي مررناها. تشغيل:
 
 .. code:: python
 
@@ -391,17 +231,14 @@ string we passed. Running
 
    fn(torch.arange(10), "Hello")
 
-with ``TORCH_LOGS=guards`` prints (among other guards)
+مع "TORCH_LOGS=guards" يطبع (من بين حراس آخرين):
 
 .. code:: python
 
    ___check_type_id(L['b'], 94334122025024)
    L['b'] == 'Hello'
 
-This reads as “the local variable ``b`` should have a specific type
-(``str`` in this case, represented by the constant ``9433...``) and
-its value should be ``'Hello'``”. If we then execute the function
-again passing a different argument
+هذا يعني "ينبغي أن يكون للمتغير المحلي b نوع محدد (str في هذه الحالة، ممثلة بالثابت 9433...) وقيمته يجب أن تكون "Hello". إذا قمنا بعد ذلك بتنفيذ الوظيفة مرة أخرى بتمرير حجة مختلفة:
 
 .. code:: python
 
@@ -414,7 +251,7 @@ again passing a different argument
    fn(torch.arange(10), "Hello")
    fn(torch.arange(10), "Hi")
 
-we can see the guard that failed by running ``TORCH_LOGS=recompiles``
+يمكننا أن نرى الحارس الذي فشل عن طريق تشغيل "TORCH_LOGS=recompiles":
 
 .. code:: python
 
@@ -422,18 +259,9 @@ we can see the guard that failed by running ``TORCH_LOGS=recompiles``
    triggered by the following guard failure(s):
         - L['b'] == 'Hello'
 
-Guards are accumulated while `the inputs to the function are wrapped in
-the
-builder <https://github.com/pytorch/pytorch/blob/69f112d5867f785a3a090a0c6d6644ae047033ac/torch/_dynamo/variables/builder.py#L808-L810>`__
-and `during the execution of the
-program <https://github.com/pytorch/pytorch/blob/69f112d5867f785a3a090a0c6d6644ae047033ac/torch/_dynamo/variables/dicts.py#L763-L769>`__.
-We will show many more examples of guards in the next section, but first
-let us discuss sources.
+يتم تجميع الحرس أثناء "لف إدخالات الوظيفة في الباني" وخلال "تنفيذ البرنامج". سنعرض العديد من الأمثلة الأخرى للحرس في القسم التالي، ولكن دعنا نناقش المصادر أولاً.
 
-A **source** tracks how to reconstruct a variable from the original
-local or global variables present when entering the current frame. In
-particular, it tracks the original local and global objects and any of
-the objects they contain. In
+يتتبع **المصدر** كيفية إعادة بناء متغير من المتغيرات المحلية أو العالمية الأصلية الموجودة عند دخول الإطار الحالي. على وجه التحديد، يتتبع الكائنات المحلية والعالمية الأصلية وأي من الكائنات التي تحتويها. في:
 
 .. code:: python
 
@@ -441,18 +269,9 @@ the objects they contain. In
        a = x * y[0]
        return a * x
 
-``x`` and ``y`` have
-`LocalSource <https://github.com/pytorch/pytorch/blob/40dc0580a69565b06ec5263efe5d87cecc8200f7/torch/_dynamo/source.py#L80-L92>`__
-as their source, and ``y[0]`` has
-`GetItemSource <https://github.com/pytorch/pytorch/blob/40dc0580a69565b06ec5263efe5d87cecc8200f7/torch/_dynamo/source.py#L302>`__,
-which stores a ``LocalSource`` inside. On the other hand, ``a`` will not
-have a source as it is an intermediate variable that only exists within
-the fx graph.
+يكون لـ "x" و "y" "LocalSource" كمصدر لهما، ويكون لـ "y[0]" "GetItemSource"، والذي يقوم بتخزين "LocalSource" بداخله. من ناحية أخرى، لن يكون لـ "a" مصدر لأنه متغير وسيط لا يوجد إلا داخل رسم FX البياني.
 
-All these are defined in
-`torch/_dynamo/source.py <https://github.com/pytorch/pytorch/blob/main/torch/_dynamo/source.py>`__.
-We can see the guard generated by ``GetItemSource`` in the following
-example:
+جميع هذه محددة في "torch/_dynamo/source.py". يمكننا أن نرى الحارس الذي تم إنشاؤه بواسطة "GetItemSource" في المثال التالي:
 
 .. code:: python
 
@@ -464,7 +283,7 @@ example:
 
    fn(torch.randn(8), ["Hi", "Hello"])
 
-generates the following guards
+ينشئ الحرس التالي:
 
 .. code:: python
 
@@ -475,46 +294,27 @@ generates the following guards
    ___check_type_id(L['l'][1], 94439025840192)
    L['l'][1] == 'Hello'
 
-Here, we see the code generated by ``GetItemSource`` (``[0]`` and
-``[1]``) wrapping a ``LocalSource`` (``L['l']``).
+هنا، نرى الرمز الذي تم إنشاؤه بواسطة "GetItemSource" ( "[0]" و "[1]") الذي يقوم بلف "LocalSource" ("L['l']").
 
-At this point, with sources and guards, we are able to implement a
-caching system to avoid recompilation without having to retrace every
-time. We will discuss a bit more in detail this caching system in the
-sequel.
+في هذه المرحلة، مع المصادر والحرس، يمكننا تنفيذ نظام ذاكرة التخزين المؤقت لتجنب إعادة التجميع دون الحاجة إلى إعادة التتبع في كل مرة. سنناقش بمزيد من التفصيل نظام ذاكرة التخزين المؤقت هذا في الجزء التالي.
 
-The attentive reader will have noticed that this does not explain yet
-why we need to have such fine control over the Python interpreter as to
-having to reimplement it. The examples of guards that we have shown
-depend on the input objects, so we could still compute these before
-executing the function. In other words, we could implement this guard
-system on top of ``torch.jit.trace`` and get the same functionality with
-much less effort… Enter symbolic shapes.
+لاحظ القارئ اليقظ أن هذا لا يفسر بعد سبب الحاجة إلى التحكم الدقيق جدًا في مفسر بايثون لدرجة إعادة تنفيذه. تعتمد أمثلة الحرس التي أظهرناها على كائنات الإدخال، لذا يمكننا حسابها قبل تنفيذ الوظيفة. وبعبارة أخرى، يمكننا تنفيذ نظام الحرس هذا أعلى "torch.jit.trace" والحصول على نفس الوظائف بجهد أقل... ادخل الأشكال الرمزية.
 
-Symbolic Shapes
+الأشكال الرمزية
+هنا نصك مترجم إلى العربية بنفس تنسيق ReStructuredText:
+
 ---------------
 
-Another point we discussed in the introduction is that Dynamo knows how
-to trace integers. In order to implement this, we use a symbolic class
-`torch.SymInt <https://github.com/pytorch/pytorch/blob/fb80f05ee2e1cba17892980701bfd5dbce58349f/torch/__init__.py#L244-L249>`__
-that acts like an ``int`` but it records all the operations performed on
-it in the output FX graph. [4]_ We already saw this class in the introduction
-when introducing symbolic integer tracing.
+ناقشنا في المقدمة نقطة أخرى وهي أن Dynamo يعرف كيفية تتبع الأعداد الصحيحة. ولتنفيذ ذلك، نستخدم فئة رمزية `torch.SymInt <https://github.com/pytorch/pytorch/blob/fb80f05ee2e1cba17892980701bfd5dbce58349f/torch/__init__.py#L244-L249>`__ التي تعمل مثل ``int`` ولكنها تسجل جميع العمليات التي يتم إجراؤها عليها في مخطط FX الناتج. [4]_ لقد رأينا بالفعل هذه الفئة في المقدمة عند تقديم التتبع الرمزي للأعداد الصحيحة.
 
-Let us now discuss the three properties that define symbolic shape
-tracing in Dynamo, and how to implement them.
+دعونا الآن نناقش الخصائص الثلاث التي تحدد التتبع الرمزي للشكل في Dynamo، وكيفية تنفيذها.
 
-Static by default
-^^^^^^^^^^^^^^^^^
+ثابت بشكل افتراضي
+^^^^^^^^^^^^^^^
 
-Dynamo assumes that every integer, let that be an input or the shape of
-a tensor, is static by default. In other words, no integers will be
-traced on the first execution of a function. Then, only if it detects
-that an integer or a shape changed value during the execution, it will
-trace it and generate a graph generic on that variable.
+يفترض Dynamo أن كل عدد صحيح، سواء كان ذلك إدخالا أو شكل مصفوفة، ثابت بشكل افتراضي. وبعبارة أخرى، لن يتم تتبع أي أعداد صحيحة في التنفيذ الأول للدالة. ثم، فقط إذا اكتشف أن عددًا صحيحًا أو شكلًا قد تغيرت قيمته أثناء التنفيذ، فسيتم تتبعه وإنشاء مخطط عام بالنسبة إلى ذلك المتغير.
 
-We already saw this behavior in the introduction using integers. Let us
-now look at an example using shapes of tensors.
+لقد رأينا بالفعل هذا السلوك في المقدمة باستخدام الأعداد الصحيحة. دعونا الآن نلقي نظرة على مثال باستخدام أشكال المصفوفات.
 
 .. code:: python
 
@@ -527,8 +327,7 @@ now look at an example using shapes of tensors.
    fn(torch.randn(4, 3), torch.randn(4, 3))
    fn(torch.randn(8, 3), torch.randn(8, 3))
 
-Running this program with ``TORCH_LOGS=graph_code`` we see that these
-two calls are traced as
+عند تشغيل هذا البرنامج مع ``TORCH_LOGS=graph_code``، نرى أن هاتين المكالمة يتم تتبعهما على النحو التالي:
 
 .. code:: python
 
@@ -544,10 +343,7 @@ two calls are traced as
        mul_1 = mul * l_b_
        return (mul_1,)
 
-In the first graph the shape is traced as a constant, but once it
-changes, it traces it symbolically using a ``SymInt``\ s. In general, a
-simpler way to see the shapes of the intermediary values is by running
-the program with ``TORCH_LOGS=graph_sizes``
+في المخطط الأول، يتم تتبع الشكل كقيمة ثابتة، ولكن بمجرد تغييره، يتم تتبعه بشكل رمزي باستخدام ``SymInt``\ s. بشكل عام، هناك طريقة أبسط لرؤية أشكال القيم الوسيطة وهي تشغيل البرنامج مع ``TORCH_LOGS=graph_sizes``
 
 ::
 
@@ -562,10 +358,9 @@ the program with ``TORCH_LOGS=graph_sizes``
    mul_1: (s0, 3)
    mul_1 (concrete): (8, 3)
 
-where we can see that the first dimension of the two tensor args is
-dynamic, given that it is represented by the ``s0`` variable.
+حيث يمكننا أن نرى أن البعد الأول لحججي مصفوفة التنس هو ديناميكي، نظرًا لأنه يتم تمثيله بواسطة متغير ``s0``.
 
-We can find how Dynamo implements this by running ``TORCH_LOGS=guards``
+يمكننا معرفة كيفية تنفيذ Dynamo لهذا عن طريق تشغيل ``TORCH_LOGS=guards``
 
 .. code:: python
 
@@ -580,55 +375,28 @@ We can find how Dynamo implements this by running ``TORCH_LOGS=guards``
    L['b'].size()[0] == L['a'].size()[0]
    2 <= L['a'].size()[0]
 
-We see that on the first call, the guards check that the tensors have
-some fixed sizes and strides. These guards fail in the second execution,
-so it retraces. Since it was an ``int`` guard that failed, in this
-second iteration it traces this ``int`` symbolically and it installs
-more general guards on this more generic kernel.
+نرى أنه في المكالمة الأولى، يتحقق الحرس من أن المصفوفات لها أحجام ومسافات ثابتة. تفشل هذه الحراس في التنفيذ الثاني، لذلك يتم إعادة التتبع. نظرًا لأنه كان حارسًا للأعداد الصحيحة الذي فشل، في هذه الحلقة الثانية، فإنه يتتبع هذا العدد الصحيح بشكل رمزي ويقوم بتثبيت حراس أكثر عمومية على هذه النواة الأكثر عمومية.
 
-**Compilation performance tip**. If you know that a dimension will vary
-in size, you can mark it as dynamic by calling
-`torch._dynamo.mark_dynamic <https://github.com/pytorch/pytorch/blob/66a76516bfc341b2b55bb2056d2faa9c2de46d69/torch/_dynamo/decorators.py#L176>`__
-before calling ``torch.compile``. This will avoid the first compilation
-with a static shape. There are other useful utility functions like
-``maybe_mark_dynamic`` or ``mark_static``. You can also have all
-integers and shapes traced by calling ``torch.compile(dynamic=True)``.
-This is mostly useful for debugging purposes.
+**نصيحة أداء التجميع**. إذا كنت تعلم أن بعدًا سيختلف في الحجم، فيمكنك تمييزه كديناميكي عن طريق استدعاء `torch._dynamo.mark_dynamic <https://github.com/pytorch/pytorch/blob/66a76516bfc341b2b55bb2056d2faa9c2de46d69/torch/_dynamo/decorators.py#L176>`__ قبل استدعاء ``torch.compile``. سيؤدي هذا إلى تجنب التجميع الأول بشكل ثابت. هناك أيضًا وظائف مساعدة مفيدة مثل ``maybe_mark_dynamic`` أو ``mark_static``. يمكنك أيضًا تتبع جميع الأعداد الصحيحة والأشكال عن طريق استدعاء ``torch.compile(dynamic=True)``. هذا مفيد بشكل أساسي لأغراض التصحيح.
 
-0, 1 are always specialized
+0، 1 متخصصان دائمًا
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Regardless of whether we mark a dimension as dynamic, if we pass an input
-where that dimension is 0 or 1, Dynamo will trace it as non-dynamic and it
-will generate a specific graph for it. This is the reason why in the example
-above we find guards of the form ``2 <= L['a'].size()[0]``.
+بغض النظر عما إذا كنا نحدد بعدًا كديناميكي، إذا مررنا بإدخال حيث يكون هذا البعد 0 أو 1، فسيقوم Dynamo بتتبعه على أنه غير ديناميكي وسيقوم بتوليد مخطط محدد له. هذا هو السبب في أننا نجد حراسًا على شكل ``2 <= L['a'].size()[0]`` في المثال أعلاه.
 
-There are several reasons for this choice. There are two particularly
-important - A tensor is empty if and only if any of its dimensions is
-zero - A tensor can only be contiguous if one of the strides is one
+هناك عدة أسباب لهذا الاختيار. هناك سببان مهمان بشكل خاص - مصفوفة فارغة إذا وفقط إذا كان أي من أبعادها صفرًا - لا يمكن أن تكون المصفوفة متجاورة إلا إذا كان أحد المسافات يساوي واحدًا
 
-This policy decision does NOT apply to plain Python ints; if we think a Python
-int should be compiled dynamically, we won't specialize them by default;
-instead, whether or not it gets specialized depends on its usage.
+لا تنطبق سياسة القرار هذه على أعداد Python الصحيحة العادية؛ إذا كنا نعتقد أن عددًا صحيحًا في Python يجب أن يتم تجميعه ديناميكيًا، فلن نقوم بتخصيصها بشكل افتراضي؛ بدلاً من ذلك، ما إذا كان يتم تخصيصها أم لا يعتمد على استخدامها.
 
-Duck shaping
+تشكيل البط
 ^^^^^^^^^^^^
 
-Dynamo performs what we call “duck shaping”. If two dynamic integers
-have the same value at trace time, we will assume that they are equal
-and guard on it. Effectively, this means that rather than having two
-symbols ``s0``, ``s1`` in the example above, we just unified them to
-``s0`` and had the guard ``L['b'].size()[0] == L['a'].size()[0]``. This
-enables performing fusions within the compiler while being able to
-generate kernels that are generic enough.
+يقوم Dynamo بما نسميه "تشكيل البط". إذا كان هناك عددان صحيحان ديناميكيان لهما نفس القيمة في وقت التتبع، فسوف نفترض أنهما متساويان ونحميها. وهذا يعني فعليًا أنه بدلاً من وجود رمزين ``s0``، ``s1`` في المثال أعلاه، فقد وحدناهما ببساطة إلى ``s0`` وكان الحارس ``L['b'].size()[0] == L['a'].size()[0]``. يمكّن ذلك من إجراء عمليات دمج داخل المترجم أثناء القدرة على إنشاء نوى عامة بما يكفي.
 
-Guards on symbolic ints
+حراس على الأعداد الصحيحة الرمزية
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-We now understand how symbolic shapes are implemented at a high level
-and the properties they have. Now, why is that symbolic shapes forced us
-through the tricky route of getting control of the CPython interpreter?
-Consider the following example:
+الآن بعد أن فهمنا كيف يتم تنفيذ الأشكال الرمزية على مستوى عالٍ والخصائص التي تمتلكها. الآن، لماذا الأشكال الرمزية أجبرتنا على الطريق الصعب المتمثل في الحصول على تحكم في مفسر CPython؟ ضع في اعتبارك المثال التالي:
 
 .. code:: python
 
@@ -643,112 +411,57 @@ Consider the following example:
 
    fn(torch.randn(8))
 
-This code has a guard of the form ``2*L['a'].size()[0] >= 16``. This is
-a non-trivial guard in terms of the inputs of the function, but it is
-registered in the middle of the execution of the program. Even more so,
-we cannot know this guard is needed until we see the ``if`` statement
-conditional on a ``SymNodeVariable`` argument. Such conditions are
-invisible to ``torch.jit.trace`` and require deep analysis of the python
-code.
+يحتوي هذا الكود على حارس على شكل ``2*L['a'].size()[0] >= 16``. هذه حارس غير تافهة من حيث مدخلات الدالة، ولكن يتم تسجيلها في منتصف تنفيذ البرنامج. والأكثر من ذلك، لا يمكننا معرفة أن هذا الحارس مطلوب حتى نرى شرط "if" الشرطي على حجة ``SymNodeVariable``. مثل هذه الشروط غير مرئية لـ ``torch.jit.trace`` وتتطلب تحليلًا عميقًا لرمز Python.
 
-**Debugging tip** Running this code with ``TORCH_LOGS=dynamo`` tells us
-where this guard was added
+**نصيحة التصحيح** عند تشغيل هذا الكود مع ``TORCH_LOGS=dynamo``، فإنه يخبرنا بالمكان الذي تمت فيه إضافة هذا الحارس
 
 ::
 
    eval 2*s0 >= 16 [guard added] at script.py:5 in fn (_dynamo/variables/tensor.py:812 in evaluate_expr)
 
-Placing a breakpoint there and looking at the backtrace is rather useful
-to understand where a guard came from.
+وضع نقطة توقف هناك والنظر في تتبع المكدس مفيد جدًا لفهم المكان الذي جاء منه الحارس.
 
-Making Dynamo Complete: Graph Breaks
-------------------------------------
+جعل Dynamo مكتمل: كسور المخطط
+بالرغم من كل الأدوات التي ناقشناها، فإن لدينا أداة تتبع يمكنها تتبع عمليات PyTorch على المصفوفات والأعداد الصحيحة، ولديها نظام تخزين مؤقت يعرف متى يمكنه إعادة استخدام مخطط تم تتبعه مسبقًا ومتى يحتاج إلى إعادة التتبع. كل هذا أثناء تنفيذ تعليمات برمجية Python عشوائية!
 
-With all the tools we have discussed, we have a tracer that can trace
-PyTorch operations on tensors and integers and has a caching system that
-knows when it can reuse a previously traced graph and when it needs to
-retrace. All this executing arbitrary Python code!
+هناك فقط مشكلة صغيرة واحدة مع هذا. قد يكون بيان "تنفيذ تعليمات برمجية Python عشوائية" عامًا بعض الشيء. ينفذ Dynamo جزءًا جيدًا من Python، ولكن هل ينفذ الأجزاء الأكثر تعقيدًا، مثل الروتينات الفرعية أو async؟ هل ينفذ مكتبة Python القياسية بأكملها؟ لدى NumPy أيضًا واجهة برمجة تطبيقات Python. هل يفهم "torch.compile" أيضًا NumPy؟ وDjango؟ [5] _
 
-There is just one small issue with this. The statement “executing
-arbitrary Python code” is perhaps a bit too general. Dynamo implements a
-good part of Python, but does it implement the more complex parts, like
-coroutines or async? Does it implement the whole Python standard
-library? NumPy also has a Python API. Does ``torch.compile`` also
-understand NumPy? and Django? [5]_
+النظام البيئي لـ Python هائل، وجزء كبير منه مكتوب بلغات أخرى أكثر كفاءة مثل C++ أو Rust، ويقوم فقط بتعريض روابط Python. لا يوجد أمل في أن يقوم Dynamo بتتبع كائنات Python التي يتم تنفيذها في C++. ماذا يمكن أن تفعل أداة التتبع عندما تجد عملية لا تفهمها؟
 
-Python’s ecosystem is massive, and a good part of it is written in other
-more performant languages like C++ or Rust, and it just exposes Python
-bindings. There is no hope in Dynamo tracing through Python objects that
-are implemented in C++. What can a tracer do when it finds an operation
-that it does not understand?
+الطريقة المعتادة التي تتعامل بها أدوات التتبع الخاصة بالتعلم الآلي مع هذه المشكلة هي إبلاغ المستخدم بالعملية التي تعثرت فيها والتخلي عن التتبع تمامًا. من شأن هذا أن يطرح مشكلة حقيقية في قابلية الاستخدام في حالة PyTorch، حيث اعتاد مستخدموها على المرونة التي توفرها لهم. كمثال من العالم الحقيقي، يستخدم نموذج "doctr_det_predictor" NumPy ومكتبة "cv2" لـ `معالجة نتيجة النموذج <https://github.com/mindee/doctr/blob/f2114758d529ed8d3d00030581638f0520b6b98d8/doctr/models/detection/core.py#L86>`__.
 
-The usual way machine learning tracers handle this issue is by informing
-the user that the operation they choked on and giving up tracing
-altogether. This would pose a real usability issue in the case of
-PyTorch, where its users are used to the flexibility it gives them. As a
-real-world example the ``doctr_det_predictor`` model uses NumPy and the
-``cv2`` library to `postprocess the model’s
-result <https://github.com/mindee/doctr/blob/f2114758d529ed8d3d0030581638f0520b6b98d8/doctr/models/detection/core.py#L86>`__.
+هنا مكان آخر يكون فيه الوصول إلى CPython مثيرًا للاهتمام. بدلاً من إظهار خطأ، يمكن لـ Dynamo أن يجعل CPython ينفذ تلك التعليمات البرمجية المشكلة! للقيام بذلك، يقوم Dynamo بتوليد مخطط واحد في وقت التتبع مع جميع العمليات قبل التعليمات البرمجية المشكلة، ومخطط واحد مع جميع العمليات بعد ذلك. [6] _ بعد ذلك، في وقت التشغيل، سيفوض إلى CPython لتنفيذ المخطط الأول، ثم التعليمات البرمجية المشكلة، ثم المخطط الثاني. وتسمى هذه العملية لإيقاف التتبع وتوليد مخططات متعددة **كسر المخطط**.
 
-Here is another place where having access to CPython is interesting.
-Rather than erroring out, Dynamo can let CPython run that problematic
-code! To do this, Dynamo generates at trace time one graph with all the
-operations before the problematic code, and one with all the operations
-after. [6]_ Then, at runtime, it will delegate to CPython to execute the
-first graph, then the problematic code, and then the second graph. This
-process of stopping the tracing and generating multiple graphs is called
-a **graph break**.
+اعتراف صغير: لقد كذبت طوال المقدمة والأقسام الأولى. لا يقوم Dynamo بتوليد مخطط واحد، ولكن **مخططات متعددة**! لأغراض عملية، يمكن اعتبار بدء إعادة التتبع بعد مخطط ثانٍ مثل بدء تتبع دالة جديدة. سيكون للمخطط الجديد بعد كسر المخطط حراسه، ومجموعة متغيرات محلية جديدة، وهكذا.
 
-A small confession: I lied all throughout the introduction and the first
-sections. Dynamo does not generate one graph, but **multiple graphs**!
-For all practical purposes, starting retracing after a second graph can
-be thought of as starting tracing a new function. The new graph after
-the graph break will have its own guards, its new set of local
-variables, and so on.
+لمناقشة كيفية تنفيذ كسور المخططات، نحتاج أولاً إلى إعادة النظر في كيفية تفاعل Dynamo مع CPython. باستخدام PEP 523، تسمح CPython للمستخدم باستخدام آلية تقييم الإطار الخاصة به. ما لم نناقشه هو أن CPython تعرض أيضًا تقييم الإطار الخاص بها للآخرين لاستخدامها. يستفيد Dynamo من هذا للسماح لمفسر CPython السريع بتشغيل التعليمات البرمجية المترجمة. لعملية بدون كسور في المخطط، تبدو عملية التتبع/التنفيذ الكاملة لبرنامج يستدعي الدالة مرتين بنفس الحجج على النحو التالي:
 
-To discuss how to implement graph breaks, we need to first revisit how
-Dynamo interacts with CPython. Using PEP 523, CPython allows a user to
-use their own frame evaluation mechanism. What we had not discussed is
-that CPython also exposes its own frame evaluation for others to use.
-Dynamo leverages this to let the fast CPython interpreter run the
-compiled code. For a function without graph breaks, the whole tracing /
-execution process of a program that calls the function 2 times with the
-same arguments looks like this:
+1. في المكالمة الأولى للدالة
 
-1. In the first call to the function
+   1. يقوم Dynamo بتتبع الدالة في مخطط FX
 
-   1. Dynamo traces the function into an FX graph
+      1. يقوم المترجم (Inductor) بتجميع مخطط FX إلى تعليمات برمجية منخفضة المستوى وفعالة... ولكن هذه قصة ليوم آخر
 
-      1. The FX graph is compiled by the compiler (Inductor) into
-         efficient low-level code… but that’s a story for another day
+   2. يقوم بإعادة كتابة بايت كود للدالة بحيث تقوم ببساطة باستدعاء الدالة المترجمة
+   3. يقوم بإعطاء CPython بايت كود الجديد ويطلب منه تشغيله
+      [`هنا <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L1006>`__]
 
-   2. It rewrites the bytecode of the function so that it simply calls
-      the compiled function
-   3. It gives CPython this new bytecode and asks it to run it
-      [`here <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L1006>`__]
+2. في المكالمة الثانية للدالة
 
-2. In the second call to the function
+   1. يتحقق من حراس المكالمة الأولى مقابل الحجج الجديدة
+      [`هنا <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L658>`__].
+      نظرًا لأنها نفس الحجج كما كانت من قبل، فإنها تمر
+   2. يطلب من CPython تشغيل بايت كود المرتبط بتلك الحراس
+      [`هنا <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L972-L975>`__]
 
-   1. It checks the guards from the first call against the new arguments
-      [`here <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L658>`__].
-      Since they are the same arguments as before, they pass
-   2. It asks CPython to run the bytecode associated to those guards
-      [`here <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/csrc/dynamo/eval_frame.c#L972-L975>`__]
+تبدو هذه العملية في حد ذاتها معقدة للغاية. لماذا يتم إنشاء بايت كود جديد وطلب تشغيله من CPython بدلاً من مجرد إنشاء ارتباط C++ للدالة المترجمة وتشغيلها؟ حسنًا، يسمح لنا هذا النمط بتنفيذ كسور المخطط! بايت كود الذي تم إنشاؤه بواسطة كسر المخطط له البنية التالية:
 
-This process on its own looks overly complicated. Why generate new
-bytecode and ask CPython to run it rather than simply creating a C++
-binding to the compiled function and executing it? Well, this pattern
-allows us to implement graph breaks! The bytecode generated by a graph
-break has the following structure:
+1. بايت كود الذي ينفذ المخطط الأول
+2. بايت كود يترك المكدس كما لو كان CPython قد نفذ المخطط الأول. كما يقوم بتشغيل أي تعديلات على المتغيرات المحلية أو العالمية التي ستكون مرئية في هذه المرحلة
+3. بايت كود الذي جعل Dynamo يكسر المخطط
+4. بايت كود الذي ينفذ المخطط الثاني
 
-1. Bytecode that executes the first graph
-2. Bytecode that leaves the stack as it would be if CPython would have
-   executed the first graph. It also replays any modifications to local
-   or global variables that would be visible at this point
-3. The bytecode that made Dynamo graph break
-4. Bytecode that executes the second graph
-
-Let us see this in a simple example
+دعونا نرى هذا في مثال بسيط
 
 .. code:: python
 
@@ -762,8 +475,7 @@ Let us see this in a simple example
 
    fn(torch.randn(4))
 
-Running this with ``TORCH_LOGS=bytecode`` shows us the initial bytecode
-and the modified bytecode
+يُظهر لنا تشغيل هذا مع ``TORCH_LOGS=bytecode`` بايت كود الأولي وبايت كود المعدل
 
 .. code:: python
 
@@ -795,74 +507,41 @@ and the modified bytecode
     8 UNPACK_SEQUENCE          1
    10 RETURN_VALUE
 
-We can see that the modified bytecode is split into two functions,
-``fn``, the original function, and a function called ``resume_in_fn``.
-This second function is a function created by Dynamo to implement the
-execution of the program starting at the graph break. This is often
-called a `continuation
-function <https://en.wikipedia.org/wiki/Continuation>`__. This
-continuation function simply calls the second compiled function with the
-right arguments. The code for the initial function is rewritten
-implementing the strategy that we described before
+يمكننا أن نرى أن بايت كود المعدل منقسم إلى دالتين، ``fn``، والدالة الأصلية، ودالة تسمى ``resume_in_fn``. هذه الدالة الثانية هي دالة تم إنشاؤها بواسطة Dynamo لتنفيذ تنفيذ البرنامج بدءًا من كسر المخطط. يُطلق على هذا غالبًا اسم `دالة الاستمرار <https://en.wikipedia.org/wiki/Continuation>`__. تقوم دالة الاستمرار هذه ببساطة باستدعاء الدالة المترجمة الثانية باستخدام الحجج الصحيحة. تتم إعادة كتابة كود الدالة الأولية لتنفيذ الاستراتيجية التي وصفناها سابقًا
 
--  L0-4. Call the compiled function (``a + 2``).
--  L6. Store its result in a local variable called ``graph_out_0``.
-   ``graph_out_0`` is a tuple
--  L8-18. Leave the stack as it would be at the point of the graph break
--  L20. Execute the code that caused the graph break
--  L22-32. Call the compiled continuation function (``a + b``)
+-  L0-4. استدعاء الدالة المترجمة (``a + 2``).
+-  L6. قم بتخزين نتيجتها في متغير محلي يسمى ``graph_out_0``. ``graph_out_0`` عبارة عن مجموعة
+-  L8-18. اترك المكدس كما لو كان في نقطة كسر المخطط
+-  L20. تنفيذ التعليمات البرمجية التي تسببت في كسر المخطط
+-  L22-32. استدعاء دالة الاستمرار المترجمة (``a + b``)
 
-The code generation of the stack in Dynamo is delegated to
-``VariableTracker`` subclasses. Every ``VariableTracker`` object in
-Dynamo has a `reconstruct <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/_dynamo/variables/lists.py#L307-L309>`__
-method that generates the necessary bytecode to create the python object
-it represents on the stack.
+يتم تفويض توليد المكدس في Dynamo إلى فئات ``VariableTracker`` الفرعية. تحتوي كل كائن ``VariableTracker`` في Dynamo على طريقة `reconstruct <https://github.com/pytorch/pytorch/blob/e891a3bba9f05697d72776f6e89347231a141f03/torch/_dynamo/variables/lists.py#L307-L309>`__ تقوم بتوليد بايت كود اللازم لإنشاء كائن Python الذي تمثله على المكدس.
 
-**Debugging tip**. Graph breaks hamper performance, and as such, it is
-best to avoid them. Running a program with ``TORCH_LOGS=graph_breaks``
-is a great way to find how many graph breaks did our program hit. The
-information it returns is in terms of ``VariableTracker`` objects, so
-the debugging tips above are sometimes also helpful to figure out what
-caused that graph break.
+**نصيحة التصحيح**. تعرقل كسور المخطط الأداء، وبالتالي، من الأفضل تجنبها. يعد تشغيل برنامج باستخدام ``TORCH_LOGS=graph_breaks`` طريقة رائعة لمعرفة عدد كسور المخطط التي أصابت برنامجنا. تُرجع المعلومات التي تم الحصول عليها من حيث كائنات ``VariableTracker``، لذا فإن نصائح التصحيح المذكورة أعلاه مفيدة أحيانًا أيضًا لمعرفة ما تسبب في كسر المخطط.
 
-Conclusion
+الخاتمة
 ----------
 
-Dynamo is a complex piece of software. Once you sign up to implement a
-CPython interpreter you know you are in for a ride. That being said, we
-hope that this post helps demystify it a bit.
+Dynamo عبارة عن قطعة معقدة من البرامج. بمجرد أن تقرر تنفيذ مفسر CPython، فأنت تعلم أنك ستحصل على رحلة. ومع ذلك، نأمل أن تساعد هذه المقالة في توضيحها قليلاً.
 
-Dynamo is (mostly) implemented in Python. We left plenty of links to the
-pieces of the code that we discussed. We hope that reading those pieces
-of code and grepping for the places that call them, or putting
-breakpoints on them and looking at the call stack helps understanding
-the rest of the code base.
+يتم تنفيذ Dynamo (معظمها) في Python. لقد تركنا الكثير من الروابط إلى قطع الكود التي ناقشناها. نأمل أن يساعد قراءة هذه القطع من الكود والبحث عن الأماكن التي تستدعيها، أو وضع نقاط توقف عليها والنظر في مكدس الاستدعاءات، في فهم بقية قاعدة الكود.
 
-Of course, the best way to learn how a piece of software works is by
-extending it. In this case, the best way is to have a look at the `open
-dynamo issues on
-github <https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+label%3A%22module%3A+dynamo%22+>`__.
-Many of them require very minor changes in the code, once you find where
-you need to make those changes.
+بالطبع، أفضل طريقة لمعرفة كيفية عمل قطعة من البرامج هي عن طريق توسيعها. في هذه الحالة، فإن أفضل طريقة هي إلقاء نظرة على `قضايا dynamo المفتوحة على
+github <https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+label%3A%22module%3A+dynamo%22+>`__. يتطلب الكثير منها تغييرات طفيفة للغاية في الكود، بمجرد أن تعرف المكان الذي تحتاج إلى إجراء هذه التغييرات فيه.
 
-Footnotes
+الحواشي
 ---------
 
-.. [1] In the literature, this is called a Directed Acyclical Graph (DAG).
+.. [1] في الأدبيات، يطلق على هذا اسم الرسم البياني الموجه غير الدوري (DAG).
 
-.. [2] All this binding code lives in ``torch/csrc/dynamo/eval_frame.c``.
+.. [2] يعيش كل هذا الكود الملزم في ``torch/csrc/dynamo/eval_frame.c``.
 
-.. [3] In CPython lingo, the set of all these objects are called `a
-   frame <https://github.com/python/cpython/blob/f26bfe4b25f7e5a4f68fcac26207b7175abad208/Include/internal/pycore_frame.h#L57-L71>`__.
+.. [3] في لغة CPython، يطلق على مجموعة جميع هذه الكائنات اسم `إطار <https://github.com/python/cpython/blob/f26bfe4b25f7e5a4f68fcac26207b7175abad208/Include/internal/pycore_frame.h#L57-L71>`__.
 
-.. [4] There are also ``SymBool`` and ``SymFloat`` classes. The latter one
-   is not used all that much at the time of this writing.
+.. [4] هناك أيضًا فئات ``SymBool`` و ``SymFloat``. لا يتم استخدام الأخير كثيرًا في وقت كتابة هذا التقرير.
 
-.. [5] Interestingly enough, it does understand NumPy code! Have a look at
-   `this blogpost <https://pytorch.org/blog/compiling-numpy-code/>`__
-   and `the docs <https://pytorch.org/docs/main/torch.compiler_faq.html#does-numpy-work-with-torch-compile>`__.
-   Now, this is just possible because we reimplemented NumPy using
-   PyTorch. Good luck implementing Django in PyTorch though…
+.. [5] من المثير للاهتمام أنه يفهم تعليمات برمجية NumPy! الق نظرة على `هذه التدوينة <https://pytorch.org/blog/compiling-numpy-code/>`__
+   و `الوثائق <https://pytorch.org/docs/main/torch.compiler_faq.html#does-numpy-work-with-torch-compile>`__.
+   الآن، هذا ممكن فقط لأننا قمنا بإعادة تنفيذ NumPy باستخدام PyTorch. حظا سعيدا في تنفيذ Django في PyTorch على الرغم من...
 
-.. [6] Assuming there is just one piece of problematic code. If there are
-   more, Dynamo can split the code into as many graphs as it needs.
+.. [6] بافتراض وجود قطعة واحدة فقط من التعليمات البرمجية المشكلة. إذا كان هناك المزيد، فيمكن لـ Dynamo تقسيم التعليمات البرمجية إلى أكبر عدد ممكن من المخططات التي يحتاجها.
