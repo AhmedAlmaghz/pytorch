@@ -1,5 +1,5 @@
 torch.mps
-===================================
+============
 .. automodule:: torch.mps
 .. currentmodule:: torch.mps
 
@@ -19,7 +19,7 @@ torch.mps
     driver_allocated_memory
     recommended_max_memory
 
-MPS Profiler
+ملف تعريف MPS
 ------------
 .. autosummary::
     :toctree: generated
@@ -29,7 +29,7 @@ MPS Profiler
     profiler.stop
     profiler.profile
 
-MPS Event
+حدث MPS
 ------------
 .. autosummary::
     :toctree: generated
@@ -38,7 +38,7 @@ MPS Event
     event.Event
 
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. نقوم بإضافتها هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.mps.event
 .. py:module:: torch.mps.profiler
