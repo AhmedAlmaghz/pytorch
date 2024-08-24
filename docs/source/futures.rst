@@ -5,11 +5,7 @@
 torch.futures
 =============
 
-This package provides a :class:`~torch.futures.Future` type that encapsulates
-an asynchronous execution and a set of utility functions to simplify operations
-on :class:`~torch.futures.Future` objects. Currently, the
-:class:`~torch.futures.Future` type is primarily used by the
-:ref:`distributed-rpc-framework`.
+توفر هذه الحزمة نوعًا :class:`~torch.futures.Future` يغلف عملية تنفيذ غير متزامنة ومجموعة من وظائف المنفعة لتبسيط العمليات على كائنات :class:`~torch.futures.Future`. حاليًا، يتم استخدام نوع :class:`~torch.futures.Future` بشكل أساسي بواسطة :ref:`distributed-rpc-framework`.
 
 .. automodule:: torch.futures
 
