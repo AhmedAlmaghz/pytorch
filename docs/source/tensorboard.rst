@@ -1,34 +1,31 @@
 torch.utils.tensorboard
-===================================
+===========================
+
 .. automodule:: torch.utils.tensorboard
 
-Before going further, more details on TensorBoard can be found at
+قبل الاسترسال أكثر، يمكن إيجاد المزيد من التفاصيل حول TensorBoard على الرابط التالي:
 https://www.tensorflow.org/tensorboard/
 
-Once you've installed TensorBoard, these utilities let you log PyTorch models
-and metrics into a directory for visualization within the TensorBoard UI.
-Scalars, images, histograms, graphs, and embedding visualizations are all
-supported for PyTorch models and tensors as well as Caffe2 nets and blobs.
+بمجرد تثبيت TensorBoard، تسمح هذه الأدوات المساعدة بتسجيل نماذج ومعايير PyTorch في دليل للتصور ضمن واجهة مستخدم TensorBoard.
+يتم دعم المخططات البيانية والصور والرسوم البيانية والتعبئات والرسوم البيانية والتصورات المضمنة لنماذج PyTorch وtensors، بالإضافة إلى شبكات Caffe2 وblobs.
 
-The SummaryWriter class is your main entry to log data for consumption
-and visualization by TensorBoard. For example:
+تعد فئة SummaryWriter المدخل الرئيسي الخاص بك لتسجيل البيانات لاستهلاكها وتصورها بواسطة TensorBoard. على سبيل المثال:
 
 .. code:: python
-
 
     import torch
     import torchvision
     from torch.utils.tensorboard import SummaryWriter
     from torchvision import datasets, transforms
 
-    # Writer will output to ./runs/ directory by default
+    # سيقوم الكاتب بالإخراج إلى دليل ./runs/ بشكل افتراضي
     writer = SummaryWriter()
 
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
     trainset = datasets.MNIST('mnist_train', train=True, download=True, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
     model = torchvision.models.resnet50(False)
-    # Have ResNet model take in grayscale rather than RGB
+    # قم بتعديل نموذج ResNet لأخذ تدرج الرمادي بدلاً من RGB
     model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
     images, labels = next(iter(trainloader))
 
@@ -37,21 +34,14 @@ and visualization by TensorBoard. For example:
     writer.add_graph(model, images)
     writer.close()
 
-This can then be visualized with TensorBoard, which should be installable
-and runnable with::
+بعد ذلك، يمكن تصور هذا باستخدام TensorBoard، والذي يجب أن يكون قابلاً للتثبيت والتشغيل باستخدام::
 
     pip install tensorboard
     tensorboard --logdir=runs
 
-
-Lots of information can be logged for one experiment. To avoid cluttering
-the UI and have better result clustering, we can group plots by naming them
-hierarchically. For example, "Loss/train" and "Loss/test" will be grouped
-together, while "Accuracy/train" and "Accuracy/test" will be grouped separately
-in the TensorBoard interface.
+يمكن تسجيل الكثير من المعلومات لتجربة واحدة. لتجنب الفوضى في واجهة المستخدم والحصول على نتائج أفضل للتجمع، يمكننا تجميع المخططات بتسميتها بشكل هرمي. على سبيل المثال، سيتم تجميع "Loss/train" و "Loss/test" معًا، في حين سيتم تجميع "Accuracy/train" و "Accuracy/test" بشكل منفصل في واجهة TensorBoard.
 
 .. code:: python
-
 
     from torch.utils.tensorboard import SummaryWriter
     import numpy as np
@@ -61,13 +51,13 @@ in the TensorBoard interface.
     for n_iter in range(100):
         writer.add_scalar('Loss/train', np.random.random(), n_iter)
         writer.add_scalar('Loss/test', np.random.random(), n_iter)
-        writer.add_scalar('Accuracy/train', np.random.random(), n_iter)
+        writerMultiplier.add_scalar('Accuracy/train', np.random.random(), n_iter)
         writer.add_scalar('Accuracy/test', np.random.random(), n_iter)
 
 
-Expected result:
+النتيجة المتوقعة:
 
-.. image:: _static/img/tensorboard/hier_tags.png
+.. image:: _static/img/tensorboard/hier_tags_ar.png
     :scale: 75 %
 
 |
