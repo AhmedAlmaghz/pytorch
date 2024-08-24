@@ -1,5 +1,5 @@
 torch.__config__
-===================================
+====================
 
 .. automodule:: torch.__config__
 .. currentmodule:: torch.__config__
