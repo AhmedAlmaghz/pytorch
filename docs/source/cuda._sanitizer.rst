@@ -4,19 +4,17 @@ CUDA Stream Sanitizer
 =====================
 
 .. note::
-    This is a prototype feature, which means it is at an early stage
-    for feedback and testing, and its components are subject to change.
+    هذه ميزة تجريبية، مما يعني أنها في مرحلة مبكرة لتلقي الملاحظات والاختبار، وقد تخضع مكوناتها للتغيير.
 
-Overview
+نظرة عامة
 --------
 
 .. automodule:: torch.cuda._sanitizer
 
-
-Usage
+الاستخدام
 ------
 
-Here is an example of a simple synchronization error in PyTorch:
+فيما يلي مثال على خطأ تزامن بسيط في PyTorch:
 
 ::
 
@@ -27,66 +25,63 @@ Here is an example of a simple synchronization error in PyTorch:
     with torch.cuda.stream(torch.cuda.Stream()):
         torch.mul(a, 5, out=a)
 
-The ``a`` tensor is initialized on the default stream and, without any synchronization
-methods, modified on a new stream. The two kernels will run concurrently on the same tensor,
-which might cause the second kernel to read uninitialized data before the first one was able
-to write it, or the first kernel might overwrite part of the result of the second.
-When this script is run on the commandline with:
+يتم تهيئة المصفوفة "a" على دفق الافتراضي، وبدون أي طرق تزامن، يتم تعديلها على دفق جديد. سيتم تشغيل نواة المعالجة بشكل متزامن على نفس المصفوفة، مما قد يتسبب في قراءة النواة الثانية لبيانات غير مستهلة قبل أن تتمكن النواة الأولى من كتابتها، أو قد تقوم النواة الأولى بكتابة جزء من نتيجة النواة الثانية.
+
+عند تشغيل هذا البرنامج النصي على سطر الأوامر باستخدام:
 ::
 
     TORCH_CUDA_SANITIZER=1 python example_error.py
 
-the following output is printed by CSAN:
+تتم طباعة الإخراج التالي بواسطة CSAN:
 
 ::
 
     ============================
-    CSAN detected a possible data race on tensor with data pointer 139719969079296
-    Access by stream 94646435460352 during kernel:
-    aten::mul.out(Tensor self, Tensor other, *, Tensor(a!) out) -> Tensor(a!)
-    writing to argument(s) self, out, and to the output
-    With stack trace:
-      File "example_error.py", line 6, in <module>
+    اكتشف CSAN احتمال حدوث سباق بيانات على المصفوفة ذات مؤشر البيانات 139719969079296
+    تم الوصول إليه بواسطة الدفق 94646435460352 أثناء النواة:
+    aten::mul.out(Tensor self، Tensor other، *، Tensor(a!) out) -> Tensor(a!)
+    الكتابة إلى الحجة (ق) الذاتية، out، وإلى الإخراج
+    مع تتبع المكدس:
+      File "example_error.py"، line 6، in <module>
         torch.mul(a, 5, out=a)
       ...
-      File "pytorch/torch/cuda/_sanitizer.py", line 364, in _handle_kernel_launch
+      File "pytorch/torch/cuda/_sanitizer.py"، line 364، in _handle_kernel_launch
         stack_trace = traceback.StackSummary.extract(
 
-    Previous access by stream 0 during kernel:
-    aten::rand(int[] size, *, int? dtype=None, Device? device=None) -> Tensor
-    writing to the output
-    With stack trace:
-      File "example_error.py", line 3, in <module>
+    الوصول السابق بواسطة الدفق 0 أثناء النواة:
+    aten::rand(int[] size، *، int؟ dtype=None، Device؟ device=None) -> Tensor
+    الكتابة إلى الإخراج
+    مع تتبع المكدس:
+      File "example_error.py"، line 3، in <module>
         a = torch.rand(10000, device="cuda")
       ...
-      File "pytorch/torch/cuda/_sanitizer.py", line 364, in _handle_kernel_launch
+      File "pytorch/torch/cuda/_sanitizer.py"، line 364، in _handle_kernel_launch
         stack_trace = traceback.StackSummary.extract(
 
-    Tensor was allocated with stack trace:
-      File "example_error.py", line 3, in <module>
+    تم تخصيص المصفوفة مع تتبع المكدس:
+      File "example_error.py"، line 3، in <module>
         a = torch.rand(10000, device="cuda")
       ...
-      File "pytorch/torch/cuda/_sanitizer.py", line 420, in _handle_memory_allocation
+      File "pytorch/torch/cuda/_sanitizer.py"، line 420، in _handle_memory_allocation
         traceback.StackSummary.extract(
 
-This gives extensive insight into the origin of the error:
+يقدم هذا شرحًا وافيًا لسبب الخطأ:
 
-- A tensor was incorrectly accessed from streams with ids: 0 (default stream) and 94646435460352 (new stream)
-- The tensor was allocated by invoking ``a = torch.rand(10000, device="cuda")``
-- The faulty accesses were caused by operators
-    - ``a = torch.rand(10000, device="cuda")`` on stream 0
-    - ``torch.mul(a, 5, out=a)`` on stream 94646435460352
-- The error message also displays the schemas of the invoked operators, along with a note
-  showing which arguments of the operators correspond to the affected tensor.
+- تم الوصول إلى مصفوفة بشكل غير صحيح من دفقات ذات معرفات: 0 (دفق الافتراضي) و94646435460352 (دفق جديد)
+- تم تخصيص المصفوفة عن طريق استدعاء ``a = torch.rand(10000, device="cuda")``
+- تسبب عمليات التشغيل غير الصحيحة في:
+    - ``a = torch.rand(10000, device="cuda")`` على الدفق 0
+    - ``torch.mul(a, 5, out=a)`` على الدفق 94646435460352
+- تعرض رسالة الخطأ أيضًا مخططات مشغلي التشغيل المستدعى، بالإضافة إلى ملاحظة
+  تُظهر أي حجج للمشغلين المقابلين للمصفوفة المتأثرة.
 
-  - In the example, it can be seen that tensor ``a`` corresponds to arguments ``self``, ``out``
-    and the ``output`` value of the invoked operator ``torch.mul``.
+  - في المثال، يمكن ملاحظة أن المصفوفة "a" تتوافق مع حجج "self" و"out"
+    وقيمة "الإخراج" لمشغل "torch.mul" المستدعى.
 
 .. seealso::
-    The list of supported torch operators and their schemas can be viewed
-    :doc:`here <torch>`.
+    يمكن عرض قائمة مشغلي تورتش المدعومة ومخططاتهم :doc:`هنا <torch>`.
 
-The bug can be fixed by forcing the new stream to wait for the default stream:
+يمكن إصلاح الخلل عن طريق إجبار الدفق الجديد على الانتظار حتى ينتهي الدفق الافتراضي:
 
 ::
 
@@ -94,9 +89,9 @@ The bug can be fixed by forcing the new stream to wait for the default stream:
         torch.cuda.current_stream().wait_stream(torch.cuda.default_stream())
         torch.mul(a, 5, out=a)
 
-When the script is run again, there are no errors reported.
+عند تشغيل البرنامج النصي مرة أخرى، لا يتم الإبلاغ عن أي أخطاء.
 
-API Reference
--------------
+مرجع API
+---------
 
 .. autofunction:: enable_cuda_sanitizer
