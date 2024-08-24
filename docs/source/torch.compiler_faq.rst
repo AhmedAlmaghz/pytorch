@@ -1,140 +1,136 @@
-Frequently Asked Questions
-==========================
-**Author**: `Mark Saroufim <https://github.com/msaroufim>`_
+.. _only::
 
-Does ``torch.compile`` support training?
+الأسئلة المتكررة
+===========
+
+هل يدعم ``torch.compile`` التدريب؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``torch.compile`` supports training, using AOTAutograd to capture backwards:
+يدعم ``torch.compile`` التدريب، باستخدام AOTAutograd لالتقاط الخلفيات:
 
-1. The ``.forward()`` graph and ``optimizer.step()`` is captured by
-   TorchDynamo’s python ``evalframe`` frontend.
-2. For each segment of ``.forward()`` that torchdynamo captures, it uses
-   AOTAutograd to generate a backward graph segment.
-3. Each pair of forward and backward graph are (optionally) min-cut
-   partitioned to save the minimal state between forward and backward.
-4. The forward and backward pairs are wrapped in ``autograd.function`` modules.
-5. Usercode calling\ ``.backward()`` still triggers eager’s autograd engine,
-   which runs each *compiled backward* graph as if it were one op, also running
-   any non-compiled eager ops’ ``.backward()`` functions.
+1. تتم عملية التقاط مخطط ``.forward()`` و ``optimizer.step()`` بواسطة واجهة
+   Python ``evalframe`` الخاصة بـ TorchDynamo.
+2. لكل جزء من ``.forward()`` الذي يلتقطه torchdynamo، فإنه يستخدم
+   AOTAutograd لتوليد جزء مخطط خلفي.
+3. يتم (اختياريًا) تقسيم كل زوج من المخططات الأمامية والخلفية إلى الحد الأدنى
+   لحفظ الحالة الدنيا بين الأمام والخلف.
+4. يتم لف أزواج المخططات الأمامية والخلفية في وحدات ``autograd.function``.
+5. لا يزال كود المستخدم الذي يستدعي\ ``.backward()`` يؤدي إلى تشغيل محرك
+   autograd الخاص بـ eager، والذي يقوم بتشغيل كل مخطط خلفي مجمع كما لو كان
+   عملية واحدة، كما يقوم بتشغيل وظائف ``.backward()`` لأي عمليات eager غير
+   مجمعة.
 
-Do you support Distributed code?
+هل تدعم التعليمات البرمجية الموزعة؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``torch.compile`` supports ``DistributedDataParallel`` (DDP).
-Support for other distributed training libraries is being considered.
+يدعم ``torch.compile`` ``DistributedDataParallel`` (DDP).
+ويتم النظر في دعم مكتبات التدريب الموزعة الأخرى.
 
-The main reason why Distributed code is challenging with dynamo is
-because AOTAutograd unrolls both the forward and backward pass and
-provides 2 graphs for backends to optimize. This is a problem for
-distributed code because we’d like to ideally overlap communication
-operations with computations. Eager pytorch accomplishes this in
-different ways for DDP/FSDP- using autograd hooks, module hooks, and
-modifications/mutations of module states. In a naive application of
-dynamo, hooks that should run directly after an operation during
-backwards may be delayed until after the entire compiled region of
-backwards ops, due to how AOTAutograd compiled functions interact with
-dispatcher hooks.
+والسبب الرئيسي في أن التعليمات البرمجية الموزعة تشكل تحديًا مع dynamo هو
+أن AOTAutograd تفك كل من المرور الأمامي والخلفي وتقدم
+مخططين للواجهات الخلفية للتحسين. هذه مشكلة للرمز الموزع لأننا
+نود أن نتداخل في عمليات الاتصال مع الحسابات. تنجز PyTorch
+المتحمسة ذلك بطرق مختلفة لـ DDP/FSDP - باستخدام خطافات autograd،
+وخطافات الوحدات، وتعديلات/طفرات حالات الوحدات. في تطبيق بسيط لـ
+dynamo، قد يتم تأخير الخطافات التي يجب تشغيلها مباشرة بعد عملية
+أثناء الخلفيات حتى بعد منطقة العمليات الخلفية المجمعة بأكملها، وذلك
+بسبب كيفية تفاعل وظائف AOTAutograd المجمّعة مع خطافات الموزع.
 
-The basic strategy for optimizing DDP with Dynamo is outlined in
+تتمثل الاستراتيجية الأساسية لتحسين DDP باستخدام Dynamo في
 `distributed.py <https://github.com/pytorch/pytorch/blob/main/torch/_dynamo/backends/distributed.py>`__
-where the main idea will be to graph break on `DDP bucket
-boundaries <https://pytorch.org/docs/stable/notes/ddp.html#internal-design>`__.
+حيث تتمثل الفكرة الرئيسية في كسر المخطط على `حدود دلو
+DDP <https://pytorch.org/docs/stable/notes/ddp.html#internal-design>`__.
 
-When each node in DDP needs to synchronize its weights with the other
-nodes it organizes its gradients and parameters into buckets which
-reduces communication times and allows a node to broadcast a fraction of
-its gradients to other waiting nodes.
+عندما تحتاج كل عقدة في DDP إلى مزامنة أوزانها مع العقد الأخرى،
+فهي تنظم تدرجاتها وبارامتراتها في دلاء تقلل من أوقات الاتصال
+وتسمح للعقدة ببث جزء من تدرجاتها إلى العقد الأخرى التي تنتظر.
 
-Graph breaks in distributed code mean you can expect dynamo and its
-backends to optimize the compute overhead of a distributed program but
-not its communication overhead. Graph-breaks may interfere with
-compilation speedups, if the reduced graph-size robs the compiler of
-fusion opportunities. However, there are diminishing returns with
-increasing graph size since most of the current compute optimizations
-are local fusions. So in practice this approach may be sufficient.
+تعني كسور المخطط في التعليمات البرمجية الموزعة أنه يمكنك توقع
+قيام dynamo وواجهاتها الخلفية بتحسين عبء العمل الحسابي لبرنامج
+موزع ولكن ليس عبئه التواصلي. قد تتعارض كسور المخطط مع تسريع
+التجميع، إذا حرم حجم المخطط المخفض المجمع من فرص الانصهار.
+ومع ذلك، هناك عوائد متناقصة مع زيادة حجم المخطط نظرًا لأن معظم
+تحسين الحساب الحالي عبارة عن عمليات انصهار محلية. لذا فقد يكون
+هذا النهج كافيًا في الممارسة العملية.
 
-Do I still need to export whole graphs?
+هل ما زلت بحاجة إلى تصدير الرسوم البيانية الكاملة؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For the vast majority of models you probably don’t and you can use
-``torch.compile()`` as is but there are a few situations where
-full graphs are necessary and you can can ensure a full graph by simply
-running ``torch.compile(..., fullgraph=True)``. These situations include:
+بالنسبة لأغلبية النماذج، فمن المحتمل ألا تحتاج إلى ذلك، ويمكنك استخدام
+``torch.compile()`` كما هو، ولكن هناك بعض الحالات التي تكون فيها
+الرسوم البيانية الكاملة ضرورية، ويمكنك التأكد من اكتمال الرسم البياني
+ببساطة عن طريق تشغيل ``torch.compile(..., fullgraph=True)``. تشمل هذه
+الحالات ما يلي:
 
-* Large scale training runs, such as $250K+ that require pipeline parallelism
-  and other advanced sharding strategies.
+* تشغيلات التدريب واسعة النطاق، مثل 250 ألفًا+ التي تتطلب موازاة الأنابيب
+  واستراتيجيات التجزئة المتقدمة الأخرى.
 
-* Inference optimizers like `TensorRT <https://github.com/pytorch/TensorRT>`__
-  or `AITemplate <https://github.com/facebookincubator/AITemplate>`__ that
-  rely on fusing much more aggressively than training optimizers.
+* أدوات تحسين الاستدلال مثل `TensorRT <https://github.com/pytorch/TensorRT>`__
+  أو `AITemplate <https://github.com/facebookincubator/AITemplate>`__ التي
+  تعتمد على الانصهار بشكل أكثر عدوانية من أدوات تحسين التدريب.
 
-* Mobile training or inference.
+* التدريب أو الاستدلال المحمول.
 
-Future work will include tracing communication operations into graphs,
-coordinating these operations with compute optimizations, and optimizing
-the communication operations.
+سيشمل العمل المستقبلي تتبع عمليات الاتصال في الرسوم البيانية،
+وتنسيق هذه العمليات مع تحسينات الحساب، وتحسين عمليات الاتصال.
 
-Why is my code crashing?
+لماذا تتحطم الشفرة الخاصة بي؟
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-If your code ran just fine without ``torch.compile`` and started to
-crash with it is enabled, then the most important first step is figuring
-out which part of the stack your failure occurred. To troubleshoot that,
-follow the steps below and only try the next step if the previous one
-succeeded.
+إذا كان كودك يعمل بشكل جيد دون ``torch.compile`` وبدأ في التعطل بمجرد
+تمكينه، فإن الخطوة الأولى والأهم هي معرفة الجزء من المكدس الذي حدث
+فيه الفشل. لإصلاح ذلك، اتبع الخطوات أدناه وحاول فقط الخطوة التالية إذا
+نجحت الخطوة السابقة.
 
-1. ``torch.compile(..., backend="eager")`` which only runs TorchDynamo
-   forward graph capture and then runs the captured graph with PyTorch.
-   If this fails then there’s an issue with TorchDynamo.
+1. ``torch.compile(..., backend="eager")`` الذي يقوم بتشغيل عملية التقاط
+   مخطط TorchDynamo الأمامي فقط ثم يقوم بتشغيل المخطط الذي تم التقاطه
+   باستخدام PyTorch. إذا فشل هذا، فهناك مشكلة في TorchDynamo.
 
 2. ``torch.compile(..., backend="aot_eager")``
-   which runs TorchDynamo to capture a forward graph, and then AOTAutograd
-   to trace the backward graph without any additional backend compiler
-   steps. PyTorch eager will then be used to run the forward and backward
-   graphs. If this fails then there’s an issue with AOTAutograd.
+   الذي يقوم بتشغيل TorchDynamo لالتقاط مخطط أمامي، ثم AOTAutograd
+   لتتبع مخطط خلفي دون أي خطوات مجمعة إضافية من واجهة برمجة
+   التطبيقات. سيتم بعد ذلك استخدام PyTorch eager لتشغيل المخططات الأمامية
+   والخلفية. إذا فشل هذا، فهناك مشكلة في AOTAutograd.
 
-3. ``torch.compile(..., backend="inductor")`` which runs TorchDynamo to capture a
-   forward graph, and then AOTAutograd to trace the backward graph with the
-   TorchInductor compiler. If this fails then there’s an issue with TorchInductor
+3. ``torch.compile(..., backend="inductor")`` الذي يقوم بتشغيل TorchDynamo
+   لالتقاط مخطط أمامي، ثم AOTAutograd لتتبع مخطط خلفي مع مجمع
+   TorchInductor. إذا فشل هذا، فهناك مشكلة في TorchInductor
 
-Why is compilation slow?
+لماذا التجميع بطيء؟
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-* **Dynamo Compilation**– TorchDynamo has a builtin stats function for
-  collecting and displaying the time spent in each compilation phase.
-  These stats can be accessed by calling ``torch._dynamo.utils.compile_times()``
-  after executing ``torch._dynamo``. By default, this returns a string
-  representation of the compile times spent in each TorchDynamo function by name.
+* **تجميع دينامو** - لدى TorchDynamo إحصائيات مدمجة لجمع وعرض الوقت
+  المستغرق في كل مرحلة من مراحل التجميع. يمكن الوصول إلى هذه الإحصائيات
+  عن طريق استدعاء ``torch._dynamo.utils.compile_times()`` بعد تنفيذ
+  ``torch._dynamo``. بشكل افتراضي، تقوم هذه الدالة بإرجاع تمثيل سلسلة
+  لأوقات التجميع المستغرقة في كل دالة TorchDynamo حسب الاسم.
 
-* **Inductor Compilation**– TorchInductor has a builtin stats and trace function
-  for displaying time spent in each compilation phase, output code, output
-  graph visualization and IR dump. ``env TORCH_COMPILE_DEBUG=1 python repro.py``.
-  This is a debugging tool designed to make it easier to debug/understand the
-  internals of TorchInductor with an output that will look something like
-  `this <https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
-  Each file in that debug trace can be enabled/disabled via
-  ``torch._inductor.config.trace.*``. The profile and the diagram are both
-  disabled by default since they are expensive to generate. See the
-  `example debug directory
-  output <https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
-  for more examples.
+* **تجميع المحث** - لدى TorchInductor إحصائيات مدمجة ووظيفة تتبع لعرض
+  الوقت المستغرق في كل مرحلة من مراحل التجميع، ورمز الإخراج، وتصور
+  المخطط وإغراق IR. ``env TORCH_COMPILE_DEBUG=1 python repro.py``.
+  هذه أداة تصحيح مصممة لتسهيل تصحيح أخطاء/فهم داخليات TorchInductor
+  مع إخراج سيشبه
+  `هذا <https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
+  يمكن تمكين/تعطيل كل ملف في تتبع التصحيح هذا عبر
+  ``torch._inductor.config.trace.*``. يتم تعطيل كل من المخطط والرسوم
+  البيانية بشكل افتراضي نظرًا لأنهما مكلفان لإنشائهما. راجع
+  `إخراج دليل التصحيح
+  <https://gist.github.com/jansel/f4af078Singolare.com/openai.com/blog/triton/>`__
+  للحصول على مزيد من الأمثلة.
 
-* **Excessive Recompilation**
-  When TorchDynamo compiles a function (or part of one), it makes certain
-  assumptions about locals and globals in order to allow compiler
-  optimizations, and expresses these assumptions as guards that check
-  particular values at runtime. If any of these guards fail, Dynamo will
-  recompile that function (or part) up to
-  ``torch._dynamo.config.cache_size_limit`` times. If your program is
-  hitting the cache limit, you will first need to determine which guard is
-  failing and what part of your program is triggering it. The
-  `recompilation profiler <#recompilation-profiler>`__ automates the
-  process of setting TorchDynamo’s cache limit to 1 and running your
-  program under an observation-only ‘compiler’ that records the causes of
-  any guard failures. You should be sure to run your program for at least
-  as long (as many iterations) as you were running when you ran into
-  trouble, and the profiler will accumulate statistics over this duration.
+* **إعادة التجميع المفرط**
+  عندما يقوم TorchDynamo بتجميع دالة (أو جزء منها)، فإنه يقوم بعمل افتراضات
+  معينة حول المحليات والعالميات للسماح بتحسين المجمع، ويعبر عن هذه
+  الافتراضات على أنها حراس يتحققون من القيم في وقت التشغيل. إذا فشل أي
+  من هذه الحراس، فسيقوم Dynamo بإعادة تجميع تلك الدالة (أو الجزء) حتى
+  ``torch._dynamo.config.cache_size_limit`` مرات. إذا وصل برنامجك إلى حد
+  ذاكرة التخزين المؤقت، فستحتاج أولاً إلى تحديد الحارس الذي يفشل وما
+  الجزء من برنامجك الذي يفعله. `الملف الشخصي لإعادة التجميع
+  <#recompilation-profiler>`__ يقوم بتشغيل عملية أتمتة تعيين حد ذاكرة
+  التخزين المؤقت لـ TorchDynamo إلى 1 وتشغيل برنامجك في إطار "مجمع"
+  للمراقبة فقط يقوم بتسجيل أسباب أي فشل في الحارس. يجب أن تتأكد من
+  تشغيل برنامجك لمدة لا تقل عن (عدد التكرارات) كما كنت تفعل عندما واجهت
+  مشكلة، وسيقوم الملف الشخصي بتراكم الإحصائيات خلال هذه المدة.
 
 .. code-block:: python
 
@@ -148,66 +144,65 @@ Why is compilation slow?
        profiler_model()
        print(prof.report())
 
-Why are you recompiling in production?
+لماذا تقوم بإعادة التجميع في الإنتاج؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases, you may not want unexpected compiles after a program has
-warmed up. For example, if you are serving production traffic in a
-latency critical application. For this, TorchDynamo provides an
-alternate mode where prior compiled graphs are used, but no new ones are
-generated:
+في بعض الحالات، قد لا ترغب في إجراء عمليات التجميع غير المتوقعة بعد
+تسخين البرنامج. على سبيل المثال، إذا كنت تقوم بتشغيل حركة المرور
+الإنتاجية في تطبيق حساس للاتصالات. يوفر TorchDynamo وضعًا بديلاً
+يتم فيه استخدام الرسوم البيانية المجمعة مسبقًا، ولكن لا يتم إنشاؤها
+جديدة:
 
 .. code-block:: python
 
    frozen_toy_example = dynamo.run(toy_example)
-   frozen_toy_example(torch.randn(10), torch.randn(10))
+   frozen_toy_example(torch.randn(10)، torch.randn(10))
 
-How are you speeding up my code?
+كيف تقوم بتسريع كودي؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are 3 major ways to accelerate PyTorch code:
+هناك 3 طرق رئيسية لتسريع كود PyTorch:
 
-1. Kernel fusion via vertical fusions which fuse sequential operations to avoid
-   excessive read/writes. For example, fuse 2 subsequent cosines means you
-   can can do 1 read 1 write instead 2 reads 2 writes 2. Horizontal fusion:
-   the simplest example being batching where a single matrix is multiplied
-   with a batch of examples but the more general scenario is a grouped GEMM
-   where a group of matrix multiplications are scheduled together
+1. دمج النواة من خلال عمليات الانصهار الرأسية التي تدمج العمليات المتتالية
+   لتجنب القراءات/الكتابات المفرطة. على سبيل المثال، يؤدي دمج اثنين من
+   عمليات cosine اللاحقة إلى قراءة واحدة وكتابة واحدة بدلاً من قراءتين
+   وكتابتين و2. الانصهار الأفقي: أبسط مثال على ذلك هو الدفعات، حيث يتم
+   ضرب مصفوفة واحدة بمثال دفعي، ولكن السيناريو العام هو GEMM مجمعة
+   حيث يتم جدولة مجموعة من ضربات المصفوفة معًا
 
-2. Out of order execution: A general optimization for compilers, by looking ahead
-   at the exact data dependencies within a graph we can decide on the most
-   opportune time to execute a node and which buffers can be reused
+2. التنفيذ خارج الترتيب: تحسين عام لمجمعات، بالنظر إلى الأمام إلى
+   تبعيات البيانات الدقيقة داخل الرسم البياني، يمكننا تحديد الوقت
+   الأنسب لتنفيذ عقدة وإعادة استخدام المخازن المؤقتة.
 
-3. Automatic work placement: Similar of the out of order execution point,
-   but by matching nodes of a graph to resources like physical hardware or
-   memory we can design an appropriate schedule
+3. التنسيب التلقائي للعمل: مماثل لنقطة تنفيذ خارج الترتيب، ولكن عن طريق
+   مطابقة العقد في الرسم البياني للموارد مثل الأجهزة المادية أو الذاكرة،
+   يمكننا تصميم جدول مناسب
 
-The above are general principles for accelerating PyTorch code but
-different backends will each make different tradeoffs on what to
-optimize. For example Inductor first takes care of fusing whatever it
-can and only then generates `Triton <https://openai.com/blog/triton/>`__
-kernels.
+ما سبق هي مبادئ عامة لتسريع كود PyTorch ولكن الواجهات الخلفية المختلفة
+ستقوم كل منها بمقايضات مختلفة حول ما يجب تحسينه. على سبيل المثال،
+يحرص المحث أولاً على دمج كل ما يمكنه ثم يقوم بتوليد نوى
+`Triton <https://openai.com/blog/triton/>`__.
 
-Triton in addition offers speedups because of automatic memory
-coalescing, memory management and scheduling within each Streaming
-Multiprocessor and has been designed to handle tiled computations.
+بالإضافة إلى ذلك، توفر Triton تسريعًا بسبب تجميع الذاكرة التلقائي،
+وإدارة الذاكرة، والجدولة داخل كل وحدة معالجة تدفق متعددة
+(SM)، وقد تم تصميمها للتعامل مع الحسابات المبلطة.
 
-However, regardless of the backend you use it’s best to use a benchmark
-and see approach so try out the PyTorch profiler, visually inspect the
-generated kernels and try to see what’s going on for yourself.
+ومع ذلك، بغض النظر عن الواجهة الخلفية التي تستخدمها، من الأفضل استخدام
+نهج المعايير القياسية لذا جرب ملف تعريف PyTorch، وقم بالتفتيش البصري
+على النواة المولدة، وحاول أن ترى ما يحدث بنفسك.
 
-Why am I not seeing speedups?
+لماذا لا أرى تسريع؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _torch.compiler_graph_breaks:
 
-Graph Breaks
+كسور المخطط
 ------------
 
-The main reason you won’t see the speedups you’d like to by using dynamo
-is excessive graph breaks. So what’s a graph break?
+السبب الرئيسي في أنك لن ترى تسريع السرعة التي تريدها باستخدام dynamo
+هو كسور المخطط المفرطة. لذا فما هو كسر المخطط؟
 
-Given a program like:
+بالنظر إلى برنامج مثل:
 
 .. code-block:: python
 
@@ -217,25 +212,25 @@ Given a program like:
    torch.compile(some_fun)(x)
    ...
 
-Torchdynamo will attempt to compile all of the torch/tensor operations
-within ``some_fun()`` into a single FX graph, but it may fail to capture
-everything into one graph.
+سيحاول Torchdynamo تجميع جميع عمليات torch/tensor داخل ``some_fun()``
+في رسم بياني FX واحد، ولكنه قد يفشل في التقاط كل شيء في رسم بياني
+واحد.
 
-Some graph break reasons are insurmountable to TorchDynamo like calling
-into a C extension other than PyTorch is invisible to TorchDynamo, and
-could do arbitrary things without TorchDynamo being able to introduce
-necessary guards to ensure that the compiled program would be safe to reuse.
+بعض أسباب كسر المخطط لا يمكن التغلب عليها بالنسبة إلى TorchDynamo مثل
+الاستدعاء إلى امتداد C بخلاف PyTorch غير مرئي لـ TorchDynamo، ويمكنه
+القيام بأشياء عشوائية دون أن يتمكن TorchDynamo من تقديم حراس
+ضروريين لضمان أن البرنامج المجمع سيكون آمنًا لإعادة استخدامه.
 
-   To maximize performance, it’s important to have as few graph breaks
-   as possible.
+   لتحقيق الأداء الأمثل، من المهم أن يكون لديك أقل عدد ممكن من كسور
+   المخطط.
 
-Identifying the cause of a graph break
+تحديد سبب كسر المخطط
 --------------------------------------
 
-To identify all graph breaks in a program and the associated reasons for
-the breaks, ``torch._dynamo.explain`` can be used. This tool runs
-TorchDynamo on the supplied function and aggregates the graph breaks
-that are encountered. Here is an example usage:
+لتحديد جميع كسور المخطط في برنامج وأسباب كسور المخطط المرتبطة،
+يمكن استخدام ``torch._dynamo.explain``. تقوم هذه الأداة بتشغيل
+TorchDynamo على الدالة المقدمة وتجميع كسور المخطط التي تتم مواجهتها.
+فيما يلي مثال على الاستخدام:
 
 .. code-block:: python
 
@@ -268,9 +263,9 @@ that are encountered. Here is an example usage:
      ...
    """
 
-To throw an error on the first graph break encountered you can
-disable python fallbacks by using ``fullgraph=True``, this should be
-familiar if you’ve worked with export based compilers.
+لإلقاء خطأ عند أول كسر مخطط يتم مواجهته، يمكنك تعطيل عمليات الاستدعاء
+الخلفية لـ Python باستخدام ``fullgraph=True``، والتي يجب أن تكون
+مألوفة إذا كنت قد عملت مع مجمعات قائمة على التصدير.
 
 .. code-block:: python
 
@@ -279,58 +274,46 @@ familiar if you’ve worked with export based compilers.
 
    torch.compile(toy_example, fullgraph=True, backend=<compiler>)(a, b)
 
-Why didn’t my code recompile when I changed it?
+لماذا لم تتم إعادة تجميع التعليمات البرمجية الخاصة بي عندما قمت بتغييرها؟
+هذا هو النص المترجم إلى اللغة العربية بتنسيق ReStructuredText:
+
 -----------------------------------------------
 
-If you enabled dynamic shapes by setting
-``env TORCHDYNAMO_DYNAMIC_SHAPES=1 python model.py`` then your code
-won’t recompile on shape changes. We’ve added support for dynamic shapes
-which avoids recompilations in the case when shapes vary by less than a
-factor of 2. This is especially useful in scenarios like varying image
-sizes in CV or variable sequence length in NLP. In inference scenarios
-it’s often not possible to know what a batch size will be beforehand
-because you take what you can get from different client apps.
+إذا قمت بتفعيل الأشكال الديناميكية عن طريق ضبط
+``env TORCHDYNAMO_DYNAMIC_SHAPES=1 python model.py`` فإن كودك لن يعاد تجميعه عند تغير الأشكال. لقد أضفنا دعمًا للأشكال الديناميكية
+التي تتجنب إعادة التجميع في حالة اختلاف الأشكال بأقل من عامل 2. وهذا مفيد بشكل خاص في السيناريوهات التي تختلف فيها أحجام الصور في الرؤية الحاسوبية أو طول التسلسل المتغير في معالجة اللغات الطبيعية. في سيناريوهات الاستدلال، غالبًا ما يكون من المستحيل معرفة حجم الدفعة مسبقًا لأنك تأخذ ما يمكنك الحصول عليه من تطبيقات العميل المختلفة.
 
-In general, TorchDynamo tries very hard not to recompile things
-unnecessarily so if for example TorchDynamo finds 3 graphs and your
-change only modified one graph then only that graph will recompile. So
-another tip to avoid potentially slow compilation times is to warmup a
-model by compiling it once after which subsequent compilations will be
-much faster. Cold start compile times is still a metric we track
-visibly.
+بشكل عام، يحاول TorchDynamo جاهدًا عدم إعادة تجميع الأشياء
+دون داعٍ، لذلك إذا وجد TorchDynamo، على سبيل المثال، 3 رسومات بيانية ولم يتغير تعديلك سوى رسم بياني واحد، فسيتم إعادة تجميع هذا الرسم البياني فقط. لذلك، فإن إحدى النصائح الأخرى لتجنب أوقات التجميع البطيئة المحتملة هي تسخين النموذج عن طريق تجميعه مرة واحدة، والتي ستكون التجميعات اللاحقة بعدها أسرع بكثير. وقت التجميع البارد عند بدء التشغيل لا يزال مقياسًا نتتبعه بشكل واضح.
 
-Why am I getting incorrect results?
+لماذا أحصل على نتائج غير صحيحة؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Accuracy issues can also be minified if you set the environment variable
-``TORCHDYNAMO_REPRO_LEVEL=4``, it operates with a similar git bisect
-model and a full repro might be something like
-``TORCHDYNAMO_REPRO_AFTER="aot" TORCHDYNAMO_REPRO_LEVEL=4`` the reason
-we need this is downstream compilers will codegen code whether it’s
-Triton code or the C++ backend, the numerics from those downstream
-compilers can be different in subtle ways yet have dramatic impact on
-your training stability. So the accuracy debugger is very useful for us
-to detect bugs in our codegen or with a backend compiler.
+يمكن أيضًا تقليل مشكلات الدقة إذا قمت بتعيين متغير البيئة
+``TORCHDYNAMO_REPRO_LEVEL=4``، فهو يعمل بنموذج git bisect مشابه وقد يكون إعادة الإنشاء الكامل شيئًا مثل
+``TORCHDYNAMO_REPRO_AFTER="aot" TORCHDYNAMO_REPRO_LEVEL=4`` والسبب
+نحن بحاجة إلى هذا هو أن المترجمين القادمين سيقومون بتوليد التعليمات البرمجية سواء كان ذلك
+رمز Triton أو backend C++، ويمكن أن تختلف الأرقام من هذه المترجمات النهائية بطرق دقيقة ولكنها قد يكون لها تأثير كبير على استقرار التدريب الخاص بك. لذلك، فإن مصحح الدقة مفيد جدًا بالنسبة لنا
+لاكتشاف الأخطاء في توليد التعليمات البرمجية الخاصة بنا أو مع مترجم backend.
 
-If you'd like to ensure that random number generation is the same across both torch
-and triton then you can enable ``torch._inductor.config.fallback_random = True``
+إذا كنت ترغب في التأكد من أن توليد الأرقام العشوائية هو نفسه عبر كل من torch
+و triton، فيمكنك تمكين ``torch._inductor.config.fallback_random = True``
 
-Why am I getting OOMs?
+لماذا أحصل على OOMs؟
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Dynamo is still an alpha product so there’s a few sources of OOMs and if
-you’re seeing an OOM try disabling the following configurations in this
-order and then open an issue on GitHub so we can solve the root problem
-1. If you’re using dynamic shapes try disabling them, we’ve disabled
-them by default: ``env TORCHDYNAMO_DYNAMIC_SHAPES=0 python model.py`` 2.
-CUDA graphs with Triton are enabled by default in inductor but removing
-them may alleviate some OOM issues: ``torch._inductor.config.triton.cudagraphs = False``.
+Dynamo لا يزال منتجًا تجريبيًا، لذلك هناك بضعة مصادر لـ OOMs وإذا
+كنت ترى OOM، جرب تعطيل التكوينات التالية بهذا
+الترتيب ثم قم بفتح مشكلة على GitHub حتى نتمكن من حل المشكلة الأساسية
+1. إذا كنت تستخدم الأشكال الديناميكية، فحاول تعطيلها، لقد قمنا بتعطيلها
+بشكل افتراضي: ``env TORCHDYNAMO_DYNAMIC_SHAPES=0 python model.py`` 2.
+تمكين الرسوم البيانية CUDA مع Triton بشكل افتراضي في المحرك، ولكن إزالتها قد تخفف بعض مشكلات OOM: ``torch._inductor.config.triton.cudagraphs = False``.
 
-Does ``torch.func`` work with ``torch.compile`` (for `grad` and `vmap` transforms)?
+هل يعمل ``torch.func`` مع ``torch.compile`` (لتحويلات `grad` و` vmap`)؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Applying a ``torch.func`` transform to a function that uses ``torch.compile``
-does work:
+تطبيق تحويل ``torch.func`` على دالة تستخدم ``torch.compile``
+يعمل:
 
 .. code-block:: python
 
@@ -346,11 +329,11 @@ does work:
     x = torch.randn(2, 3)
     g(x)
 
-Calling ``torch.func`` transform inside of a function handled with ``torch.compile``
+استدعاء تحويل ``torch.func`` داخل دالة تمت معالجتها باستخدام ``torch.compile``
 ------------------------------------------------------------------------------------
 
 
-Compiling ``torch.func.grad`` with ``torch.compile``
+تجميع ``torch.func.grad`` مع ``torch.compile``
 ----------------------------------------------------
 
 .. code-block:: python
@@ -363,7 +346,7 @@ Compiling ``torch.func.grad`` with ``torch.compile``
     x = torch.randn(3, 3, 3)
     grad_x = torch.compile(wrapper_fn)(x)
 
-Compiling ``torch.vmap`` with ``torch.compile``
+تجميع ``torch.vmap`` مع ``torch.compile``
 -----------------------------------------------
 
 .. code-block:: python
@@ -377,26 +360,25 @@ Compiling ``torch.vmap`` with ``torch.compile``
     output = torch.compile(my_fn)(x)
 
 
-Compiling functions besides the ones which are supported (escape hatch)
+تجميع الدوال بخلاف تلك المدعومة (مخرج الطوارئ)
 -----------------------------------------------------------------------
 
-For other transforms, as a workaround, use ``torch._dynamo.allow_in_graph``
+كحل بديل للتحويلات الأخرى، استخدم ``torch._dynamo.allow_in_graph``
 
-``allow_in_graph`` is an escape hatch. If your code does not work with
-``torch.compile``, which introspects Python bytecode, but you believe it
-will work via a symbolic tracing approach (like ``jax.jit``), then use
+``allow_in_graph`` هو مخرج للطوارئ. إذا لم يعمل كودك مع
+``torch.compile``، الذي يفحص بايتكود بايثون، ولكنك تعتقد أنه
+سيعمل عبر نهج التتبع الرمزي (مثل ``jax.jit``)، ثم استخدم
 ``allow_in_graph``.
 
-By using ``allow_in_graph`` to annotate a function, you must make sure
-your code meets the following requirements:
+من خلال استخدام ``allow_in_graph`` لوضع علامة على دالة، يجب التأكد من
+تلبية كودك للمتطلبات التالية:
 
-- All outputs in your function only depend on the inputs and
-  do not depend on any captured Tensors.
-- Your function is functional. That is, it does not mutate any state. This may
-  be relaxed; we actually support functions that appear to be functional from
-  the outside: they may have in-place PyTorch operations, but may not mutate
-  global state or inputs to the function.
-- Your function does not raise data-dependent errors.
+- تعتمد جميع المخرجات في دالتك فقط على المدخلات
+  ولا تعتمد على أي تنسيقات محتجزة.
+- دالتك وظيفية. أي أنه لا يقوم بتغيير أي حالة. قد
+  يتم الاسترخاء؛ في الواقع، نحن ندعم الدوال التي تبدو وظيفية من
+الخارج: قد يكون لديهم عمليات PyTorch في المكان، ولكن قد لا يقومون بتعديل حالة عالمية أو مدخلات للدالة.
+- لا ترفع دالتك أخطاء تعتمد على البيانات.
 
 .. code-block:: python
 
@@ -409,72 +391,70 @@ your code meets the following requirements:
     x = torch.randn(2, 3)
     f(x)
 
-A common pitfall is using ``allow_in_graph`` to annotate a function that
-invokes an ``nn.Module``. This is because the outputs now depend on the
-parameters of the ``nn.Module``. To get this to work, use
-``torch.func.functional_call`` to extract the module state.
+من الأخطاء الشائعة استخدام ``allow_in_graph`` لوضع علامة على دالة
+التي تستدعي ``nn.Module``. هذا لأن المخرجات تعتمد الآن على
+معلمات ``nn.Module``. لجعل هذا يعمل، استخدم
+``torch.func.functional_call`` لاستخراج حالة الوحدة النمطية.
 
-Does NumPy work with ``torch.compile``?
+هل يعمل NumPy مع ``torch.compile``؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Starting in 2.1, ``torch.compile`` understands native NumPy programs that
-work on NumPy arrays, and mixed PyTorch-NumPy programs that convert from PyTorch
-to NumPy and back via ``x.numpy()``, ``torch.from_numpy``, and related functions.
+بدءًا من الإصدار 2.1، يفهم ``torch.compile`` برامج NumPy الأصلية التي
+تعمل على صفيفات NumPy، وبرامج PyTorch-NumPy المختلطة التي تحول من PyTorch
+إلى NumPy والعكس باستخدام ``x.numpy()``، ``torch.from_numpy``، والوظائف ذات الصلة.
 
 .. _nonsupported-numpy-feats:
 
-Which NumPy features does ``torch.compile`` support?
+أي ميزات NumPy يدعمها ``torch.compile``؟
 ----------------------------------------------------
 
-NumPy within ``torch.compile`` follows NumPy 2.0 pre-release.
+يتبع NumPy داخل ``torch.compile`` إصدار NumPy 2.0 قبل الإصدار.
 
-Generally, ``torch.compile`` is able to trace through most NumPy constructions,
-and when it cannot, it falls back to eager and lets NumPy execute that piece of
-code. Even then, there are a few features where ``torch.compile`` semantics
-slightly deviate from those of NumPy:
+بشكل عام، يمكن لـ ``torch.compile`` تتبع معظم الإنشاءات NumPy،
+وعندما لا يستطيع، فإنه ينتقل إلى الوضع التواقتي ويدع NumPy ينفذ ذلك الجزء من
+الشفرة. حتى بعد ذلك، هناك بعض الميزات التي تنحرف فيها دلالة ``torch.compile``
+بصورة طفيفة عن تلك الخاصة بـ NumPy:
 
-- NumPy scalars: We model them as 0-D arrays. That is, ``np.float32(3)`` returns
-  a 0-D array under ``torch.compile``. To avoid a graph break, it is best to use this 0-D
-  array. If this breaks your code, you can workaround this by casting the NumPy scalar
-  to the relevant Python scalar type ``bool/int/float``.
+- المصفوفات العددية لـ NumPy: نحن نعتبرها مصفوفات أحادية البعد. أي أن ``np.float32(3)`` يعيد
+  مصفوفة أحادية البعد في ظل ``torch.compile``. لتجنب كسر الرسم البياني، من الأفضل استخدام هذه المصفوفة أحادية البعد. إذا كسر هذا كودك، فيمكنك حل هذه المشكلة عن طريق قولبة المصفوفة العددية لـ NumPy
+  إلى نوع السلسلة المناسب ``bool/int/float``.
 
-- Negative strides: ``np.flip`` and slicing with a negative step return a copy.
+- الخطوات السلبية: يعيد ``np.flip`` والشرائح مع خطوة سلبية نسخة.
 
-- Type promotion: NumPy's type promotion will change in NumPy 2.0. The new rules
-  are described in `NEP 50 <https://numpy.org/neps/nep-0050-scalar-promotion.html)>`__.
-  ``torch.compile`` implements NEP 50 rather than the current soon-to-be deprecated rules.
+- الترقية النوعية: ستتغير قواعد الترقية النوعية لـ NumPy في NumPy 2.0. القواعد الجديدة
+  موصوفة في `NEP 50 <https://numpy.org/neps/nep-0050-scalar-promotion.html)>`__.
+  ينفذ ``torch.compile`` NEP 50 بدلاً من القواعد الحالية التي سيتم إيقافها قريبًا.
 
-- ``{tril,triu}_indices_from/{tril,triu}_indices`` return arrays rather than a tuple of arrays.
+- ``{tril، triu} _indices_from / {tril، triu} _indices`` تعيد المصفوفات بدلاً من مجموعة من المصفوفات.
 
-There are other features for which we do not support tracing and we gracefully
-fallback to NumPy for their execution:
+وهناك ميزات أخرى لا ندعم فيها التتبع، وننتقل بسلاسة
+العودة إلى NumPy لتنفيذها:
 
-- Non-numeric dtypes like datetimes, strings, chars, void, structured dtypes and recarrays.
+- الأنواع غير الرقمية مثل التواريخ والأوقات، والسلاسل النصية، والمحارف، والأنواع الفارغة، والمصفوفات المهيكلة، ومصفوفات recarrays.
 
-- Long dtypes ``np.float128/np.complex256`` and some unsigned dtypes ``np.uint16/np.uint32/np.uint64``.
+- الأنواع الطويلة ``np.float128/np.complex256`` وبعض الأنواع غير الموقعة ``np.uint16/np.uint32/np.uint64``.
 
-- ``ndarray`` subclasses.
+- فئات فرعية ``ndarray``.
 
-- Masked arrays.
+- المصفوفات المقنعة.
 
-- Esoteric ufunc machinery like ``axes=[(n,k),(k,m)->(n,m)]`` and ufunc methods (e.g., ``np.add.reduce``).
+- آلات ufunc الغامضة مثل ``axes=[(n، k)، (k، m)-> (n، m)]`` وطرق ufunc (على سبيل المثال، ``np.add.reduce``).
 
-- Sorting / ordering ``complex64/complex128`` arrays.
+- فرز / ترتيب المصفوفات ``complex64/complex128``.
 
-- NumPy ``np.poly1d`` and ``np.polynomial``.
+- الدوالية ``np.poly1d`` و ``np.polynomial``.
 
-- Positional ``out1, out2`` args in functions with 2 or more returns (``out=tuple`` does work).
+- المواضع ``out1، out2`` في الدوال ذات الإرجاع 2 أو أكثر (يعمل ``out=tuple``).
 
-- ``__array_function__``, ``__array_interface__`` and ``__array_wrap__``.
+- ``__array_function__``، ``__array_interface__`` و ``__array_wrap__``.
 
-- ``ndarray.ctypes`` attribute.
+- سمة ``ndarray.ctypes``.
 
-Can I compile NumPy code using ``torch.compile``?
+هل يمكنني تجميع كود NumPy باستخدام ``torch.compile``؟
 -------------------------------------------------
 
-Of course you do! ``torch.compile`` understands NumPy code natively, and treats it
-as if it were PyTorch code. To do so, simply wrap NumPy code with the ``torch.compile``
-decorator.
+بالطبع يمكنك ذلك! يفهم ``torch.compile`` كود NumPy بشكل أصلي، ويعامله
+كما لو كان كود PyTorch. للقيام بذلك، قم ببساطة بتغليف كود NumPy باستخدام الديكور ``torch.compile``.
 
 .. code-block:: python
 
@@ -482,27 +462,24 @@ decorator.
    import numpy as np
 
    @torch.compile
-   def numpy_fn(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
-       return np.sum(X[:, :, None] * Y[:, None, :], axis=(-2, -1))
+   def numpy_fn(X: np.ndarray، Y: np.ndarray) -> np.ndarray:
+       return np.sum(X[:, :, None] * Y[:, None, :])، axis=(-2، -1))
 
-   X = np.random.randn(1024, 64)
-   Y = np.random.randn(1024, 64)
-   Z = numpy_fn(X, Y)
-   assert isinstance(Z, np.ndarray)
+   X = np.random.randn(1024، 64)
+   Y = np.random.randn(1024، 64)
+   Z = numpy_fn(X، Y)
+   تأكيد isinstance (Z، np.ndarray)
 
-Executing this example with the environment variable ``TORCH_LOGS=output_code``, we can see
-that ``torch.compile`` was able to fuse the multiplication and the sum into one C++ kernel.
-It was also able to execute them in parallel using OpenMP (native NumPy is single-threaded).
-This can easily make your NumPy code ``n`` times faster, where ``n`` is the number of cores
-in your processor!
+عند تنفيذ هذا المثال باستخدام متغير البيئة ``TORCH_LOGS=output_code``، يمكننا أن نرى
+أن ``torch.compile`` كان قادرًا على دمج الضرب والمجموع في نواة C++ واحدة.
+كما تمكن من تنفيذها بالتوازي باستخدام OpenMP (NumPy الأصلي أحادي الخيط).
+يمكن أن يجعل هذا كود NumPy الخاص بك أسرع "n" مرة، حيث "n" هو عدد النوى
+في معالجك!
 
-Tracing NumPy code this way also supports graph breaks within the compiled code.
+يدعم تتبع كود NumPy بهذه الطريقة أيضًا كسور الرسم البياني داخل الكود المجمّع.
 
-Can I execute NumPy code on CUDA and compute gradients via ``torch.compile``?
------------------------------------------------------------------------------
-
-Yes you can! To do so, you may simply execute your code within a ``torch.device("cuda")``
-context. Consider the example
+هل يمكنني تنفيذ كود NumPy على CUDA وحساب التدرجات عبر ``torch.compile``؟
+نعم، يمكنك ذلك! للقيام بذلك، يمكنك ببساطة تنفيذ كودك داخل سياق ``torch.device("cuda")``. على سبيل المثال:
 
 .. code-block:: python
 
@@ -519,13 +496,7 @@ context. Consider the example
        Z = numpy_fn(X, Y)
    assert isinstance(Z, np.ndarray)
 
-In this example, ``numpy_fn`` will be executed in CUDA. For this to be
-possible, ``torch.compile`` automatically moves ``X`` and ``Y`` from CPU
-to CUDA, and then it moves the result ``Z`` from CUDA to CPU. If we are
-executing this function several times in the same program run, we may want
-to avoid all these rather expensive memory copies. To do so, we just need
-to tweak our ``numpy_fn`` so that it accepts cuda Tensors and returns tensors.
-We can do so by using ``torch.compiler.wrap_numpy``:
+في هذا المثال، سيتم تنفيذ ``numpy_fn`` في CUDA. ولجعل ذلك ممكناً، يقوم ``torch.compile`` تلقائيًا بنقل ``X`` و ``Y`` من CPU إلى CUDA، ثم ينقل النتيجة ``Z`` من CUDA إلى CPU. إذا كنا نقوم بتنفيذ هذه الدالة عدة مرات في نفس تشغيل البرنامج، فقد نرغب في تجنب جميع عمليات نسخ الذاكرة المكلفة هذه. للقيام بذلك، نحتاج فقط إلى تعديل دالة ``numpy_fn`` بحيث تقبل Tensor CUDA وتعيد Tensor. يمكننا القيام بذلك باستخدام ``torch.compiler.wrap_numpy``:
 
 .. code-block:: python
 
@@ -540,14 +511,9 @@ We can do so by using ``torch.compiler.wrap_numpy``:
    assert isinstance(Z, torch.Tensor)
    assert Z.device.type == "cuda"
 
-Here, we explicitly create the tensors in CUDA memory, and pass them to the
-function, which performs all the computations on the CUDA device.
-``wrap_numpy`` is in charge of marking any ``torch.Tensor`` input as an input
-with ``np.ndarray`` semantics at a ``torch.compile`` level. Marking tensors
-inside the compiler is a very cheap operation, so no data copy or data movement
-happens during runtime.
+هنا، نقوم بإنشاء Tensor بشكل صريح في ذاكرة CUDA، ونمررها إلى الدالة، والتي تقوم بجميع الحسابات على جهاز CUDA. وتكون ``wrap_numpy`` مسؤولة عن وضع علامة على أي مدخلات ``torch.Tensor`` كمدخلات ذات دلالة ``np.ndarray`` على مستوى ``torch.compile``. إن وضع علامات على Tensor داخل المحول البرمجي هو عملية رخيصة للغاية، لذلك لا يحدث أي نسخ أو نقل للبيانات أثناء وقت التشغيل.
 
-Using this decorator, we can also differentiate through NumPy code!
+باستخدام هذا الديكور، يمكننا أيضًا التمييز من خلال كود NumPy!
 
 .. code-block:: python
 
@@ -561,18 +527,12 @@ Using this decorator, we can also differentiate through NumPy code!
    Z = numpy_fn(X, Y)
    assert isinstance(Z, torch.Tensor)
    Z.backward()
-   # X.grad now holds the gradient of the computation
+   # X.grad الآن يحتوي على تدرج الحساب
    print(X.grad)
 
-We have been using ``fullgraph=True`` as graph break are problematic in this context.
-When a graph break occurs, we need to materialize the NumPy arrays. Since NumPy arrays
-do not have a notion of ``device`` or ``requires_grad``, this information is lost during
-a graph break.
+لقد كنا نستخدم ``fullgraph=True`` لأن كسور الجرافيك تسبب مشاكل في هذا السياق. عندما يحدث كسر في الرسم البياني، نحتاج إلى تجسيد صفائف NumPy. نظرًا لأن صفائف NumPy لا تحتوي على مفهوم "الجهاز" أو "requires_grad"، تضيع هذه المعلومات أثناء كسر الرسم البياني.
 
-We cannot propagate gradients through a graph break, as the graph break code may execute
-arbitrary code that don't know how to differentiate. On the other hand, in the case of
-the CUDA execution, we can work around this problem as we did in the first example, by
-using the ``torch.device("cuda")`` context manager:
+لا يمكننا تمرير التدرجات عبر كسر في الرسم البياني، لأن كود كسر الرسم البياني قد ينفذ تعليمات برمجية تعسفية لا نعرف كيفية التمييز بينها. من ناحية أخرى، في حالة التنفيذ CUDA، يمكننا حل هذه المشكلة كما فعلنا في المثال الأول، باستخدام مدير سياق ``torch.device("cuda")``:
 
 .. code-block:: python
 
@@ -591,113 +551,72 @@ using the ``torch.device("cuda")`` context manager:
    assert isinstance(Z, torch.Tensor)
    assert Z.device.type == "cuda"
 
-During the graph break, the intermediary tensors still need to be moved to CPU, but when the
-tracing is resumed after the graph break, the rest of the graph is still traced on CUDA.
-Given this CUDA <> CPU and CPU <> CUDA movement, graph breaks are fairly costly in the NumPy
-context and should be avoided, but at least they allow tracing through complex pieces of code.
+أثناء كسر الرسم البياني، لا تزال هناك حاجة إلى نقل Tensor الوسيطة إلى CPU، ولكن عندما يتم استئناف التتبع بعد كسر الرسم البياني، يتم تتبع بقية الرسم البياني لا يزال على CUDA. بالنظر إلى هذه الحركة CUDA <> CPU وCPU <> CUDA، فإن كسور الرسم البياني مكلفة إلى حد ما في سياق NumPy ويجب تجنبها، ولكنها تسمح على الأقل بتتبعها من خلال قطع من التعليمات البرمجية المعقدة.
 
-
-How do I debug NumPy code under ``torch.compile``?
+كيف يمكنني تصحيح كود NumPy تحت ``torch.compile``؟
 --------------------------------------------------
 
-Debugging JIT compiled code is challenging, given the complexity of modern
-compilers and the daunting errors that they raise.
-`The tutorial on how to diagnose runtime errors within torch.compile <https://pytorch.org/docs/main/torch.compiler_troubleshooting.html#diagnosing-runtime-errors>`__
-contains a few tips and tricks on how to tackle this task.
+تصحيح الأخطاء في الكود المترجم JIT أمر صعب، نظرًا لتعقيد المحولات البرمجية الحديثة والأخطاء المخيفة التي تثيرها.
+يحتوي "البرنامج التعليمي حول كيفية تشخيص الأخطاء أثناء التشغيل داخل torch.compile" على بعض النصائح والحيل حول كيفية أداء هذه المهمة.
 
-If the above is not enough to pinpoint the origin of the issue, there are still
-a few other NumPy-specific tools we can use. We can discern whether the bug
-is entirely in the PyTorch code by disabling tracing through NumPy functions:
-
+إذا لم يكن ما سبق كافيًا لتحديد أصل المشكلة، فلا تزال هناك بعض الأدوات المحددة لـ NumPy والتي يمكننا استخدامها. يمكننا التمييز بين ما إذا كان الخطأ موجودًا بالكامل في كود PyTorch عن طريق تعطيل التتبع من خلال دالات NumPy:
 
 .. code-block:: python
 
    from torch._dynamo import config
    config.trace_numpy = False
 
-If the bug lies in the traced NumPy code, we can execute the NumPy code eagerly (without ``torch.compile``)
-using PyTorch as a backend by importing ``import torch._numpy as np``.
-This should just be used for **debugging purposes** and is in no way a
-replacement for the PyTorch API, as it is **much less performant** and, as a
-private API, **may change without notice**. At any rate, ``torch._numpy`` is a
-Python implementation of NumPy in terms of PyTorch and it is used internally by ``torch.compile`` to
-transform NumPy code into Pytorch code. It is rather easy to read and modify,
-so if you find any bug in it feel free to submit a PR fixing it or simply open
-an issue.
+إذا كان الخطأ موجودًا في كود NumPy الذي تم تتبعه، فيمكننا تنفيذ كود NumPy بحماس (بدون ``torch.compile``) باستخدام PyTorch كخلفية عن طريق استيراد ``import torch._numpy as np``.
+لا ينبغي استخدام هذا إلا لأغراض **التصحيح** وهو ليس بديلاً عن واجهة برمجة التطبيقات PyTorch بأي حال من الأحوال، لأنه **أقل أداءً بكثير**، وباعتباره واجهة برمجة تطبيقات خاصة، **قد يتغير دون إشعار**. وعلى أي حال، فإن ``torch._numpy`` هو تنفيذ Python لـ NumPy من حيث PyTorch ويستخدمه ``torch.compile`` داخليًا لتحويل كود NumPy إلى كود PyTorch. من السهل جدًا قراءته وتعديله، لذا إذا وجدت أي خطأ فيه، فلا تتردد في تقديم طلب سحب لإصلاحه أو ببساطة فتح مشكلة.
 
-If the program does work when importing ``torch._numpy as np``, chances are
-that the bug is in TorchDynamo. If this is the case, please feel open an issue
-with a `minimal reproducer <https://pytorch.org/docs/2.1/torch.compiler_troubleshooting.html>`__.
+إذا كان البرنامج يعمل عند استيراد ``torch._numpy as np``، فمن المحتمل أن يكون الخطأ في TorchDynamo. إذا كان الأمر كذلك، يرجى فتح مشكلة مع "منتج قابل للتكرار بحد أدنى".
 
-I ``torch.compile`` some NumPy code and I did not see any speed-up.
+قمت بتجميع بعض كود NumPy باستخدام ``torch.compile`` ولم ألاحظ أي تسريع.
 -------------------------------------------------------------------
 
-The best place to start is the
-`tutorial with general advice for how to debug these sort of torch.compile issues <https://pytorch.org/docs/main/torch.compiler_faq.html#why-am-i-not-seeing-speedups>`__.
+أفضل مكان للبدء هو
+"البرنامج التعليمي الذي يقدم المشورة العامة حول كيفية تصحيح مشكلات torch.compile هذه".
 
-Some graph breaks may happen because of the use of unsupported features. See
-:ref:`nonsupported-numpy-feats`. More generally, it is useful to keep in mind
-that some widely used NumPy features do not play well with compilers. For
-example, in-place modifications make reasoning difficult within the compiler and
-often yield worse performance than their out-of-place counterparts.As such, it is best to avoid
-them. Same goes for the use of the ``out=`` parameter. Instead, prefer
-out-of-place ops and let ``torch.compile`` optimize the memory use. Same goes
-for data-dependent ops like masked indexing through boolean masks, or
-data-dependent control flow like ``if`` or ``while`` constructions.
+قد تحدث بعض كسور الرسم البياني بسبب استخدام ميزات غير مدعومة. راجع :ref: `nonsupported-numpy-feats`. بشكل عام، من المفيد أن نتذكر أن بعض ميزات NumPy المستخدمة على نطاق واسع لا تتوافق مع المحولات البرمجية. على سبيل المثال، تجعل التعديلات في المكان من الصعب الاستدلال داخل المحول البرمجي وغالبا ما تعطي أداء أسوأ من نظرائهم خارج المكان. لذلك، من الأفضل تجنبها. وينطبق الشيء نفسه على استخدام معلمة ``out=``. بدلاً من ذلك، يفضل استخدام العمليات خارج المكان والسماح لـ ``torch.compile`` بتحسين استخدام الذاكرة. وينطبق الشيء نفسه على العمليات المعتمدة على البيانات مثل الفهرسة المقنعة من خلال الأقنعة الثنائية، أو التحكم في التدفق المعتمد على البيانات مثل عبارات ``if`` أو ``while``.
 
-
-Which API to use for fine grain tracing?
+أي واجهة برمجة تطبيقات يجب استخدامها للتتبع الدقيق؟
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases, you might need to exclude small parts of your code from the
-torch.compile compilations. This section provides some of the answers and
-you can find more information in :ref:`torchdynamo_fine_grain_tracing`.
+في بعض الحالات، قد تحتاج إلى استبعاد أجزاء صغيرة من الكود الخاص بك من تجميعات ``torch.compile``. يقدم هذا القسم بعض الإجابات ويمكنك العثور على مزيد من المعلومات في :ref: `torchdynamo_fine_grain_tracing`.
 
-How do I graph break on a function?
+كيف أقوم بكسر الرسم البياني على دالة؟
 -----------------------------------
 
-Graph break on a function is not enough to sufficiently express what you  want
-PyTorch to do. You need to be more specific about your use case. Some of the
-most common use cases you might want to consider:
+كسر الرسم البياني على دالة غير كافٍ للتعبير عما تريده من PyTorch القيام به. تحتاج إلى أن تكون أكثر تحديدًا بشأن حالتك الاستخدام. فيما يلي بعض حالات الاستخدام الأكثر شيوعًا التي قد ترغب في مراعاتها:
 
-* If you want to disable compilation on this function frame and the recursively
-  invoked frames, use ``torch._dynamo.disable``.
+* إذا كنت تريد تعطيل التجميع في هذا إطار الدالة والأطر المستدعاة بشكل متكرر، فاستخدم ``torch._dynamo.disable``.
 
-* If you want a particular operator, such as ``fbgemm`` to use the  eager mode,
-  use ``torch._dynamo.disallow_in_graph``.
+* إذا كنت تريد أن يستخدم مشغل معين، مثل ``fbgemm`` الوضع الحريص، فاستخدم ``torch._dynamo.disallow_in_graph``.
 
-Some of the uncommon use cases include:
+بعض حالات الاستخدام غير الشائعة تشمل:
 
-* If you want to disable TorchDynamo on the function frame but enable it back
-  on the recursively invoked frames – use ``torch._dynamo.disable(recursive=False)``.
+* إذا كنت تريد تعطيل TorchDynamo على إطار الدالة ولكن إعادة تمكينه على الأطر المستدعاة بشكل متكرر - استخدم ``torch._dynamo.disable(recursive=False)``.
 
-* If you want to prevent inlining of a function frame – use ``torch._dynamo.graph_break``
-  at the beginning of the function you want to prevent inlining.
+* إذا كنت تريد منع دمج دالة إطار - استخدم ``torch._dynamo.graph_break`` في بداية الدالة التي تريد منع دمجها.
 
-What's the difference between ``torch._dynamo.disable`` and ``torch._dynamo.disallow_in_graph``
+ما الفرق بين ``torch._dynamo.disable`` و ``torch._dynamo.disallow_in_graph``؟
 -----------------------------------------------------------------------------------------------
 
-Disallow-in-graph works at the level of operators, or more specifically,
-the operators that you see in the TorchDynamo extracted graphs.
+يعمل Disallow-in-graph على مستوى المشغلات، أو بشكل أكثر تحديدًا، المشغلات التي تشاهدها في الرسوم البيانية المستخرجة من TorchDynamo.
 
-Disable works at the function frame level and decides if TorchDynamo
-should look into the function frame or not.
+يعمل Disable على مستوى إطار الدالة ويقرر ما إذا كان يجب على TorchDynamo البحث في إطار الدالة أم لا.
 
-What's the difference between ``torch._dynamo.disable`` and ``torch._dynamo_skip``
+ما الفرق بين ``torch._dynamo.disable`` و ``torch._dynamo_skip``؟
 ----------------------------------------------------------------------------------
 
 .. note::
-   ``torch._dynamo_skip`` is deprecated.
+   ``torch._dynamo_skip`` مهمل.
 
-You most likely need ``torch._dynamo.disable``. But in an unlikely scenario, you
-might need even finer control. Suppose you want to disable the tracing on just
-the ``a_fn`` function, but want to continue the tracing back in ``aa_fn`` and
-``ab_fn``. The image below demonstrates this use case:
-
+من المحتمل أن تحتاج إلى ``torch._dynamo.disable``. ولكن في سيناريو غير محتمل، قد تحتاج إلى مزيد من التحكم الدقيق. لنفترض أنك تريد تعطيل التتبع على دالة ``a_fn`` فقط، ولكنك تريد مواصلة التتبع مرة أخرى في ``aa_fn`` و ``ab_fn``. توضح الصورة أدناه حالة الاستخدام هذه:
 
 .. figure:: _static/img/fine_grained_apis/call_stack_diagram.png
-   :alt: diagram of torch.compile + disable(a_fn, recursive=False)
+   :alt: رسم تخطيطي لـ torch.compile + disable(a_fn، recursive=False)
 
-In this case, you can use ``torch._dynamo.disable(recursive=False)``.
-In previous versions, this functionality was provided by ``torch._dynamo.skip``.
-This is now supported by the ``recursive`` flag inside ``torch._dynamo.disable``.
+في هذه الحالة، يمكنك استخدام ``torch._dynamo.disable(recursive=False)``.
+في الإصدارات السابقة، تم توفير هذه الوظيفة بواسطة ``torch._dynamo.skip``.
+يتم الآن دعم ذلك بواسطة علم ``recursive`` داخل ``torch._dynamo.disable``.
