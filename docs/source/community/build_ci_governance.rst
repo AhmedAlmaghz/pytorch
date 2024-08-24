@@ -1,20 +1,20 @@
-PyTorch Governance | Build + CI
-===============================
+حوكمة PyTorch | البناء + CI
+=================================
 
-How to Add a New Maintainer
----------------------------
+كيفية إضافة مسؤول صيانة جديد
+-----------------------------
 
-For the person to be a maintainer, a person needs to:
+لكي يصبح الشخص مسؤول صيانة، يجب عليه:
 
-* Land at least six commits to the related part of the PyTorch repository
-* At least one of these commits must be submitted in the last six months
+* إرسال ما لا يقل عن ستة التزامات إلى الجزء ذي الصلة من مستودع PyTorch
+* يجب إرسال واحد من هذه الالتزامات على الأقل في الأشهر الستة الماضية
 
-To add a qualified person to the maintainers' list, please create
-a PR that adds a person to the `persons of interests <https://pytorch.org/docs/main/community/persons_of_interest.html>`__ page and
-`merge_rules <https://github.com/pytorch/pytorch/blob/main/.github/merge_rules.yaml>`__ files. Current maintainers will cast their votes of
-support. Decision criteria for approving the PR:
+لإضافة شخص مؤهل إلى قائمة المسؤولين عن الصيانة، يرجى إنشاء
+طلب سحب (PR) يقوم بإضافة شخص إلى صفحة "أشخاص الاهتمام" <https://pytorch.org/docs/main/community/persons_of_interest.html>`__ و
+ملفات "قواعد الدمج" <https://github.com/pytorch/pytorch/blob/main/.github/merge_rules.yaml>`__. وسيقوم مسؤولو الصيانة الحاليون بالإدلاء بأصواتهم
+بالدعم. معايير القرار للموافقة على طلب السحب:
 
-* Not earlier than two business days passed before merging (ensure the majority of the contributors have seen it)
-* PR has the correct label (`module: ci`)
-* There are no objections from the current maintainers
-* There are at least three net *thumbs up* from current maintainers (or all maintainers vote *thumbs up* when the module has less than 3 maintainers).
+* لا يتم الدمج قبل مرور يومي عمل (لضمان رؤية غالبية المساهمين له)
+* يحتوي طلب السحب على التسمية الصحيحة (module: ci)
+* لا توجد اعتراضات من مسؤولي الصيانة الحاليين
+* هناك ما لا يقل عن ثلاثة أصوات *موافقة* صافية من مسؤولي الصيانة الحاليين (أو جميع مسؤولي الصيانة يصوتون بـ *موافقة* عندما يكون عدد مسؤولي الصيانة أقل من 3).
