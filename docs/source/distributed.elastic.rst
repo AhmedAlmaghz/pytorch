@@ -1,44 +1,43 @@
 Torch Distributed Elastic
 ============================
 
-Makes distributed PyTorch fault-tolerant and elastic.
+يجعل PyTorch الموزع أكثر تحملاً للأخطاء ومرونة.
 
-Get Started
----------------
+البدء
+----
 .. toctree::
    :maxdepth: 1
-   :caption: Usage
+   :caption: الاستخدام
 
-   elastic/quickstart
-   elastic/train_script
-   elastic/examples
+   elastic/quickstart_ar
+   elastic/train_script_ar
+   elastic/examples_ar
 
-Documentation
----------------
-
+الوثائق
+----
 .. toctree::
    :maxdepth: 1
-   :caption: API
+   :caption: واجهة برمجة التطبيقات
 
-   elastic/run
-   elastic/agent
-   elastic/multiprocessing
-   elastic/errors
-   elastic/rendezvous
-   elastic/timer
-   elastic/metrics
-   elastic/events
-   elastic/subprocess_handler
-   elastic/control_plane
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Advanced
-
-   elastic/customization
+   elastic/run_ar
+   elastic/agent_ar
+   elastic/multiprocessing_ar
+   elastic/errors_ar
+   elastic/rendezvous_ar
+   elastic/timer_ar
+   elastic/metrics_ar
+   elastic/events_ar
+   elastic/subprocess_handler_ar
+   elastic/control_plane_ar
 
 .. toctree::
    :maxdepth: 1
-   :caption: Plugins
+   :caption: متقدم
 
-   elastic/kubernetes
+   elastic/customization_ar
+
+.. toctree::
+   :maxdepth: 1
+   :caption: الإضافات
+
+   elastic/kubernetes_ar
