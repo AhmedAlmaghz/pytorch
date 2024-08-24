@@ -3,8 +3,8 @@
 torch.ao.ns._numeric_suite
 --------------------------
 
-.. warning ::
-     This module is an early prototype and is subject to change.
+.. warning::
+     هذا النموذج الأولي مبكر وقد يخضع للتغيير.
 
 .. currentmodule:: torch.ao.ns._numeric_suite
 
