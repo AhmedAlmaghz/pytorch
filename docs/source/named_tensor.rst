@@ -2,26 +2,22 @@
 
 .. _named_tensors-doc:
 
-Named Tensors
-=============
+التوابع المسماة
+==========
 
-Named Tensors allow users to give explicit names to tensor dimensions.
-In most cases, operations that take dimension parameters will accept
-dimension names, avoiding the need to track dimensions by position.
-In addition, named tensors use names to automatically check that APIs
-are being used correctly at runtime, providing extra safety. Names can
-also be used to rearrange dimensions, for example, to support
-"broadcasting by name" rather than "broadcasting by position".
-
+تسمح التوابع المسماة للمستخدمين بإعطاء أسماء صريحة لأبعاد التوابع.
+في معظم الحالات، تقبل العمليات التي تأخذ معلمات الأبعاد أسماء الأبعاد، مما يجنب الحاجة إلى تتبع الأبعاد حسب الموضع.
+بالإضافة إلى ذلك، تستخدم التوابع المسماة الأسماء للتحقق تلقائيًا من أن واجهات برمجة التطبيقات (APIs)
+يتم استخدامها بشكل صحيح في وقت التشغيل، مما يوفر أمانًا إضافيًا. يمكن أيضًا استخدام الأسماء لإعادة ترتيب الأبعاد،
+على سبيل المثال، لدعم "البث حسب الاسم" بدلاً من "البث حسب الموضع".
 
 .. warning::
-    The named tensor API is a prototype feature and subject to change.
+    واجهة برمجة تطبيقات التوابع المسماة هي ميزة تجريبية وقد تتغير.
 
-Creating named tensors
-----------------------
+إنشاء التوابع المسماة
+-------------
 
-Factory functions now take a new :attr:`names` argument that associates a name
-with each dimension.
+تأخذ دالات المصنع الآن وسيطًا جديدًا :attr: `names` الذي يربط اسمًا بكل بعد.
 
 ::
 
@@ -29,59 +25,55 @@ with each dimension.
     tensor([[0., 0., 0.],
             [0., 0., 0.]], names=('N', 'C'))
 
-Named dimensions, like regular Tensor dimensions, are ordered.
-``tensor.names[i]`` is the name of dimension ``i`` of ``tensor``.
+الأبعاد المسماة، مثل أبعاد التوابع العادية، مرتبة.
+``tensor.names[i]`` هو اسم البعد ``i`` من ``tensor``.
 
-The following factory functions support named tensors:
+دالات المصنع التالية تدعم التوابع المسماة:
 
-- :func:`torch.empty`
-- :func:`torch.rand`
-- :func:`torch.randn`
-- :func:`torch.ones`
-- :func:`torch.tensor`
-- :func:`torch.zeros`
+- :func: `torch.empty`
+- :func: `torch.rand`
+- :func: `torch.randn`
+- :func: `torch.ones`
+- :func: `torch.tensor`
+- :func: `torch.zeros`
 
-Named dimensions
-----------------
+الأبعاد المسماة
+----------
 
-See :attr:`~Tensor.names` for restrictions on tensor names.
+راجع :attr: `~ Tensor.names` للقيود المفروضة على أسماء التوابع.
 
-Use :attr:`~Tensor.names` to access the dimension names of a tensor and
-:meth:`~Tensor.rename` to rename named dimensions.
+استخدم :attr: `~ Tensor.names` للوصول إلى أسماء أبعاد التابع واستخدم :meth: `~ Tensor.rename` لإعادة تسمية الأبعاد المسماة.
 
 ::
 
-    >>> imgs = torch.randn(1, 2, 2, 3 , names=('N', 'C', 'H', 'W'))
+    >>> imgs = torch.randn(1, 2, 2, 3, names=('N', 'C', 'H', 'W'))
     >>> imgs.names
     ('N', 'C', 'H', 'W')
 
     >>> renamed_imgs = imgs.rename(H='height', W='width')
     >>> renamed_imgs.names
-    ('N', 'C', 'height', 'width)
+    ('N', 'C', 'height', 'width')
 
-
-Named tensors can coexist with unnamed tensors; named tensors are instances of
-:class:`torch.Tensor`. Unnamed tensors have ``None``-named dimensions. Named
-tensors do not require all dimensions to be named.
+يمكن للتوابع المسماة التعايش مع التوابع غير المسماة؛ التوابع المسماة هي مثيلات من
+:class: `torch.Tensor`. الأبعاد غير المسماة لها أسماء ``None``. لا تتطلب التوابع المسماة تسمية جميع الأبعاد.
 
 ::
 
-    >>> imgs = torch.randn(1, 2, 2, 3 , names=(None, 'C', 'H', 'W'))
+    >>> imgs = torch.randn(1, 2, 2, 3, names=(None, 'C', 'H', 'W'))
     >>> imgs.names
     (None, 'C', 'H', 'W')
 
-Name propagation semantics
---------------------------
+دلالة انتشار الاسم
+--------------
 
-Named tensors use names to automatically check that APIs are being called
-correctly at runtime. This occurs in a process called *name inference*.
-More formally, name inference consists of the following two steps:
+تستخدم التوابع المسماة الأسماء للتحقق تلقائيًا مما إذا كانت واجهات برمجة التطبيقات (APIs)
+يتم استدعاؤها بشكل صحيح في وقت التشغيل. يحدث هذا في عملية تسمى *استنتاج الاسم*.
+بشكل أكثر رسمية، يتكون استنتاج الاسم من الخطوتين التاليتين:
 
-- **Check names**: an operator may perform automatic checks at runtime that
-  check that certain dimension names must match.
-- **Propagate names**: name inference propagates names to output tensors.
+- **التحقق من الأسماء**: قد يؤدي المشغل عمليات فحص تلقائية في وقت التشغيل للتأكد من أن أسماء أبعاد معينة يجب أن تتطابق.
+- **نشر الأسماء**: ينشر استدلال الاسم الأسماء إلى التوابع الناتجة.
 
-All operations that support named tensors propagate names.
+تدعم جميع العمليات التي تدعم التوابع المسماة نشر الأسماء.
 
 ::
 
@@ -89,30 +81,27 @@ All operations that support named tensors propagate names.
     >>> x.abs().names
     ('N', 'C')
 
-
 .. _match_semantics-doc:
 
-match semantics
-^^^^^^^^^^^^^^^
+دلالات المطابقة
+^^^^^^^^^^^
 
-Two names *match* if they are equal (string equality) or if at least one is ``None``.
-Nones are essentially a special "wildcard" name.
+*تتطابق* الأسماء إذا كانت متساوية (تساوي السلاسل) أو إذا كان أحدهما على الأقل ``None``.
+إن "Nones" هي في الأساس اسم "برية" خاص.
 
-``unify(A, B)`` determines which of the names ``A`` and ``B`` to propagate to the outputs.
-It returns the more *specific* of the two names, if they match. If the names do not match,
-then it errors.
+تحدد ``unify(A، B)`` أي من الأسماء ``A`` و ``B`` التي سيتم نشرها إلى المخرجات.
+إنه يعيد الأكثر *تحديدًا* من الاسمين، إذا تطابقا. إذا لم تتطابق الأسماء،
+ثم يرتكب خطأ.
 
 .. note::
-    In practice, when working with named tensors, one should avoid having unnamed
-    dimensions because their handling can be complicated. It is recommended to lift
-    all unnamed dimensions to be named dimensions by using :meth:`~Tensor.refine_names`.
+    من الناحية العملية، عند العمل مع التوابع المسماة، يجب تجنب وجود أبعاد غير مسماة لأن التعامل معها قد يكون معقدًا. يوصى برفع
+    جميع الأبعاد غير المسماة لتصبح أبعادًا مسماة باستخدام :meth: `~ Tensor.refine_names`.
 
+قواعد استدلال الاسم الأساسية
+^^^^^^^^^^^^^^^^^
 
-Basic name inference rules
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Let's see how ``match`` and ``unify`` are used in name inference in the case of
-adding two one-dim tensors with no broadcasting.
+دعونا نرى كيف يتم استخدام "المطابقة" و "unify" في استدلال الاسم في حالة
+إضافة اثنين من التوابع ذات البعد الواحد بدون البث.
 
 ::
 
@@ -120,9 +109,9 @@ adding two one-dim tensors with no broadcasting.
     y = torch.randn(3)
     z = torch.randn(3, names=('Z',))
 
-**Check names**: check that the names of the two tensors *match*.
+**التحقق من الأسماء**: التحقق من أن أسماء التابعين *تتطابق*.
 
-For the following examples:
+بالنسبة للأمثلة التالية:
 
 ::
 
@@ -131,11 +120,11 @@ For the following examples:
     >>> # x + x  # match('X', 'X') is True
 
     >>> x + z
-    Error when attempting to broadcast dims ['X'] and dims ['Z']: dim 'X' and dim 'Z' are at the same position from the right but do not match.
+    خطأ عند محاولة بث الأبعاد ['X'] والأبعاد ['Z']: البعد 'X' والبعد 'Z' في نفس الموضع من اليمين ولكن لا تتطابق.
 
-**Propagate names**: *unify* the names to select which one to propagate.
-In the case of ``x + y``, ``unify('X', None) = 'X'`` because ``'X'`` is more
-specific than ``None``.
+**نشر الأسماء**: *توحيد* الأسماء لاختيار أيهما ينتشر.
+في حالة ``x + y``، ``unify('X', None) = 'X'`` لأن ``'X'`` أكثر
+تحديدًا من ``None``.
 
 ::
 
@@ -144,23 +133,23 @@ specific than ``None``.
     >>> (x + x).names
     ('X',)
 
-For a comprehensive list of name inference rules, see :ref:`name_inference_reference-doc`.
-Here are two common operations that may be useful to go over:
+للاطلاع على قائمة شاملة بقواعد استدلال الاسم، راجع :ref: `name_inference_reference-doc`.
+فيما يلي عمليتان شائعتان قد يكون من المفيد مراجعتهما:
 
-- Binary arithmetic ops: :ref:`unifies_names_from_inputs-doc`
-- Matrix multiplication ops: :ref:`contracts_away_dims-doc`
+- العمليات الحسابية الثنائية: :ref: `unifies_names_from_inputs-doc`
+- عمليات الضرب المصفوفة: :ref: `contracts_away_dims-doc`
 
-Explicit alignment by names
+المواءمة الصريحة حسب الأسماء
 ---------------------------
 
-Use :meth:`~Tensor.align_as` or :meth:`~Tensor.align_to` to align tensor dimensions
-by name to a specified ordering. This is useful for performing "broadcasting by names".
+استخدم :meth: `~ Tensor.align_as` أو :meth: `~ Tensor.align_to` لمواءمة أبعاد التابع
+حسب الاسم إلى ترتيب محدد. هذا مفيد لأداء "البث حسب الأسماء".
 
 ::
 
-    # This function is agnostic to the dimension ordering of `input`,
-    # as long as it has a `C` dimension somewhere.
-    def scale_channels(input, scale):
+    # هذه الدالة لا تعتمد على ترتيب الأبعاد لـ `input`،
+    # طالما أن لديها بعد `C` في مكان ما.
+    def scale_channels(input، scale):
         scale = scale.refine_names('C')
         return input * scale.align_as(input)
 
@@ -168,31 +157,31 @@ by name to a specified ordering. This is useful for performing "broadcasting by 
     >>> scale = torch.randn(num_channels, names=('C',))
     >>> imgs = torch.rand(3, 3, 3, num_channels, names=('N', 'H', 'W', 'C'))
     >>> more_imgs = torch.rand(3, num_channels, 3, 3, names=('N', 'C', 'H', 'W'))
-    >>> videos = torch.randn(3, num_channels, 3, 3, 3, names=('N', 'C', 'H', 'W', 'D')
+    >>> videos = torch.randn(3، num_channels، 3، 3، 3، names=('N'، 'C'، 'H'، 'W'، 'D')
 
-    >>> scale_channels(imgs, scale)
-    >>> scale_channels(more_imgs, scale)
-    >>> scale_channels(videos, scale)
+    >>> scale_channels(imgs، scale)
+    >>> scale_channels(more_imgs، scale)
+    >>> scale_channels(videos، scale)
 
-Manipulating dimensions
------------------------
+التلاعب بالأبعاد
+----------
 
-Use :meth:`~Tensor.align_to` to permute large amounts of dimensions without
-mentioning all of them as in required by :meth:`~Tensor.permute`.
+استخدم :meth: `~ Tensor.align_to` لإعادة ترتيب كميات كبيرة من الأبعاد دون
+ذكرها جميعًا كما هو مطلوب بواسطة :meth: `~ Tensor.permute`.
 
 ::
 
     >>> tensor = torch.randn(2, 2, 2, 2, 2, 2)
     >>> named_tensor = tensor.refine_names('A', 'B', 'C', 'D', 'E', 'F')
 
-    # Move the F (dim 5) and E dimension (dim 4) to the front while keeping
-    # the rest in the same order
+    # حرك البعد F (البعد 5) والبعد E (البعد 4) إلى الأمام مع الحفاظ
+    # الباقي في نفس الترتيب
     >>> tensor.permute(5, 4, 0, 1, 2, 3)
-    >>> named_tensor.align_to('F', 'E', ...)
+    >>> named_tensor.align_to('F'، 'E'، ...)
 
-Use :meth:`~Tensor.flatten` and :meth:`~Tensor.unflatten` to flatten and unflatten
-dimensions, respectively. These methods are more verbose than :meth:`~Tensor.view`
-and :meth:`~Tensor.reshape`, but have more semantic meaning to someone reading the code.
+استخدم :meth: `~ Tensor.flatten` و :meth: `~ Tensor.unflatten` لتقسيم الأبعاد وإلغاء تقسيمها،
+على التوالي. هذه الطرق أكثر تفصيلاً من :meth: `~ Tensor.view`
+و :meth: `~ Tensor.reshape`، ولكن لها معنى دلالي أكثر للشخص الذي يقرأ الكود.
 
 ::
 
@@ -202,92 +191,89 @@ and :meth:`~Tensor.reshape`, but have more semantic meaning to someone reading t
     >>> flat_imgs = imgs.view(32, -1)
     >>> named_flat_imgs = named_imgs.flatten(['C', 'H', 'W'], 'features')
     >>> named_flat_imgs.names
-    ('N', 'features')
+    ('N'، 'features')
 
-    >>> unflattened_named_imgs = named_flat_imgs.unflatten('features', [('C', 3), ('H', 128), ('W', 128)])
+    >>> unflattened_named_imgs = named_flat_imgs.unflatten('features'، [('C'، 3)، ('H'، 128)، ('W'، 128)])
     >>> unflattened_named_imgs.names
-    ('N', 'C', 'H', 'W')
+    ('N'، 'C'، 'H'، 'W')
 
 .. _named_tensors_autograd-doc:
 
-Autograd support
-----------------
+دعم Autograd
+--------------
 
-Autograd currently supports named tensors in a limited manner: autograd ignores
-names on all tensors. Gradient computation is still correct but we lose the
-safety that names give us.
+يدعم Autograd حاليًا التوابع المسماة بطريقة محدودة: يتجاهل Autograd
+الأسماء على جميع التوابع. لا يزال حساب التدرج صحيحًا ولكننا نفقد الأمان الذي توفره لنا الأسماء.
 
 ::
 
     >>> x = torch.randn(3, names=('D',))
-    >>> weight = torch.randn(3, names=('D',), requires_grad=True)
+    >>> weight = torch.randn(3, names=('D',)، requires_grad=True)
     >>> loss = (x - weight).abs()
     >>> grad_loss = torch.randn(3)
     >>> loss.backward(grad_loss)
-    >>> weight.grad  # Unnamed for now. Will be named in the future
-    tensor([-1.8107, -0.6357,  0.0783])
+    >>> weight.grad  # غير مسمى الآن. ستكون مسماة في المستقبل
+    tensor([-1.8107، -0.6357، 0.0783])
 
     >>> weight.grad.zero_()
     >>> grad_loss = grad_loss.refine_names('C')
     >>> loss = (x - weight).abs()
-    # Ideally we'd check that the names of loss and grad_loss match but we don't yet.
+    # من الناحية المثالية، يجب أن نتحقق من أن أسماء الخسارة و grad_loss تتطابق ولكننا لا نفعل ذلك بعد.
     >>> loss.backward(grad_loss)
     >>> weight.grad
-    tensor([-1.8107, -0.6357,  0.0783])
+    tensor([-1.8107، -0.6357، 0.0783])
 
-Currently supported operations and subsystems
----------------------------------------------
+العمليات والنظم الفرعية المدعومة حاليًا
+------------------------
 
-Operators
-^^^^^^^^^
+المشغلات
+^^^^^^
 
-See :ref:`name_inference_reference-doc` for a full list of the supported torch and
-tensor operations. We do not yet support the following that is not covered by the link:
+راجع :ref: `name_inference_reference-doc` للحصول على قائمة كاملة بالمشغلات المدعومة
+و :ref: `tensor operations`. لا ندعم ما يلي:
 
-- indexing, advanced indexing.
+- الفهرسة، الفهرسة المتقدمة.
 
-For ``torch.nn.functional`` operators, we support the following:
+بالنسبة لمشغلات ``torch.nn.functional``، ندعم ما يلي:
 
-- :func:`torch.nn.functional.relu`
-- :func:`torch.nn.functional.softmax`
-- :func:`torch.nn.functional.log_softmax`
-- :func:`torch.nn.functional.tanh`
-- :func:`torch.nn.functional.sigmoid`
-- :func:`torch.nn.functional.dropout`
+- :func: `torch.nn.functional.relu`
+- :func: `torch.nn.functional.softmax`
+- :func: `torch.nn.functional.log_softmax`
+- :func: `torch.nn.functional.tanh`
+- :func: `torch.nn.functional.sigmoid`
+- :func: `torch.nn.functional.dropout`
 
-Subsystems
+النظم الفرعية
 ^^^^^^^^^^
 
-Autograd is supported, see :ref:`named_tensors_autograd-doc`.
-Because gradients are currently unnamed, optimizers may work but are untested.
+يتم دعم Autograd، راجع :ref: `named_tensors_autograd-doc`.
+نظرًا لأن التدرجات غير مسماة حاليًا، فقد تعمل المحسنات ولكنها غير مختبرة.
 
-NN modules are currently unsupported. This can lead to the following when calling
-modules with named tensor inputs:
+وحدات NN غير مدعومة حاليًا. قد يؤدي هذا إلى ما يلي عند استدعاء
+وحدات نمطية ذات مدخلات مسماة:
 
-- NN module parameters are unnamed, so outputs may be partially named.
-- NN module forward passes have code that don't support named tensors and will
-  error out appropriately.
+- معلمات الوحدة النمطية NN غير مسماة، لذا فقد تكون المخرجات مسماة جزئيًا.
+- تحتوي تمريرات الوحدة النمطية NN للأمام على تعليمات برمجية لا تدعم التوابع المسماة وستخطئ بشكل مناسب.
 
-We also do not support the following subsystems, though some may work out
-of the box:
+لا ندعم أيضًا الأنظمة الفرعية التالية، على الرغم من أن بعضها قد يعمل
+من الصندوق:
 
-- distributions
-- serialization (:func:`torch.load`, :func:`torch.save`)
-- multiprocessing
+- التوزيعات
+- التسلسل (:func: `torch.load`، :func: `torch.save`)
+- المعالجة المتعددة
 - JIT
-- distributed
+- الموزعة
 - ONNX
 
-If any of these would help your use case, please
-`search if an issue has already been filed <https://github.com/pytorch/pytorch/issues?q=is%3Aopen+is%3Aissue+label%3A%22module%3A+named+tensor%22>`_
-and if not, `file one <https://github.com/pytorch/pytorch/issues/new/choose>`_.
+إذا كان أي من هذه الأمور مفيدًا لحالتك، يرجى البحث
+`تم رفع قضية بالفعل <https://github.com/pytorch/pytorch/issues?q=is%3Aopen+is%3Aissue+label%3A%22module%3A+named+tensor%22>`_
+وإذا لم يكن الأمر كذلك، `قم برفع واحدة <https://github.com/pytorch/pytorch/issues/new/choose>`_.
 
-Named tensor API reference
+مرجع واجهة برمجة تطبيقات التوابع المسماة
 --------------------------
 
-In this section please find the documentation for named tensor specific APIs.
-For a comprehensive reference for how names are propagated through other PyTorch
-operators, see :ref:`name_inference_reference-doc`.
+في هذا القسم، يرجى الاطلاع على الوثائق الخاصة بواجهات برمجة التطبيقات المحددة للتوابع المسماة.
+للمرجع الشامل حول كيفية انتشار الأسماء عبر مشغلات PyTorch الأخرى، راجع :ref: `name_inference_reference-doc`.
 
 .. class:: Tensor()
    :noindex:
@@ -300,20 +286,20 @@ operators, see :ref:`name_inference_reference-doc`.
    .. automethod:: align_as
    .. automethod:: align_to
 
-   .. py:method:: flatten(dims, out_dim) -> Tensor
+   .. py:method:: flatten(dims، out_dim) -> Tensor
       :noindex:
 
-      Flattens :attr:`dims` into a single dimension with name :attr:`out_dim`.
+      يسطّح :attr: `dims` في بعد واحد باسم :attr: `out_dim`.
 
-      All of `dims` must be consecutive in order in the :attr:`self` tensor,
-      but not necessary contiguous in memory.
+      يجب أن تكون جميع `dims` متتالية في الترتيب في التابع :attr: `self`،
+      ولكن ليس من الضروري أن تكون متجاورة في الذاكرة.
 
-      Examples::
+      الأمثلة::
 
-          >>> imgs = torch.randn(32, 3, 128, 128, names=('N', 'C', 'H', 'W'))
-          >>> flat_imgs = imgs.flatten(['C', 'H', 'W'], 'features')
-          >>> flat_imgs.names, flat_imgs.shape
-          (('N', 'features'), torch.Size([32, 49152]))
+          >>> imgs = torch.randn(32, 3, 128, 128, names=('N'، 'C'، 'H'، 'W'))
+          >>> flat_imgs = imgs.flatten(['C'، 'H'، 'W']، 'features')
+          >>> flat_imgs.names، flat_imgs.shape
+          (('N'، 'features')، torch.Size ([32، 49152]))
 
       .. warning::
-          The named tensor API is experimental and subject to change.
+          واجهة برمجة تطبيقات التوابع المسماة تجريبية وقد تتغير.
