@@ -4,16 +4,15 @@ TunableOp
 =========
 
 .. note::
-    This is a prototype feature, which means it is at an early stage
-    for feedback and testing, and its components are subject to change.
+    هذه ميزة تجريبية، مما يعني أنها في مرحلة مبكرة لتلقي الملاحظات والاختبارات، وقد تتغير مكوناتها.
 
-Overview
+نظرة عامة
 --------
 
 .. automodule:: torch.cuda.tunable
 
-API Reference
--------------
+مرجع واجهة برمجة التطبيقات
+-------------------
 
 .. autofunction:: enable
 .. autofunction:: is_enabled
