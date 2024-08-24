@@ -1,35 +1,7 @@
-torch.utils.checkpoint
-======================
-
 .. note::
-    Checkpointing is implemented by rerunning a forward-pass segment for
-    each checkpointed segment during backward propagation.  This can cause persistent
-    states like the RNG state to be more advanced than they would without
-    checkpointing.  By default, checkpointing includes logic to juggle
-    the RNG state such that checkpointed passes making use of RNG
-    (through dropout for example) have deterministic output as
-    compared to non-checkpointed passes.  The logic to stash and restore
-    RNG states can incur a moderate performance hit depending on the runtime
-    of checkpointed operations.  If deterministic output compared to
-    non-checkpointed passes is not required, supply ``preserve_rng_state=False``
-    to ``checkpoint`` or ``checkpoint_sequential`` to omit stashing and
-    restoring the RNG state during each checkpoint.
+   يتم تنفيذ إنشاء نقطة التفتيش عن طريق إعادة تشغيل جزء من عملية التغذية الأمامية لكل جزء تمت نقطة تفتيشه أثناء الانتشار الخلفي. يمكن أن يتسبب ذلك في تقدم حالات الإصرار مثل حالة مولد الأرقام العشوائية (RNG) أكثر مما كانت ستكون عليه بدون إنشاء نقطة تفتيش. بشكل افتراضي، يتضمن إنشاء نقطة التفتيش منطقًا لموازنة حالة مولد الأرقام العشوائية بحيث يكون للمرور الذي تم نقطة تفتيشه والذي يستخدم مولد الأرقام العشوائية (من خلال الإسقاط العشوائي على سبيل المثال) إخراج محدد مقارنة بالمرور غير الخاضع لنقطة التفتيش. يمكن أن يتسبب منطق تخزين واستعادة حالات مولد الأرقام العشوائية في حدوث انخفاض ملحوظ في الأداء اعتمادًا على وقت تشغيل العمليات الخاضعة لنقطة التفتيش. إذا لم تكن الإخراج المحددة مقارنة بالمرور غير الخاضع لنقطة التفتيش مطلوبة، فقم بتمرير "preserve_rng_state=False" إلى "checkpoint" أو "checkpoint_sequential" لتجاوز تخزين واستعادة حالة مولد الأرقام العشوائية أثناء كل نقطة تفتيش.
 
-    The stashing logic saves and restores the RNG state for CPU and another
-    device type (infer the device type from Tensor arguments excluding CPU
-    tensors by ``_infer_device_type``) to the ``run_fn``. If there are multiple
-    device, device state will only be saved for devices of a single device type,
-    and the remaining devices will be ignored. Consequently, if any checkpointed
-    functions involve randomness, this may result in incorrect gradients. (Note
-    that if CUDA devices are among the devices detected, it will be prioritized;
-    otherwise, the first device encountered will be selected.) If there are no
-    CPU-tensors, the default device type state (default value is `cuda`, and it
-    could be set to other device by ``DefaultDeviceType``) will be saved and restored.
-    However, the logic has no way to anticipate if the user will move
-    Tensors to a new device within the ``run_fn`` itself.  Therefore, if you move
-    Tensors to a new device ("new" meaning not belonging to the set of
-    [current device + devices of Tensor arguments]) within ``run_fn``, deterministic
-    output compared to non-checkpointed passes is never guaranteed.
+   يقوم منطق التخزين بحفظ واستعادة حالة مولد الأرقام العشوائية للـ CPU ونوع جهاز آخر (يستنتج نوع الجهاز من وسائط Tensor باستثناء تنسورات CPU بواسطة _infer_device_type) إلى run_fn. إذا كان هناك أجهزة متعددة، فسيتم حفظ حالة الجهاز فقط لأجهزة نوع جهاز واحد، وسيتم تجاهل الأجهزة المتبقية. وبالتالي، إذا كانت أي وظائف خاضعة لنقطة التفتيش تنطوي على عشوائية، فقد يؤدي ذلك إلى نتائج تدرجات غير صحيحة. (ملاحظة: إذا كانت أجهزة CUDA من بين الأجهزة المكتشفة، فستكون لها الأولوية؛ وإلا، سيتم تحديد الجهاز الأول الذي يتم اكتشافه.) إذا لم تكن هناك تنسورات CPU، فسيتم حفظ حالة نوع الجهاز الافتراضي (القيمة الافتراضية هي "cuda"، ويمكن تعيينها إلى جهاز آخر بواسطة DefaultDeviceType) واستعادتها. ومع ذلك، لا توجد طريقة للمنطق لتوقع ما إذا كان المستخدم سينقل وسائط Tensor إلى جهاز جديد داخل run_fn نفسه. لذلك، إذا قمت بنقل تنسورات إلى جهاز جديد ("جديد" بمعنى أنه لا ينتمي إلى مجموعة [الجهاز الحالي + أجهزة وسائط Tensor]) داخل run_fn، فإن الإخراج المحدد مقارنة بالمرور غير الخاضع لنقطة التفتيش غير مضمون أبدًا.
 
 .. currentmodule:: torch.utils.checkpoint
 .. autofunction:: checkpoint
