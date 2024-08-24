@@ -1,9 +1,105 @@
-torch
-=====
+.. _torch-label:
+
+**الإطار PyTorch**
+
+`PyTorch <https://pytorch.org/>`_ هو إطار عمل مفتوح المصدر للتعلم الآلي، تم تطويره بشكل أساسي من قبل `Facebook's AI Research lab <https://ai.facebook.com/>`_ (FAIR). يوفر PyTorch واجهة تفاعل سهلة الاستخدام للتعلم الآلي العميق، مما يسمح للمطورين بتصميم وتدريب شبكات عصبية معقدة بفعالية.
+
+أحد المزايا الرئيسية لـ PyTorch هو قدرته على استخدام التسارع عبر وحدات معالجة الرسوميات (GPU) أو وحدات معالجة الرسوميات التخصصية (TPU)، مما يجعله أداة قوية للتعامل مع نماذج التعلم العميق الكبيرة والمعقدة. كما يوفر PyTorch قدرات تفاضلية قوية، مما يجعله أداة مفضلة للعديد من الباحثين في مجال التعلم الآلي.
+
+بالإضافة إلى ذلك، يتمتع PyTorch بدعم مجتمعي قوي، مع توفر العديد من المكتبات والموارد الإضافية التي تمكن المطورين من تسريع عملية تطويرهم. كما أن لديها نظامًا بيئيًا غنيًا من الأدوات والوحدات التي يمكن أن تساعد في مختلف جوانب تطوير التعلم الآلي، بما في ذلك ما قبل المعالجة، والتصور، ونشر النماذج.
+
+يوفر PyTorch أيضًا PyTorch Hub، وهو مستودع عبر الإنترنت للنماذج المسبقة التدريب والنماذج التي تم إنشاؤها بواسطة المجتمع، مما يسهل على المطورين والباحثين الوصول إليها واستخدامها.
+
+.. _torch-install-label:
+
+**تثبيت PyTorch**
+
+يمكن تثبيت PyTorch باستخدام مدير الحزم ``pip``::
+
+   pip install torch torchvision
+
+يرجى ملاحظة أن PyTorch يتطلب بعض المكتبات الإضافية، مثل ``numpy`` و``matplotlib``، والتي يمكن تثبيتها أيضًا باستخدام ``pip``.
+
+.. _torch-resources-label:
+
+**الموارد**
+
+- `موقع PyTorch الرسمي <https://pytorch.org/>`_
+
+- `وثائق PyTorch <https://pytorch.org/docs/stable/index.html>`_
+
+- `PyTorch على GitHub <https://github.com/pytorch/pytorch>`_
+
+- `دليل البدء السريع لـ PyTorch <https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html>`_
+
+- `مجموعة أدوات PyTorch <https://pytorch.org/tutorials>`_ - مجموعة من البرامج التعليمية والكتب الإلكترونية حول PyTorch.
+
+- `منتدى مناقشة PyTorch <https://discuss.pytorch.org/>`_ - مكان رائع لطرح الأسئلة ومناقشة PyTorch مع المجتمع.
+
+.. seealso::
+
+   `إطار TensorFlow <tensorflow.html>`_
+      تعرف على إطار TensorFlow للتعلم العميق.
+
+.. |PyTorch| image:: ../_static/logos/PyTorch.svg
+   :width: 300px
+   :alt: PyTorch
+
+.. _PyTorch: https://pytorch.org/
+
+.. |Facebook| image:: ../_static/logos/facebook.svg
+   :width: 200px
+   :alt: Facebook
+
+.. _Facebook: https://www.facebook.com/
+
+.. |FAIR| replace:: مختبر FAIR
+
+.. _FAIR: https://ai.facebook.com/
+
+.. |GPU| replace:: وحدة معالجة الرسوميات (GPU)
+
+.. |TPU| replace:: وحدة معالجة الرسوميات التخصصية (TPU)
+
+.. |numpy| replace:: NumPy
+
+.. _numpy: https://numpy.org/
+
+.. |matplotlib| replace:: Matplotlib
+
+.. _matplotlib: https://matplotlib.org/
+
+.. |pip| replace:: Pip
+
+.. _pip: https://pip.pypa.io/
+
+.. |PyTorch Hub| raw:: html
+
+   <a href="https://pytorch.org/hub/" target="_blank">PyTorch Hub</a>
+
+.. |PyTorch Hub| replace:: PyTorch Hub
+
+.. _PyTorch Hub: https://pytorch.org/hub/
+
+.. |PyTorch tutorials| raw:: html
+
+   <a href="https://pytorch.org/tutorials/" target="_blank">مجموعة أدوات PyTorch</a>
+
+.. |PyTorch tutorials| replace:: مجموعة أدوات PyTorch
+
+.. _PyTorch tutorials: https://pytorch.org/tutorials/
+
+.. |PyTorch forum| raw:: html
+
+   <a href="https://discuss.pytorch.org/" target="_blank">منتدى مناقشة PyTorch</a>
+
+.. |PyTorch forum| replace:: منتدى مناقشة PyTorch
+
+.. _PyTorch forum: https://discuss.pytorch.Multiplier: https://en.wikipedia.org/wiki/Multiprocessingorg/
 .. automodule:: torch
 .. currentmodule:: torch
 
-Tensors
+التنسورات
 -------
 .. autosummary::
     :toctree: generated
@@ -26,12 +122,11 @@ Tensors
 
 .. _tensor-creation-ops:
 
-Creation Ops
+عمليات الإنشاء
 ~~~~~~~~~~~~
 
 .. note::
-    Random sampling creation ops are listed under :ref:`random-sampling` and
-    include:
+    يتم سرد عمليات إنشاء العينات العشوائية تحت :ref:`random-sampling` وتشمل:
     :func:`torch.rand`
     :func:`torch.rand_like`
     :func:`torch.randn`
@@ -39,9 +134,9 @@ Creation Ops
     :func:`torch.randint`
     :func:`torch.randint_like`
     :func:`torch.randperm`
-    You may also use :func:`torch.empty` with the :ref:`inplace-random-sampling`
-    methods to create :class:`torch.Tensor` s with values sampled from a broader
-    range of distributions.
+    يمكنك أيضًا استخدام :func:`torch.empty` مع :ref:`inplace-random-sampling`
+    الأساليب لإنشاء :class:`torch.Tensor` s مع القيم التي تم أخذ عينات منها من مجموعة أوسع
+    من التوزيعات.
 
 .. autosummary::
     :toctree: generated
@@ -83,8 +178,8 @@ Creation Ops
 
 .. _indexing-slicing-joining:
 
-Indexing, Slicing, Joining, Mutating Ops
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+الفهرسة والتقطيع والانضمام وعمليات الطفرة
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -142,17 +237,17 @@ Indexing, Slicing, Joining, Mutating Ops
 
 .. _accelerators:
 
-Accelerators
-----------------------------------
-Within the PyTorch repo, we define an "Accelerator" as a :class:`torch.device` that is being used
-alongside a CPU to speed up computation. These device use an asynchronous execution scheme,
-using :class:`torch.Stream` and :class:`torch.Event` as their main way to perform synchronization.
-We also assume that only one such accelerator can be available at once on a given host. This allows
-us to use the current accelerator as the default device for relevant concepts such as pinned memory,
-Stream device_type, FSDP, etc.
+المعالجات
+------------
+في مستودع PyTorch، نُعرِّف "المعالج" على أنه :class:`torch.device` الذي يتم استخدامه
+إلى جانب وحدة المعالجة المركزية لتسريع الحساب. تستخدم هذه الأجهزة مخطط تنفيذ غير متزامن،
+باستخدام :class:`torch.Stream` و :class:`torch.Event` كطريقتها الرئيسية لأداء المزامنة.
+نفترض أيضًا أنه لا يمكن إلا لمعالج تسريع واحد أن يكون متاحًا في نفس الوقت على مضيف معين. يسمح لنا هذا
+باستخدام المعالج المسرع الافتراضي كجهاز افتراضي لمفاهيم ذات صلة مثل الذاكرة المثبتة،
+نوع الجهاز Stream، FSDP، إلخ.
 
-As of today, accelerator devices are (in no particular order) :doc:`"CUDA" <cuda>`, :doc:`"MTIA" <mtia>`,
-:doc:`"XPU" <xpu>`, and PrivateUse1 (many device not in the PyTorch repo itself).
+اعتبارًا من اليوم، أجهزة المعالجة المسرعة هي (بدون ترتيب معين) :doc:`"CUDA" <cuda>`، :doc:`"MTIA" <mtia>`،
+:doc:`"XPU" <xpu>`، وPrivateUse1 (العديد من الأجهزة غير الموجودة في مستودع PyTorch نفسه).
 
 .. autosummary::
     :toctree: generated
@@ -163,8 +258,8 @@ As of today, accelerator devices are (in no particular order) :doc:`"CUDA" <cuda
 
 .. _generators:
 
-Generators
-----------------------------------
+المولدات
+-----------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -173,8 +268,8 @@ Generators
 
 .. _random-sampling:
 
-Random sampling
-----------------------------------
+النماذج العشوائية
+------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -186,14 +281,14 @@ Random sampling
     set_rng_state
 
 .. autoattribute:: torch.default_generator
-   :annotation:  Returns the default CPU torch.Generator
+   :annotation:  يعيد مولد CPU الافتراضي
 
 .. The following doesn't actually seem to exist.
    https://github.com/pytorch/pytorch/issues/27780
    .. autoattribute:: torch.cuda.default_generators
-      :annotation:  If cuda is available, returns a tuple of default CUDA torch.Generator-s.
-                    The number of CUDA torch.Generator-s returned is equal to the number of
-                    GPUs available in the system.
+      :annotation:  إذا كان CUDA متاحًا، فإنه يعيد مجموعة من مولدات CUDA الافتراضية.
+                    عدد مولدات CUDA التي تم إرجاعها يساوي عدد
+                    وحدات معالجة الرسومات المتوفرة في النظام.
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -212,22 +307,22 @@ Random sampling
 
 .. _inplace-random-sampling:
 
-In-place random sampling
-~~~~~~~~~~~~~~~~~~~~~~~~
+النماذج العشوائية في المكان
+~~~~~~~~~~~~~~~~~~~~
 
-There are a few more in-place random sampling functions defined on Tensors as well. Click through to refer to their documentation:
+هناك عدد قليل من وظائف النماذج العشوائية في المكان المحدد على التنسورات أيضًا. انقر من خلال الرجوع إلى وثائقها:
 
-- :func:`torch.Tensor.bernoulli_` - in-place version of :func:`torch.bernoulli`
-- :func:`torch.Tensor.cauchy_` - numbers drawn from the Cauchy distribution
-- :func:`torch.Tensor.exponential_` - numbers drawn from the exponential distribution
-- :func:`torch.Tensor.geometric_` - elements drawn from the geometric distribution
-- :func:`torch.Tensor.log_normal_` - samples from the log-normal distribution
-- :func:`torch.Tensor.normal_` - in-place version of :func:`torch.normal`
-- :func:`torch.Tensor.random_` - numbers sampled from the discrete uniform distribution
-- :func:`torch.Tensor.uniform_` - numbers sampled from the continuous uniform distribution
+- :func:`torch.Tensor.bernoulli_` - الإصدار في المكان لـ :func:`torch.bernoulli`
+- :func:`torch.Tensor.cauchy_` - الأرقام التي تم رسمها من توزيع كوشي
+- :func:`torch.Tensor.exponential_` - الأرقام التي تم رسمها من التوزيع الأسي
+- :func:`torch.Tensor.geometric_` - العناصر التي تم رسمها من التوزيع الهندسي
+- :func:`torch.Tensor.log_normal_` - العينات من التوزيع اللوغاريتمي الطبيعي
+- :func:`torch.Tensor.normal_` - الإصدار في المكان لـ :func:`torch.normal`
+- :func:`torch.Tensor.random_` - الأرقام التي تم أخذ عينات منها من التوزيع المنتظم المتقطع
+- :func:`torch.Tensor.uniform_` - الأرقام التي تم أخذ عينات منها من التوزيع المنتظم المستمر
 
-Quasi-random sampling
-~~~~~~~~~~~~~~~~~~~~~
+النماذج شبه العشوائية
+~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -235,8 +330,8 @@ Quasi-random sampling
 
     quasirandom.SobolEngine
 
-Serialization
-----------------------------------
+التوصيف
+---------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -244,8 +339,8 @@ Serialization
     save
     load
 
-Parallelism
-----------------------------------
+التوازي
+----------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -257,15 +352,13 @@ Parallelism
 
 .. _torch-rst-local-disable-grad:
 
-Locally disabling gradient computation
---------------------------------------
-The context managers :func:`torch.no_grad`, :func:`torch.enable_grad`, and
-:func:`torch.set_grad_enabled` are helpful for locally disabling and enabling
-gradient computation. See :ref:`locally-disable-grad` for more details on
-their usage.  These context managers are thread local, so they won't
-work if you send work to another thread using the ``threading`` module, etc.
+تعطيل حساب التدرج محليًا
+------------------
+تعد برامج إدارة السياق :func:`torch.no_grad`، و :func:`torch.enable_grad`، و
+:func:`torch.set_grad_enabled` مفيدة لتعطيل حساب التدرج وتمكينه محليًا. راجع :ref:`locally-disable-grad` لمزيد من التفاصيل حول
+استخدامها. تعد برامج إدارة السياق هذه خاصة بالخيوط، لذا فلن تعمل إذا أرسلت عملًا إلى خيط آخر باستخدام وحدة "الخيوط"، إلخ.
 
-Examples::
+أمثلة::
 
   >>> x = torch.zeros(1, requires_grad=True)
   >>> with torch.no_grad():
@@ -279,7 +372,7 @@ Examples::
   >>> y.requires_grad
   False
 
-  >>> torch.set_grad_enabled(True)  # this can also be used as a function
+  >>> torch.set_grad_enabled(True)  # يمكن أيضًا استخدام هذا كدالة
   >>> y = x * 2
   >>> y.requires_grad
   True
@@ -300,11 +393,11 @@ Examples::
     autograd.grad_mode.inference_mode
     is_inference_mode_enabled
 
-Math operations
----------------
+عمليات الرياضيات
+------------
 
-Pointwise Ops
-~~~~~~~~~~~~~~~~~~~~~~
+عمليات نقطة إلى نقطة
+~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated
@@ -419,8 +512,8 @@ Pointwise Ops
     trunc
     xlogy
 
-Reduction Ops
-~~~~~~~~~~~~~~~~~~~~~~
+عمليات التخفيض
+~~~~~~~~~~~~
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -455,7 +548,7 @@ Reduction Ops
     var_mean
     count_nonzero
 
-Comparison Ops
+عمليات المقارنة
 ~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: generated
@@ -493,8 +586,8 @@ Comparison Ops
     msort
 
 
-Spectral Ops
-~~~~~~~~~~~~~~~~~~~~~~
+العمليات الطيفية
+~~~~~~~~~~~~
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -508,8 +601,8 @@ Spectral Ops
     kaiser_window
 
 
-Other Operations
-~~~~~~~~~~~~~~~~~~~~~~
+عمليات أخرى
+~~~~~~~~~~
 
 .. autosummary::
     :toctree: generated
@@ -573,8 +666,8 @@ Other Operations
     resolve_neg
 
 
-BLAS and LAPACK Operations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+عمليات BLAS و LAPACK
+~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -620,12 +713,12 @@ BLAS and LAPACK Operations
     triangular_solve
     vdot
 
-Foreach Operations
+عمليات ForEach
 ~~~~~~~~~~~~~~~~~~
 
 .. warning::
-    This API is in beta and subject to future changes.
-    Forward-mode AD is not supported.
+    هذا API في مرحلة البيتا وقد يخضع لتغييرات في المستقبل.
+    لا يتم دعم طريقة AD للأمام.
 
 .. autosummary::
     :toctree: generated
@@ -687,8 +780,8 @@ Foreach Operations
     _foreach_trunc_
     _foreach_zero_
 
-Utilities
-----------------------------------
+مرافق
+-----
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -710,7 +803,7 @@ Utilities
     vmap
     _assert
 
-Symbolic Numbers
+الأرقام الرمزية
 ----------------
 .. autoclass:: SymInt
     :members:
@@ -732,23 +825,23 @@ Symbolic Numbers
     sym_not
     sym_ite
 
-Export Path
+مسار التصدير
 -------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
 
 .. warning::
-    This feature is a prototype and may have compatibility breaking changes in the future.
+    هذه الميزة هي نموذج أولي وقد تخضع لتغييرات تتعارض مع التوافق في المستقبل.
 
     export
     generated/exportdb/index
 
-Control Flow
-------------
+تدفق التحكم
+---------
 
 .. warning::
-    This feature is a prototype and may have compatibility breaking changes in the future.
+    هذه الميزة هي نموذج أولي وقد تخضع لتغييرات تتعارض مع التوافق في المستقبل.
 
 .. autosummary::
     :toctree: generated
@@ -756,30 +849,30 @@ Control Flow
 
     cond
 
-Optimizations
--------------
+التحسين
+-------
 .. autosummary::
     :toctree: generated
     :nosignatures:
 
     compile
 
-`torch.compile documentation <https://pytorch.org/docs/main/torch.compiler.html>`__
+`وثائق torch.compile <https://pytorch.org/docs/main/torch.compiler.html>`__
 
-Operator Tags
-------------------------------------
+علامات المشغل
+---------------
 .. autoclass:: Tag
     :members:
 
-.. Empty submodules added only for tracking.
+.. تم إضافة وحدات فرعية فارغة فقط لأغراض التتبع.
 .. py:module:: torch.contrib
 .. py:module:: torch.utils.backcompat
 
-.. This module is only used internally for ROCm builds.
+.. هذه الوحدة تستخدم داخليا فقط لبناء ROCm.
 .. py:module:: torch.utils.hipify
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. نقوم بإضافتها هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.utils.model_dump
 .. py:module:: torch.utils.viz
 .. py:module:: torch.functional
