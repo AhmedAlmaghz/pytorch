@@ -1,8 +1,8 @@
 torch.utils.module_tracker
-===================================
+============================
 .. automodule:: torch.utils.module_tracker
 
-This utility can be used to track the current position inside an :class:`torch.nn.Module` hierarchy.
-It can be used within other tracking tools to be able to easily associate measured quantities to user-friendly names. This is used in particular in the FlopCounterMode today.
+يمكن استخدام هذه الأداة المساعدة لتتبع الموقع الحالي داخل هرمية :class:`torch.nn.Module`.
+يمكن استخدامها ضمن أدوات التتبع الأخرى لتكون قادرًا على ربط الكميات المقاسة بسهولة بأسماء سهلة الاستخدام. ويستخدم هذا بشكل خاص في FlopCounterMode اليوم.
 
 .. autoclass:: torch.utils.module_tracker.ModuleTracker
