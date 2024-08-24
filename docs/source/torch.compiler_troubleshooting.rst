@@ -1,137 +1,222 @@
-PyTorch 2.0 Troubleshooting
-===========================
+.. _troubleshooting:
 
-**Author**: `Michael Lazos <https://github.com/mlazos>`_
+استكشاف أخطاء PyTorch 2.0 وإصلاحها
+===============================
 
-We are actively developing debug tools, profilers, and improving our
-error and warning messages. Below is a table of the available
-tools and their typical usage. For additional help see
-`Diagnosing Runtime Errors <#diagnosing-runtime-errors>`__.
+هذه الصفحة مخصصة لمساعدتك في استكشاف الأخطاء وإصلاحها في PyTorch. إذا واجهتك مشكلة، يرجى الاطلاع على الأسئلة الشائعة التالية. إذا لم تجد حلاً لمشكلتك هنا، فيرجى فتح مشكلة على صفحة `GitHub Issues <https://github.com/pytorch/pytorch/issues>`_ الخاصة بنا.
 
-.. list-table:: Title
+.. contents:: جدول المحتويات
+    :local:
+
+أسئلة عامة
+----------
+
+ما هي متطلبات النظام لتشغيل PyTorch؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  PyTorch يدعم Windows وLinux وmacOS.
+-  يتطلب PyTorch Python 3.6 أو أعلى.
+-  يتطلب PyTorch `CUDA <https://developer.nvidia.com/cuda-downloads>`_ 9.2 أو أعلى إذا كنت ترغب في استخدام PyTorch مع GPU.
+-  يتطلب PyTorch `cuDNN <https://developer.nvidia.com/cudnn>`_ 7.4.2 أو أعلى.
+
+كيف يمكنني تثبيت PyTorch؟
+^^^^^^^^^^^^^^^^^^^^^^
+
+يمكنك العثور على تعليمات التثبيت التفصيلية في `صفحة التثبيت الخاصة بنا <https://pytorch.org/get-started/locally/>`_.
+
+ما هي إصدارات PyTorch المدعومة حالياً؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+يمكنك العثور على معلومات حول الإصدارات المدعومة حاليًا في `سياسة دعم الإصدارات الخاصة بنا <https://pytorch.org/resources/stable/version_policy.html>`_.
+
+ما هي أفضل طريقة للتحديث إلى أحدث إصدار من PyTorch؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+يرجى الاطلاع على `دليل الترقية <https://pytorch.org/resources/stable/notes/upgrade.html>`_ للحصول على إرشادات حول كيفية الترقية إلى أحدث إصدار من PyTorch.
+
+أين يمكنني العثور على أحدث إصدار من PyTorch؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+يمكنك دائمًا العثور على أحدث إصدار من PyTorch على موقعنا على الويب في `https://pytorch.org/get-started/ <https://pytorch.org/get-started/>`_.
+
+ما هي الطريقة الموصى بها للتعامل مع الأخطاء في PyTorch؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا صادفت خطأ أثناء استخدام PyTorch، فيرجى فتح مشكلة على صفحة `GitHub Issues <https://github.com/pytorch/pytorch/issues>`_ الخاصة بنا. يرجى تضمين أكبر قدر ممكن من التفاصيل حول الخطأ، بما في ذلك أي رسائل خطأ أو آثار، بالإضافة إلى التعليمات البرمجية أو الخطوات اللازمة لإعادة إنتاج الخطأ.
+
+أسئلة محددة
+---------
+
+لماذا أحصل على خطأ "لا يمكن استيراد الاسم 'XYZ'" عند محاولة استيراد PyTorch؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا واجهت خطأ مثل "لا يمكن استيراد الاسم 'XYZ'"، فهذا يعني أن PyTorch غير مثبت بشكل صحيح. يرجى التأكد من اتباعك `تعليمات التثبيت <https://pytorch.org/get-started/locally/>`_ بشكل صحيح، والتأكد من أنك قمت بتنشيط بيئة Python الخاصة بك بشكل صحيح.
+
+لماذا لا يمكنني استيراد PyTorch في Jupyter Notebook؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا كنت تستخدم Jupyter Notebook، فتأكد من تشغيل دفتر الملاحظات في نفس البيئة التي قمت بتثبيت PyTorch فيها. يمكنك أيضًا محاولة إعادة تشغيل الخادم وإعادة فتح دفتر الملاحظات.
+
+لماذا أحصل على خطأ "لا يمكن تحميل وحدة CUDA" عند تشغيل التعليمات البرمجية على GPU؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا واجهت خطأ "لا يمكن تحميل وحدة CUDA"، فتأكد من تثبيت CUDA وcuDNN بشكل صحيح ومتاح لـ PyTorch. يرجى الاطلاع على `متطلبات النظام <#what-are-the-system-requirements-to-run-pytorch>`_ للتأكد من أن لديك الإصدارات المدعومة من CUDA وcuDNN.
+
+لماذا أحصل على خطأ "لا يوجد جهاز CUDA متوفر" عند محاولة تشغيل التعليمات البرمجية على GPU؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا واجهت خطأ "لا يوجد جهاز CUDA متوفر"، فتأكد من أن لديك بطاقة GPU متوافقة مع CUDA وأن PyTorch يمكنه الوصول إليها. يمكنك استخدام ``torch.cuda.is_available()`` للتحقق مما إذا كان PyTorch قادرًا على اكتشاف GPU.
+
+لماذا أحصل على خطأ "ذاكرة CUDA خارج النطاق" عند تشغيل التعليمات البرمجية على GPU؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا واجهت خطأ "ذاكرة CUDA خارج النطاق"، فهذا يعني أنك تستخدم المزيد من ذاكرة GPU أكثر مما هو متاح. حاول تقليل حجم دفعة التعليمات البرمجية الخاصة بك أو تقليل عدد المتغيرات التي يتم تخزينها في GPU. يمكنك أيضًا محاولة استخدام بطاقة GPU ذات سعة ذاكرة أكبر.
+
+لماذا أحصل على نتائج مختلفة عند تشغيل نفس التعليمات البرمجية على CPU وGPU؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+قد تحدث اختلافات طفيفة في النتائج عند تشغيل التعليمات البرمجية على CPU وGPU بسبب الاختلافات في الدقة العددية وتوازي الحسابات. في معظم الحالات، يجب ألا يكون لهذه الاختلافات تأثير كبير على الأداء العام لنموذجك.
+
+لماذا بطء PyTorch عند تشغيله على CPU؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PyTorch مصمم للاستفادة من قدرات معالجة GPU، لذلك قد يكون أبطأ عند تشغيله على CPU. إذا كنت تواجه مشكلات في الأداء عند تشغيل PyTorch على CPU، فتأكد من أنك تستخدم أحدث إصدار من PyTorch، والذي يتضمن تحسينات للأداء على CPU. يمكنك أيضًا محاولة استخدام مكتبات مثل `Numba <https://numba.readthedocs.io/en/stable/cuda/overview.html>`_ أو `Cython <https://cython.org/>`_ لتسريع أجزاء حرجة من التعليمات البرمجية الخاصة بك.
+
+لماذا لا يمكنني تثبيت PyTorch على Windows؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا كنت تواجه مشكلات في تثبيت PyTorch على Windows، فتأكد من أنك تستخدم `مفسر Python مدعوم <https://pytorch.org/get-started/locally/#windows-install-with-pip>`_ وأن لديك `Microsoft Visual C++ Redistributable <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ مثبتًا. إذا استمرت المشكلة، فيرجى الرجوع إلى `دليل استكشاف الأخطاء وإصلاحها الخاص بنا <https://pytorch.org/get-started/locally/#windows-troubleshooting>`_ لمزيد من الاقتراحات.
+
+لماذا لا يمكنني تثبيت PyTorch على macOS؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إذا كنت تواجه مشكلات في تثبيت PyTorch على macOS، فتأكد من أن لديك الإصدار الصحيح من `Xcode <https://developer.apple.com/xcode/>`_ و `Xcode Command Line Tools <https://developer.apple.
+com/downloads/all/>`_ مثبتًا. إذا استمرت المشكلة، فيرجى الرجوع إلى `دليل استكشاف الأخطاء وإصلاحها الخاص بنا <https://pytorch.org/get-started/locally/#macos-troubleshooting>`_ لمزيد من الاقتراحات.
+**المؤلف**: `مايكل لازوس <https://github.com/mlazos>`_
+
+نقوم حاليًا بتطوير أدوات التصحيح، ومُصَحِّحات الأخطاء، وتحسين رسائل الخطأ والتحذير لدينا. فيما يلي جدول بالأدوات المتاحة واستخداماتها النموذجية. للحصول على مساعدة إضافية، راجع `تشخيص أخطاء وقت التشغيل <#diagnosing-runtime-errors>`__.
+
+.. list-table:: العنوان
    :widths: 25 25 50
    :header-rows: 1
 
-   * - Tool
-     - Purpose
-     - Usage
-   * - Info logging
-     - View summarized steps of compilation
-     - ``torch._logging.set_logs(dynamo = logging.INFO)`` or ``TORCH_LOGS="dynamo"``
-   * - Debug logging
-     - View detailed steps of compilation (print every instruction traced)
-     - ``torch._logging.set_logs(dynamo = logging.DEBUG)`` and
-       ``torch._dynamo.config.verbose = True``, or ``TORCH_LOGS="+dynamo" TORCHDYNAMO_VERBOSE=1``
-   * - Minifier for any backend
-     - Find smallest subgraph which reproduces errors for any backend
-     - set environment variable ``TORCHDYNAMO_REPRO_AFTER="dynamo"``
-   * - Minifier for ``TorchInductor``
-     - If the error is known to occur after ``AOTAutograd`` find
-       smallest subgraph which reproduces errors during ``TorchInductor`` lowering
-     - set environment variable ``TORCHDYNAMO_REPRO_AFTER="aot"``
-   * - Dynamo accuracy minifier
-     - Finds the smallest subgraph which reproduces an accuracy issue
-       between an eager mode model and optimized model, when you
-       suspect the problem is in ``AOTAutograd``
+   * - الأداة
+     - الغرض
+     - الاستخدام
+   * - تسجيل المعلومات
+     - عرض الخطوات الملخصة للتجميع
+     - ``torch._logging.set_logs(dynamo = logging.INFO)`` أو ``TORCH_LOGS="dynamo"``
+   * - تسجيل التصحيح
+     - عرض الخطوات التفصيلية للتجميع (طباعة كل تعليمة تم تتبعها)
+     - ``torch._logging.set_logs(dynamo = logging.DEBUG)`` و
+       ``torch._dynamo.config.verbose = True``، أو ``TORCH_LOGS="+dynamo" TORCHDYNAMO_VERBOSE=1``
+   * - المُصَغِّر لأي backend
+     - البحث عن أصغر subgraph الذي يكرر الأخطاء لأي backend
+     - قم بتعيين متغير البيئة ``TORCHDYNAMO_REPRO_AFTER="dynamo"``
+   * - المُصَغِّر لـ ``TorchInductor``
+     - إذا كان الخطأ معروفًا بعد حدوثه ``AOTAutograd`` ابحث
+       أصغر subgraph الذي يكرر الأخطاء أثناء ``TorchInductor`` lowering
+     - قم بتعيين متغير البيئة ``TORCHDYNAMO_REPRO_AFTER="aot"``
+   * - مُصَغِّر دقة Dynamo
+     - يجد أصغر subgraph الذي يكرر مشكلة دقة
+       بين نموذج الوضع الحريص ونموذج مُحَسَّن، عندما تشتبه
+       المشكلة في ``AOTAutograd``
      - ``TORCHDYNAMO_REPRO_AFTER="dynamo" TORCHDYNAMO_REPRO_LEVEL=4``
-   * - Inductor accuracy minifier
-     - Finds the smallest subgraph which reproduces an accuracy issue
-       between an eager mode model and optimized model, when you
-       suspect the problem is in the backend (e.g., inductor).
-       If this doesn't work, try the Dynamo accuracy minifier
-       instead.
+   * - مُصَغِّر دقة Inductor
+     - يجد أصغر subgraph الذي يكرر مشكلة دقة
+       بين نموذج الوضع الحريص ونموذج مُحَسَّن، عندما تشتبه
+       المشكلة في backend (على سبيل المثال، inductor).
+       إذا لم ينجح هذا، جرب مُصَغِّر دقة Dynamo
+       بدلا من ذلك.
      - ``TORCHDYNAMO_REPRO_AFTER="aot" TORCHDYNAMO_REPRO_LEVEL=4``
    * - ``torch._dynamo.explain``
-     - Find graph breaks and display reasoning for them
+     - العثور على كسور الرسم البياني وعرض التبرير لها
      - ``torch._dynamo.explain(fn)(*inputs)``
-   * - Record/Replay
-     - Record and replay frames which to reproduce errors during graph capture
+   * - التسجيل/إعادة التشغيل
+     - تسجيل وإعادة تشغيل الإطارات التي تتكرر الأخطاء أثناء التقاط الرسم البياني
      - ``torch._dynamo.config.replay_record_enabled = True``
-   * - TorchDynamo function name filtering
-     - Only compile functions with the given name to reduce noise when
-       debugging an issue
-     - set environment variable ``TORCHDYNAMO_DEBUG_FUNCTION=<name>``
-   * - TorchInductor Debug logging
-     - Print general TorchInductor debug info and generated Triton/C++ code
+   * - تصفية أسماء وظائف TorchDynamo
+     - قم بتجميع الوظائف فقط مع الاسم المحدد لتقليل الضوضاء عند
+       تصحيح مشكلة
+     - قم بتعيين متغير البيئة ``TORCHDYNAMO_DEBUG_FUNCTION=<name>``
+   * - تسجيل تصحيح TorchInductor
+     - طباعة معلومات تصحيح الأخطاء العامة لـ TorchInductor والرمز المولد لـ Triton/C++
      - ``torch._inductor.config.debug = True``
-   * - TorchInductor Tracing
-     - Show time taken in each TorchInductor stage + output code and graph
-       visualization
-     - set the environment variable TORCH_COMPILE_DEBUG=1 or
+   * - تتبع TorchInductor
+     - عرض الوقت المستغرق في كل مرحلة من مراحل TorchInductor + إخراج التعليمات البرمجية وتصور الرسم البياني
+     - قم بتعيين متغير البيئة TORCH_COMPILE_DEBUG=1 أو
        ``torch._inductor.config.trace.enabled = True``
 
-In addition to info and debug logging,
-you can use `torch._logging <https://pytorch.org/docs/main/logging.html>`__
-for more fine-grained logging.
+بالإضافة إلى تسجيل المعلومات وتسجيل التصحيح،
+يمكنك استخدام `torch._logging <https://pytorch.org/docs/main/logging.html>`__
+للحصول على تسجيل أكثر تفصيلاً.
 
-Diagnosing Runtime Errors
+تشخيص أخطاء وقت التشغيل
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-At a high level, the TorchDynamo stack consists of a graph capture from
-Python code (TorchDynamo) and a backend compiler. For example, a
-backend compiler may consist of backward graph tracing (AOTAutograd) and
-graph lowering (TorchInductor)*. Errors can occur in any component of
-the stack and will provide full stack traces.
+على مستوى عالٍ، تتكون مكدس TorchDynamo من التقاط الرسم البياني
+من رمز Python (TorchDynamo) ومُجَمِّع backend. على سبيل المثال، قد يتكون مُجَمِّع backend من تتبع الرسم البياني العكسي (AOTAutograd)
+وتقليل الرسم البياني (TorchInductor)*. يمكن أن تحدث الأخطاء في أي مكون
+من المكدس وسيوفر آثار المكدس الكاملة.
 
-To determine in which component an error occurred,
-you may use info-level logging
-``torch._logging.set_logs(dynamo = logging.INFO)`` or ``TORCH_LOGS="dynamo"``
-and look for ``Step #: ...`` outputs. Logs are made at the beginning and end of
-each step, so the step that an error should correspond to is the most recently
-logged step whose end has not yet been logged. The steps correspond to the
-following parts of the stack:
+لتحديد المكون الذي حدث فيه الخطأ،
+يمكنك استخدام تسجيل مستوى المعلومات
+``torch._logging.set_logs(dynamo = logging.INFO)`` أو ``TORCH_LOGS="dynamo"``
+والبحث عن مخرجات ``Step #: ...``. يتم إجراء السجلات في بداية ونهاية
+كل خطوة، لذلك فإن الخطوة التي يجب أن يقابلها الخطأ هي أحدث خطوة تم تسجيلها
+التي لم يتم تسجيل نهايتها بعد. تتوافق الخطوات مع
+أجزاء المكدس التالية:
 
 ==== ================
-Step Component
+الخطوة المكون
 ==== ================
 1    TorchDynamo
-2    Compiler Backend
+2    مُجَمِّع backend
 3    TorchInductor
 ==== ================
 
-If info logging is insufficient, you can use available backend
-options. These options include:
+إذا كان تسجيل المعلومات غير كافٍ، فيمكنك استخدام خيارات backend
+المتاحة. تشمل هذه الخيارات:
 
--  ``"eager"``: only runs TorchDynamo forward graph capture and then
-   runs the captured graph with PyTorch. This provides an indication as
-   to whether TorchDynamo is raising the error.
+-  ``"eager"``: تشغيل TorchDynamo التقاط الرسم البياني للأمام فقط
+   ثم قم بتشغيل الرسم البياني الذي تم التقاطه باستخدام PyTorch. يوفر هذا مؤشرا على
+   ما إذا كان TorchDynamo يرفع الخطأ.
 
--  ``"aot_eager"``: runs TorchDynamo to capture a forward graph, and
-   then AOTAutograd to trace the backward graph without any additional
-   backend compiler steps. PyTorch eager will then be used to run the
-   forward and backward graphs. This is useful to narrow down the issue
-   to AOTAutograd.
+-  ``"aot_eager"``: تشغيل TorchDynamo لالتقاط الرسم البياني للأمام، و
+   ثم AOTAutograd لتعقب الرسم البياني العكسي دون أي خطوات إضافية
+   مُجَمِّع backend. سيتم بعد ذلك استخدام PyTorch eager لتشغيل
+   الرسوم البيانية للأمام والخلف. هذا مفيد لتضييق المشكلة
+   إلى AOTAutograd.
 
-The general procedure to narrow down an issue is the following:
+الإجراء العام لتضييق نطاق المشكلة هو ما يلي:
 
-1. Run your program with the ``"eager"`` backend. If the error no longer
-   occurs, the issue is in the backend compiler that is being used (if
-   using TorchInductor, proceed to step 2. If not, see `this
-   section <#minifying-backend-compiler-errors>`__). If the error still
-   occurs with the ``"eager"`` backend, it is an `error while running
-   torchdynamo <#torchdynamo-errors>`__.
+1. قم بتشغيل برنامجك باستخدام backend "eager". إذا لم يعد الخطأ يحدث،
+   فإن المشكلة تكمن في مُجَمِّع backend الذي يتم استخدامه (إذا
+   استخدام TorchInductor، انتقل إلى الخطوة 2. إذا لم يكن الأمر كذلك، راجع `هذا
+   القسم <#minifying-backend-compiler-errors>`__). إذا استمر الخطأ
+   مع backend "eager"، فهو `خطأ أثناء تشغيل torchdynamo <#torchdynamo-errors>`__.
 
-2. This step is only necessary if ``TorchInductor`` is used as the backend
-   compiler. Run the model with the ``"aot_eager"`` backend. If this
-   backend raises an error then the error is occurring during
-   AOTAutograd tracing. If the error no longer occurs with this backend,
-   then `the error is in
+2. هذه الخطوة ضرورية فقط إذا تم استخدام ``TorchInductor`` كمُجَمِّع backend
+   . قم بتشغيل النموذج باستخدام backend "aot_eager". إذا قام هذا
+   backend برفع خطأ، فإن الخطأ يحدث أثناء
+   تتبع AOTAutograd. إذا لم يعد الخطأ يحدث مع هذا backend،
+   ثم `الخطأ في
    TorchInductor\* <#minifying-torchinductor-errors>`__.
 
-Each of these cases are analyzed in the following sections.
+يتم تحليل كل من هذه الحالات في الفروع التالية.
 
-.. note:: The TorchInductor backend consists of
-   both AOTAutograd tracing and the TorchInductor compiler itself. We will
-   disambiguate by referring to ``TorchInductor`` as the backend, and
-   TorchInductor lowering as the phase which lowers the graph traced by
+.. note:: يتكون backend TorchInductor من
+   كل من تتبع AOTAutograd ومُجَمِّع TorchInductor نفسه. سنقوم
+   إزالة الغموض عن طريق الإشارة إلى ``TorchInductor`` كمُجَمِّع backend، و
+   تقليل TorchInductor كمرحلة تقلل الرسم البياني الذي تم تتبع بواسطة
    AOTAutograd.
 
-Torchdynamo Errors
+أخطاء Torchdynamo
 ------------------
 
-If the error that is generated occurs with the ``"eager"`` backend, then
-TorchDynamo is most likely the source of the error. Here is a sample code
-which will generate an error.
+إذا حدث الخطأ الذي تم إنشاؤه مع backend "eager"، فإن
+TorchDynamo هو على الأرجح مصدر الخطأ. فيما يلي رمز العينة
+التي ستولد خطأ.
 
 .. code-block:: py
 
@@ -149,7 +234,7 @@ which will generate an error.
 
    compiled_test_assertion_error()
 
-The code above generates the following error:
+تولد الشفرة أعلاه الخطأ التالي:
 
 ::
 
@@ -167,64 +252,58 @@ The code above generates the following error:
    Set torch._dynamo.config.verbose=True for more information
    ==========
 
-As the message suggests you can set
-``torch._dynamo.config.verbose=True`` to get a full stack trace to both
-the error in TorchDynamo and the user code. In addition to this flag,
-you can also set the ``log_level`` of TorchDynamo through
-``torch._logging.set_logs(dynamo = logging.INFO)`` or ``TORCH_LOGS="dynamo"``. These levels include:
+كما يوحي الرسالة، يمكنك تعيين
+``torch._dynamo.config.verbose=True`` للحصول على أثر المكدس الكامل للخطأ
+في TorchDynamo ورمز المستخدم. بالإضافة إلى هذا العلم،
+يمكنك أيضًا تعيين مستوى تسجيل الدخول لـ TorchDynamo من خلال
+``torch._logging.set_logs(dynamo = logging.INFO)`` أو ``TORCH_LOGS="dynamo"``. تشمل هذه المستويات:
 
-- ``logging.DEBUG`` or ``TORCH_LOGS="+dynamo"``: Print every instruction that is
-  encountered in addition to all the log levels listed below.
+- ``logging.DEBUG`` أو ``TORCH_LOGS="+dynamo"``: طباعة كل تعليمة
+   يتم مواجهتها بالإضافة إلى جميع مستويات تسجيل الدخول المدرجة أدناه.
 - ``logging.INFO``:
-  Print each function that is compiled (original and modified bytecode)
-  and the graph that is captured in addition to all the log levels listed below.
-- ``logging.WARNING`` (default): Print graph breaks in addition to all
-  the log levels listed below.
-- ``logging.ERROR``: Print errors only.
+   طباعة كل دالة يتم تجميعها (رمز البايت الأصلي والمعدل)
+   والرسوم البيانية التي يتم التقاطها بالإضافة إلى جميع مستويات تسجيل الدخول المدرجة أدناه.
+- ``logging.WARNING`` (افتراضي): طباعة كسور الرسم البياني بالإضافة إلى جميع
+   مستويات تسجيل الدخول المدرجة أدناه.
+- ``logging.ERROR``: طباعة الأخطاء فقط.
 
-If a model is very large, the logs can become overwhelming. If
-an error occurs deep within a model's Python code, it can be useful to
-execute only the frame in which the error occurs to enable easier
-debugging. There are two tools available to enable this:
+إذا كان النموذج كبيرًا جدًا، فقد تصبح السجلات ساحقة. إذا
+حدث خطأ عميقًا داخل رمز Python للنموذج، فقد يكون من المفيد
+تنفيذ الإطار الذي يحدث فيه الخطأ فقط لتمكين تصحيح الأخطاء بشكل أسهل. هناك أداتان متاحتان لتمكين ذلك:
 
-- Setting the environment variable ``TORCHDYNAMO_DEBUG_FUNCTION``
-  to the desired function name will only run torchdynamo on functions with that
-  name.
+- قم بتعيين متغير البيئة ``TORCHDYNAMO_DEBUG_FUNCTION``
+  إلى اسم الدالة المطلوبة لتشغيل torchdynamo فقط على الوظائف التي تحمل هذا الاسم.
 
-- Enabling the record/replay tool (set ``torch._dynamo.config.replay_record_enabled = True``)
-  which dumps an execution record when an error is encountered. This record can
-  then be replayed to run only the frame where an error occurred.
+- تمكين أداة التسجيل/إعادة التشغيل (تعيين ``torch._dynamo.config.replay_record_enabled = True``)
+  الذي يقوم بإلقاء سجل التنفيذ عند مواجهة خطأ. يمكن بعد ذلك إعادة تشغيل هذا السجل
+  لتشغيل الإطار فقط حيث حدث خطأ.
 
-Diagnosing TorchInductor Errors
+تشخيص أخطاء TorchInductor
 -------------------------------
 
-If the error does not occur with the ``"eager"`` backend, then the
-backend compiler is the source of the error (`example
-error <https://gist.github.com/mlazos/2f13681e3cc6c43b3911f336327032de%5D>`__).
-There are `different choices <./torch.compiler.rst>`__
-for backend compilers for TorchDynamo, with TorchInductor
-fitting the needs of most users. This section focuses on TorchInductor
-as the motivating example, but some tools can also be used with other
-backend compilers.
+إذا لم يحدث الخطأ مع backend "eager"، فإن
+مُجَمِّع backend هو مصدر الخطأ (`مثال
+خطأ <https://gist.github.com/mlazos/2f13681e3cc6c43b3911f336327032de%5D>`__).
+هناك `خيارات مختلفة <./torch.compiler.rst>`__
+لمُجَمِّعات backend لـ TorchDynamo، مع TorchInductor
+تلبية احتياجات معظم المستخدمين. يركز هذا القسم على TorchInductor
+كمثال توضيحي، ولكن يمكن استخدام بعض الأدوات أيضًا مع مُجَمِّعات backend الأخرى.
 
-Below is the portion of the stack which we are focusing on:
+فيما يلي الجزء من المكدس الذي نركز عليه:
 
-With TorchInductor as the chosen backend, AOTAutograd is used to
-generate the backward graph from the forward graph captured by
-torchdynamo. It is important to note that errors can occur during this
-tracing and also while TorchInductor lowers the forward and backward
-graphs to GPU code or C++. A model can often consist of hundreds or
-thousands of FX nodes, so narrowing the exact nodes where this problem
-occurred can be very difficult. Fortunately, there are tools available to
-automatically minify these input graphs to the nodes which are causing
-the issue. The first step is to determine whether the error occurs
-during tracing of the backward graph with AOTAutograd or during
-TorchInductor lowering. As mentioned above in step 2, the
-``"aot_eager"`` backend can be used to run only AOTAutograd in isolation
-without lowering. If the error still occurs with this backend, this
-indicates that the error is occurring during AOTAutograd tracing.
+مع اختيار TorchInductor كمُجَمِّع backend، يتم استخدام AOTAutograd
+لإنشاء الرسم البياني العكسي من الرسم البياني للأمام الذي تم التقاطه بواسطة
+torchdynamo. من المهم ملاحظة أنه يمكن أن تحدث أخطاء أثناء هذا
+التتبع وأيضًا أثناء قيام TorchInductor بتقليل الرسوم البيانية للأمام والخلف إلى رمز GPU أو C++. غالبًا ما يتكون النموذج من مئات أو
+آلاف عقد FX، لذلك قد يكون من الصعب تضييق العقدة التي حدثت فيها المشكلة
+بشكل كبير. لحسن الحظ، هناك أدوات متاحة ل
+تصغير هذه الرسوم البيانية المدخلة تلقائيًا إلى العقد التي تسبب
+المشكلة. تتمثل الخطوة الأولى في تحديد ما إذا كان الخطأ يحدث
+أثناء تتبع الرسم البياني العكسي باستخدام AOTAutograd أو أثناء تقليل TorchInductor. كما ذكرنا أعلاه في الخطوة 2، يمكن استخدام backend
+"aot_eager" لتشغيل AOTAutograd في عزلة دون تقليل. إذا استمر الخطأ في الحدوث مع هذا backend،
+فذلك يشير إلى أن الخطأ يحدث أثناء تتبع AOTAutograd.
 
-Here is an example:
+فيما يلي مثال:
 
 .. code-block:: py
 
@@ -239,15 +318,14 @@ Here is an example:
        y = torch.ones(200, 200)
        x = torch.ones(200, 200)
        z = x + y
-       a = torch.ops.aten._foobar(z)  # dummy function which errors
+       a = torch.ops.aten._foobar(z)  # وظيفة وهمية بها خطأ
        return model(a)
 
 
    compiled_test_backend_error = torch.compile(test_backend_error, backend="inductor")
    compiled_test_backend_error()
 
-Running this should give you this error with a longer stack trace below
-it:
+يجب أن يعطيك هذا الخطأ مع أثر المكدس الأطول أدناه
 
 ::
 
@@ -261,35 +339,20 @@ it:
    AssertionError
    ...
 
-`error with full stack
-trace <https://gist.github.com/mlazos/d6947854aa56d686800259a164c62100>`__
+`خطأ مع أثر المكدس الكامل
+<https://gist.github.com/mlazos/d6947854aa56d686800259a164c62100>`__
 
-If you then change ``torch.compile(backend="inductor")`` to
-``torch.compile(backend="aot_eager")``, it will run without error, because
-`the
-issue <https://github.com/pytorch/torchdynamo/blob/d09e50fbee388d466b5252a63045643166006f77/torchinductor/lowering.py#:~:text=%23%20This%20shouldn%27t%20be,assert%20False>`__
-is in the TorchInductor lowering process, not in AOTAutograd.
+إذا قمت بعد ذلك بتغيير ``torch.compile(backend="inductor")`` إلى
+``torch.compile(backend="aot_eager")``، فسيتم تشغيله دون خطأ، لأن
+`القضية <https://github.com/pytorch/torchdynamo/blob/d09e50fbee388d466b5252a63045643166006f77/torchinductor/lowering.py#:~:text=%23%20This%20shouldn%27t%20be,assert%20False>`__
+في عملية تقليل TorchInductor، وليس في AOTAutograd.
 
-Minifying TorchInductor Errors
-------------------------------
+تصغير أخطاء TorchInductor
+-------------------------
 
-From here, let’s run the minifier to get a minimal repro. Setting the
-environment variable ``TORCHDYNAMO_REPRO_AFTER="aot"`` (or setting
-``torch._dynamo.config.repro_after="aot"`` directly) will generate a
-Python program which reduces the graph produced by AOTAutograd to the
-smallest subgraph which reproduces the error. (See below for an example
-where we minify the graph produced by TorchDynamo) Running the program
-with this environment variable should show nearly `identical
-output <https://gist.github.com/mlazos/0458ab828aa403c779fe73c012aa5982>`__,
-with an additional line indicating where ``minifier_launcher.py`` has
-been written to. The output directory is configurable by setting
-``torch._dynamo.config.base_dir`` to a valid directory name. The final
-step is to run the minifier and check that it runs successfully. A
-successful run looks like
-`this <https://gist.github.com/mlazos/e6ea41ccce68a7b1b8a7a09acb1b206a>`__.
-If the minifier runs successfully, it generates runnable python code
-which reproduces the exact error. For our example this is the following
-code:
+من هنا، دعنا نقوم بتشغيل أداة التبسيط (minifier) للحصول على نسخة مبسطة يمكن إعادة إنتاجها. سيؤدي تعيين متغير البيئة ``TORCHDYNAMO_REPRO_AFTER="aot"`` (أو تعيين ``torch._dynamo.config.repro_after="aot"`` مباشرةً) إلى إنشاء برنامج Python يقوم بتبسيط الرسم البياني الذي ينتجه AOTAutograd إلى أصغر رسم فرعي يعيد إنتاج الخطأ. (انظر أدناه لمثال حيث نقوم بتبسيط الرسم البياني الذي ينتجه TorchDynamo) يجب أن يؤدي تشغيل البرنامج مع متغير البيئة هذا إلى إخراج متطابق تقريبًا، مع إضافة سطر يشير إلى المكان الذي تم فيه كتابة ``minifier_launcher.py``. يمكن تكوين دليل الإخراج عن طريق تعيين ``torch._dynamo.config.base_dir`` إلى اسم دليل صالح. الخطوة الأخيرة هي تشغيل أداة التبسيط والتحقق من تشغيلها بنجاح. يبدو التشغيل الناجح مثل
+`هذا <https://gist.github.com/mlazos/e6ea41ccce68a7b1b8a7a09acb1b206a>`__.
+إذا نجحت أداة التبسيط، فستولد كود Python قابل للتنفيذ يعيد إنتاج الخطأ بالضبط. بالنسبة لمثالنا، يكون الكود على النحو التالي:
 
 .. code-block:: python
 
@@ -300,22 +363,22 @@ code:
    from math import inf
    from torch.fx.experimental.proxy_tensor import make_fx
 
-   # torch version: 1.13.0a0+gitfddfc44
-   # torch cuda version: 11.6
-   # torch git version: fddfc4488afb207971c54ad4bf58130fdc8a4dc5
+   # نسخة PyTorch: 1.13.0a0+gitfddfc44
+   # نسخة CUDA في PyTorch: 11.6
+   # نسخة Git في PyTorch: fddfc4488afb207971c54ad4bf58130fdc8a4dc5
 
 
-   # CUDA Info:
-   # nvcc: NVIDIA (R) Cuda compiler driver
-   # Copyright (c) 2005-2022 NVIDIA Corporation
-   # Built on Thu_Feb_10_18:23:41_PST_2022
-   # Cuda compilation tools, release 11.6, V11.6.112
-   # Build cuda_11.6.r11.6/compiler.30978841_0
+   # معلومات CUDA:
+   # nvcc: برنامج تجميع CUDA من NVIDIA (R)
+   # حقوق النشر (ج) 2005-2022 لشركة NVIDIA Corporation
+   # تم البناء يوم: Thu_Feb_10_18:23:41_PST_2022
+   # أدوات التجميع CUDA، الإصدار 11.6، V11.6.112
+   # إنشاء cuda_11.6.r11.6/compiler.30978841_0
 
-   # GPU Hardware Info:
-   # NVIDIA A100-SXM4-40GB : 8
+   # معلومات عتاد GPU:
+   # NVIDIA A100-SXM4-40GB: 8
 
-   from torch.nn import *
+   من torch.nn استورد *
 
    class Repro(torch.nn.Module):
        def __init__(self):
@@ -333,19 +396,12 @@ code:
    compiled = compile_fx_inner(mod, args)
    compiled(*args)
 
-The ``forward`` method of the ``Repro`` module contains the exact op
-which causes the issue. When filing an issue, please include any
-minified repros to aid in debugging.
+تحتوي طريقة ``forward`` في وحدة ``Repro`` على العملية الدقيقة التي تسبب المشكلة. عند إرسال مشكلة، يرجى تضمين أي نسخ مبسطة يمكن إعادة إنتاجها للمساعدة في تصحيح الأخطاء.
 
-Minifying Backend Compiler Errors
----------------------------------
+تبسيط أخطاء مجمع المؤخرة
+--------------------
 
-With backend compilers other than TorchInductor the process for finding
-the subgraph causing the error is nearly identical to the procedure in
-`errors in TorchInductor <#torchinductor-errors>`__ with one important
-caveat. Namely, that the minifier will now be run on the graph that is
-traced by TorchDynamo, not the output graph of AOTAutograd. Let’s walk
-through an example.
+مع مجمعات المؤخرة الأخرى بخلاف TorchInductor، تكون عملية العثور على الرسم الفرعي الذي يسبب الخطأ مماثلة تقريبًا للإجراء المتبع في `الأخطاء في TorchInductor <#torchinductor-errors>`__ مع تحذير مهم واحد. وهو أن أداة التبسيط ستعمل الآن على الرسم البياني الذي يتم تتبعه بواسطة TorchDynamo، وليس الرسم البياني الناتج عن AOTAutograd. دعنا نتعمق في مثال.
 
 .. code-block:: py
 
@@ -354,7 +410,7 @@ through an example.
    import torch._dynamo as dynamo
 
    model = torch.nn.Sequential(*[torch.nn.Linear(200, 200) for _ in range(5)])
-   # toy compiler which fails if graph contains relu
+   # مجمع تجريبي يفشل إذا احتوى الرسم البياني على relu
    def toy_compiler(gm: torch.fx.GraphModule, _):
        for node in gm.graph.nodes:
            if node.target == torch.relu:
@@ -374,15 +430,11 @@ through an example.
    compiled_test_backend_error = torch.compile(test_backend_error, backend=toy_compiler)
    compiled_test_backend_error()
 
-In order to run the code after TorchDynamo has traced the forward graph,
-you can use the ``TORCHDYNAMO_REPRO_AFTER`` environment variable. Running
-this program with ``TORCHDYNAMO_REPRO_AFTER="dynamo"`` (or
-``torch._dynamo.config.repro_after="dynamo"``) should produce `this
-output <https://gist.github.com/mlazos/244e3d5b53667e44078e194762c0c92b>`__\ and
-the following code in ``{torch._dynamo.config.base_dir}/repro.py``.
+لتشغيل الكود بعد أن يقوم TorchDynamo بتتبع الرسم البياني للأمام، يمكنك استخدام متغير البيئة ``TORCHDYNAMO_REPRO_AFTER``. يجب أن يؤدي تشغيل هذا البرنامج مع ``TORCHDYNAMO_REPRO_AFTER="dynamo"`` (أو ``torch._dynamo.config.repro_after="dynamo"``) إلى إنتاج `هذا
+الإخراج <https://gist.github.com/mlazos/244e3d5b53667e44078e194762c0c92b>`__\ وكود على النحو التالي في ``{torch._dynamo.config.base_dir}/repro.py``.
 
-.. note:: The other option for TORCHDYNAMO_REPRO_AFTER is ``"aot"``, which
-   will run the minifier after the backward graph has been generated.
+.. note:: الخيار الآخر لـ TORCHDYNAMO_REPRO_AFTER هو ``"aot"``، والذي
+   سيقوم بتشغيل أداة التبسيط بعد إنشاء الرسم البياني للخلف.
 
 .. code-block:: python
 
@@ -417,34 +469,22 @@ the following code in ``{torch._dynamo.config.base_dir}/repro.py``.
        ref = run_fwd_maybe_bwd(mod, args)
        res = run_fwd_maybe_bwd(opt_mod, args)
 
-The minifier successfully reduced the graph to the op that raises the
-error in ``toy_compiler``. The other difference from the procedure in
-`TorchInductor Errors <#torchinductor-errors>`__ is that the minifier is
-automatically run after encountering a backend compiler error. After a
-successful run, the minifier writes ``repro.py`` to
-``torch._dynamo.config.base_dir``.
+نجحت أداة التبسيط في تقليل الرسم البياني إلى العملية التي تسبب الخطأ في ``toy_compiler``. والاختلاف الآخر عن الإجراء المتبع في `أخطاء TorchInductor <#torchinductor-errors>`__ هو أن أداة التبسيط تعمل تلقائيًا بعد مواجهة خطأ في مجمع المؤخرة. بعد تشغيل ناجح، تقوم أداة التبسيط بكتابة ``repro.py`` إلى ``torch._dynamo.config.base_dir``.
 
-Performance Profiling
-~~~~~~~~~~~~~~~~~~~~~
+تحليل الأداء
+~~~~~~~~~~
 
-Accessing TorchDynamo Profiler
+الوصول إلى ملف تعريف TorchDynamo
 ------------------------------
 
-TorchDynamo has a built-in stats function for collecting and displaying
-the time spent in each compilation phase. These stats can be accessed by
-calling ``torch._dynamo.utils.compile_times()`` after executing
-Torch._Dynamo. By default, this returns a string representation of the
-compile times spent in each TorchDynamo function by name.
+يحتوي TorchDynamo على دالة إحصائيات مدمجة لجمع وعرض الوقت المستغرق في كل مرحلة من مراحل التجميع. يمكن الوصول إلى هذه الإحصائيات عن طريق استدعاء ``torch._dynamo.utils.compile_times()`` بعد تنفيذ Torch._Dynamo. بشكل افتراضي، تقوم الدالة بإرجاع تمثيل نصي لأوقات التجميع المستغرقة في كل دالة TorchDynamo حسب الاسم.
 
-TorchInductor Debugging using TORCH_COMPILE_DEBUG
--------------------------------------------------
+تصحيح الأخطاء في TorchInductor باستخدام TORCH_COMPILE_DEBUG
+-----------------------------------------------------
 
-TorchInductor has a builtin stats and trace function for displaying time
-spent in each compilation phase, output code, output graph visualization
-and IR dump. This is a debugging tool designed to make it easier to
-understand and troubleshoot the internals of TorchInductor.
+يحتوي TorchInductor على دالة مدمجة للتعقب والإحصاءات لعرض الوقت المستغرق في كل مرحلة من مراحل التجميع، وكود الإخراج، وتصوير الرسم البياني للإخراج، وإلقاء IR. تعد هذه الأداة مصممة لتسهيل فهم واستكشاف أخطاء TorchInductor الداخلية.
 
-Let's run an example with the following test program (``repro.py``):
+دعنا نتعمق في مثال باستخدام برنامج الاختبار التالي (``repro.py``):
 
 ::
 
@@ -462,12 +502,7 @@ Let's run an example with the following test program (``repro.py``):
 
   y = test_model(torch.ones(10, 10))
 
-Setting the environment variable ``TORCH_COMPILE_DEBUG=1`` will cause a
-debug trace directory to be created, by default this directory will be in the
-current directory and named torch_compile_debug (this can be overridden in
-the torchdynamo configuration field ``debug_dir_root`` and also the
-``env var TORCH_COMPILE_DEBUG_DIR``). Inside this directory, each run will
-have a separate folder named with the timestamp and process id of the run:
+سيؤدي تعيين متغير البيئة ``TORCH_COMPILE_DEBUG=1`` إلى إنشاء دليل تعقب للتصحيح، بشكل افتراضي، سيكون هذا الدليل في الدليل الحالي ويُسمى torch_compile_debug (يمكن تجاوز هذا الإعداد في حقل التكوين torchdynamo ``debug_dir_root`` ومتغير البيئة ``TORCH_COMPILE_DEBUG_DIR`` أيضًا). داخل هذا الدليل، سيكون لكل عملية تشغيل مجلد منفصل باسم ختم التاريخ والوقت وعملية التعريف:
 
 ::
 
@@ -476,9 +511,7 @@ have a separate folder named with the timestamp and process id of the run:
    $ ls
    run_2023_03_01_08_20_52_143510-pid_180167
 
-In the run folder there will be a ``torchdynamo`` directory which contains
-debug logs, and an ``torchinductor`` folder which contains a subfolder for each
-compiled kernel with inductor debug artifacts.
+في مجلد العملية، سيكون هناك مجلد ``torchdynamo`` يحتوي على سجلات التصحيح، ومجلد ``torchinductor`` يحتوي على مجلد فرعي لكل نواة مجمعة مع آثار تصحيح الأخطاء في Inductor.
 
 ::
 
@@ -487,9 +520,7 @@ compiled kernel with inductor debug artifacts.
    $ ls
    torchinductor  torchdynamo
 
-Moving further into the ``torchinductor`` directory, the ``\*.log`` files are
-logs from the AOT Autograd phase of compilation, ``model__0_forward_1.0`` contains
-the inductor debug artifacts.
+عند الدخول أكثر إلى مجلد ``torchinductor``، تكون ملفات ``\*.log`` هي سجلات من مرحلة AOT Autograd من التجميع، ويحتوي ``model__0_forward_1.0`` على آثار تصحيح الأخطاء في Inductor.
 
 ::
 
@@ -500,17 +531,16 @@ the inductor debug artifacts.
    $ ls
    debug.log  fx_graph_readable.py  fx_graph_runnable.py  fx_graph_transformed.py  ir_post_fusion.txt  ir_pre_fusion.txt  output_code.py
 
-Here is a summary of the contents:
+فيما يلي ملخص للمحتويات:
 
-- ``fx_graph_readable.py`` and ``fx_graph_runnable.py`` are the readable and
-  runnable versions of the ``fx_graph`` received by inductor.
-- ``fx_graph_transformed.py`` is the fx graph after inductor has run all fx passes.
-- ``ir\*.txt`` is the inductor ir pre and post fusion.
-- ``output_code.py`` is the compiled triton kernel for the subgraph.
+- ``fx_graph_readable.py`` و ``fx_graph_runnable.py`` هما الإصدارات القابلة للقراءة والقابلة للتنفيذ من ``fx_graph`` التي تلقاها inductor.
+- ``fx_graph_transformed.py`` هو الرسم البياني fx بعد أن قام inductor بتشغيل جميع تمريرات fx.
+- ``ir\*.txt`` هو IR inductor قبل وبعد الانصهار.
+- ``output_code.py`` هو نواة Triton المجمعة للرسم البياني الفرعي.
 
-Here are `example debug directory contents
-<https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
-for the test program:
+فيما يلي `محتويات دليل التصحيح
+المثال <https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
+لبرنامج الاختبار:
 
 ::
 
@@ -528,11 +558,9 @@ for the test program:
 
   y = test_model(torch.ones(10, 10))
 
-Each file in that debug trace can be enabled and disabled through
-``torch._inductor.config.trace.*``. The profile and the diagram are both
-disabled by default since they are expensive to generate.
+يمكن تمكين كل ملف في تنسيق التصحيح الجديد هذا وتعطيله من خلال ``torch._inductor.config.trace.*``. يتم تعطيل المخطط والتعريف بشكل افتراضي لأنهما مكلفان في الإنشاء.
 
-A single node in this new debug format looks like:
+تبدو العقدة الفردية في تنسيق التصحيح الجديد هذا كما يلي:
 
 ::
 
@@ -559,20 +587,17 @@ A single node in this new debug format looks like:
            reduction = ops.reduction('buf1', torch.float32, torch.float32, 'sum', get_index_2, add)
            return reduction
 
-See the `example debug directory
-output <https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
-for more examples.
+راجع `إخراج دليل التصحيح
+المثال <https://gist.github.com/jansel/f4af078791ad681a0d4094adeb844396>`__
+لمزيد من الأمثلة.
 
-..
-  _Memory Profiling
+..  _Memory Profiling
   ----------------
 
-  TBD
+  TBD كسر الرسم البياني
+---------------------
 
-Graph Breaks
-------------
-
-Given a program like this:
+بالنسبة لبرنامج مثل هذا:
 
 .. code-block:: python
 
@@ -582,25 +607,14 @@ Given a program like this:
    compiled_fun = torch.compile(some_fun, ...)
    ...
 
-TorchDynamo will attempt to compile all of the torch/tensor operations
-within some_fun into a single FX graph, but it may fail to capture
-everything into one graph.
+سيحاول TorchDynamo تجميع جميع عمليات torch/tensor داخل some_fun في مخطط FX واحد، ولكنه قد يفشل في التقاط كل شيء في مخطط واحد.
 
-Some graph break reasons are insurmountable to TorchDynamo, and can't be
-easily fixed. - calling into a C extension other than torch is invisible
-to torchdynamo, and could do arbitrary things without TorchDynamo being
-able to introduce necessary guards (see :ref:`making-dynamo-sound-guards`)
-to ensure that the compiled program would be safe to reuse. Graph breaks
-can hinder performance if the resulting fragments are small. To maximize
-performance, it's important to have as few graph breaks as possible.
+قد تكون بعض أسباب كسر المخطط غير قابلة للتغلب عليها بالنسبة لـ TorchDynamo، ولا يمكن إصلاحها بسهولة. - تعتبر الاستدعاءات إلى امتداد C بخلاف torch غير مرئية لـ torchdynamo، وقد تقوم بأشياء عشوائية دون أن يتمكن TorchDynamo من تقديم الضمانات اللازمة (راجع :ref: making-dynamo-sound-guards) ) لضمان أن يكون البرنامج المجمع آمنًا لإعادة الاستخدام. يمكن أن تعوق كسور المخطط الأداء إذا كانت الشظايا الناتجة صغيرة. ولتحقيق أقصى قدر من الأداء، من المهم تقليل عدد كسور المخطط إلى الحد الأدنى.
 
-Identifying the Cause of a Graph Break
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+تحديد سبب كسر المخطط
+~~~~~~~~~~~~~~~~~~~~~~
 
-To identify all graph breaks in a program and the associated reasons for
-the breaks, ``torch._dynamo.explain`` can be used. This tool runs
-TorchDynamo on the supplied function and aggregates the graph breaks
-that are encountered. Here is an example usage:
+لتحديد جميع كسور المخطط في برنامج وأسباب الكسور المرتبطة، يمكن استخدام "torch._dynamo.explain". تقوم هذه الأداة بتشغيل TorchDynamo على الدالة المقدمة وتجميع كسور المخطط التي يتم مواجهتها. فيما يلي مثال على الاستخدام:
 
 .. code-block:: python
 
@@ -615,34 +629,31 @@ that are encountered. Here is an example usage:
    explanation = dynamo.explain(toy_example)(torch.randn(10), torch.randn(10))
    print(explanation_verbose)
    """
-   Graph Count: 3
-   Graph Break Count: 2
-   Op Count: 5
-   Break Reasons:
-     Break Reason 1:
-       Reason: builtin: print [<class 'torch._dynamo.variables.constant.ConstantVariable'>] False
-       User Stack:
+   عدد المخططات: 3
+   عدد كسور المخطط: 2
+   عدد العمليات: 5
+   أسباب الكسر:
+     سبب الكسر 1:
+       السبب: builtin: print [<class 'torch._dynamo.variables.constant.ConstantVariable'>] False
+       مكدس المستخدم:
          <FrameSummary file foo.py, line 5 in toy_example>
-     Break Reason 2:
-       Reason: generic_jump TensorVariable()
-       User Stack:
+     سبب الكسر 2:
+       السبب: generic_jump TensorVariable()
+       مكدس المستخدم:
          <FrameSummary file foo.py, line 6 in torch_dynamo_resume_in_toy_example_at_5>
-   Ops per Graph:
+   العمليات لكل مخطط:
      ...
-   Out Guards:
+   الضمانات الخارجية:
      ...
    """
 
-Outputs include:
+تشمل النواتج ما يلي:
 
-- ``out_guards`` - a list of lists where each sublist contains the guards that must pass to ensure the traced graphs are valid.
-- ``graphs`` - a list of graph modules which were successfully traced.
-- ``ops_per_graph`` - a list of lists where each sublist contains the ops that are run in the graph.
+- ``out_guards`` - قائمة قوائم حيث تحتوي كل قائمة فرعية على الضمانات التي يجب أن تتحقق لضمان صحة المخططات التي تم تتبعها.
+- ``graphs`` - قائمة وحدات المخطط التي تم تتبعها بنجاح.
+- ``ops_per_graph`` - قائمة قوائم حيث تحتوي كل قائمة فرعية على العمليات التي يتم تشغيلها في المخطط.
 
-To throw an error on the first graph break encountered, use the ``fullgraph``
-mode. This mode disables TorchDynamo’s Python fallback, and only
-succeeds if the entire program is convertible into a single graph. Example
-usage:
+لإلقاء خطأ عند أول كسر مخطط يتم مواجهته، استخدم وضع "fullgraph". يعطل هذا الوضع عملية الرجوع إلى Python في TorchDynamo، ولا ينجح إلا إذا كان البرنامج بأكمله قابلًا للتحويل إلى مخطط واحد. مثال على الاستخدام:
 
 .. code-block:: python
 
@@ -651,39 +662,22 @@ usage:
 
    compiled_toy = torch.compile(toy_example, fullgraph=True, backend=<compiler>)(a, b)
 
-Excessive Recompilation
------------------------
+إعادة التجميع المفرطة
+----------------
 
-When TorchDynamo compiles a function (or part of one), it makes certain
-assumptions about locals and globals in order to allow compiler
-optimizations, and expresses these assumptions as guards that check
-particular values at runtime. If any of these guards fail, Dynamo will
-recompile that function (or part) up to
-``torch._dynamo.config.cache_size_limit`` times. If your program is
-hitting the cache limit, you will first need to determine which guard is
-failing and what part of your program is triggering it.
+عندما يقوم TorchDynamo بتجميع دالة (أو جزء منها)، فإنه يقوم بعمل افتراضات معينة حول المتغيرات المحلية والعالمية للسماح بتحسين المترجم، ويعبر عن هذه الافتراضات على أنها ضمانات للتحقق من قيم معينة في وقت التشغيل. إذا فشل أي من هذه الضمانات، فسوف يقوم Dynamo بإعادة تجميع تلك الدالة (أو الجزء) حتى
+``torch._dynamo.config.cache_size_limit`` مرات. إذا كان برنامجك يصل إلى حد ذاكرة التخزين المؤقت، فستحتاج أولاً إلى تحديد الضمان الذي فشل والجزء من برنامجك الذي يفعله.
 
-The `compile profiler <https://github.com/pytorch/pytorch/blob/main/torch/_dynamo/utils.py>`__ automates the
-process of setting TorchDynamo’s cache limit to 1 and running your
-program under an observation-only 'compiler' that records the causes of
-any guard failures. You should be sure to run your program for at least
-as long (as many iterations) as you were running when you ran into
-trouble, and the profiler will accumulate statistics over this duration.
+يقوم "مُحسِّن التجميع" <https://github.com/pytorch/pytorch/blob/main/torch/_dynamo/utils.py>`__ بتشغيل عملية
+ضبط حد ذاكرة التخزين المؤقت لـ TorchDynamo إلى 1 وتشغيل برنامجك في ظل "مُجمِّع" للمراقبة فقط يقوم بتسجيل أسباب أي فشل في الضمان. يجب التأكد من تشغيل برنامجك لمدة لا تقل عن المدة (عدد التكرارات) التي كنت تعمل خلالها عندما واجهت مشكلة، وسيقوم المحسن بتجميع الإحصائيات خلال هذه المدة.
 
-If your program exhibits a bounded amount of dynamism, you may be able
-to tune the TorchDynamo cache limit to allow for each variation to be
-compiled and cached, but if the cache limit is too high you may find the
-cost of recompilation outweighs any optimization benefits.
+إذا أظهر برنامجك قدرًا محدودًا من الديناميكية، فقد تتمكن من ضبط حد ذاكرة التخزين المؤقت لـ TorchDynamo للسماح بتجميع وتخزين كل تنوع في الذاكرة المؤقتة في الذاكرة، ولكن إذا كان حد ذاكرة التخزين المؤقت مرتفعًا جدًا، فقد تجد أن تكلفة إعادة التجميع تفوق فوائد التحسين.
 
 ::
 
    torch._dynamo.config.cache_size_limit = <your desired cache limit>
 
-TorchDynamo plans to support many common cases of dynamic tensor shapes,
-such as varying batch size or sequence length. It does not plan to
-support rank-dynamism. In the meantime, setting a specific cache limit
-can be used in coordination with bucketing techniques to achieve an
-acceptable number of recompilations for some dynamic models.
+يخطط TorchDynamo لدعم العديد من الحالات الشائعة للأشكال الديناميكية للموتر، مثل حجم الدفعة المتغير أو طول التسلسل. ولا يخطط لدعم ديناميكية الرتبة. في الوقت نفسه، يمكن استخدام تعيين حد ذاكرة تخزين مؤقت محدد بالتنسيق مع تقنيات التجميع لتحقيق عدد مقبول من عمليات إعادة التجميع لبعض النماذج الديناميكية.
 
 .. code-block:: python
 
@@ -697,41 +691,33 @@ acceptable number of recompilations for some dynamic models.
        profiler_model()
        print(prof.report())
 
-Accuracy Debugging
-~~~~~~~~~~~~~~~~~~
+تصحيح الأخطاء الدقيقة
+~~~~~~~~~~~~~~~~
 
-Accuracy issues can also be minified if you set the environment variable
-``TORCHDYNAMO_REPRO_LEVEL=4``, it operates with a similar git bisect
-model and a full repro might be something like
-``TORCHDYNAMO_REPRO_AFTER="aot" TORCHDYNAMO_REPRO_LEVEL=4`` the reason
-we need this is downstream compilers will codegen code whether it’s
-Triton code or the C++ backend, the numerics from those downstream
-compilers can be different in subtle ways yet have dramatic impact on
-your training stability. So the accuracy debugger is very useful for us
-to detect bugs in our codegen or with a backend compiler.
+يمكن أيضًا تصغير مشكلات الدقة إذا قمت بتعيين متغير البيئة
+``TORCHDYNAMO_REPRO_LEVEL=4``، فهو يعمل بنموذج git bisect مشابه وقد يكون إعادة إنتاج كاملة شيئًا مثل
+``TORCHDYNAMO_REPRO_AFTER="aot" TORCHDYNAMO_REPRO_LEVEL=4`` السبب
+نحن بحاجة إلى هذا هو أن المترجمين في الأسفل سيقومون بتوليد التعليمات البرمجية سواء كان ذلك
+رمز Triton أو backend C++، ويمكن أن تختلف الأرقام من هذه المترجمات في الأسفل
+طرق دقيقة بعد أن يكون لها تأثير كبير على استقرار التدريب الخاص بك. لذلك، فإن مصحح الأخطاء الدقيق مفيد جدًا لنا
+لاكتشاف الأخطاء في توليد التعليمات البرمجية الخاصة بنا أو مع مترجم backend.
 
-If you'd like to ensure that random number generation is the same across both torch
-and triton then you can enable ``torch._inductor.config.fallback_random = True``
+إذا كنت ترغب في التأكد من أن توليد الأرقام العشوائية هو نفسه عبر كل من torch وtriton، فيمكنك تمكين ``torch._inductor.config.fallback_random = True``
 
-Extended Debugging
-~~~~~~~~~~~~~~~~~~
+تصحيح الأخطاء الممتد
+~~~~~~~~~~~~~~~~
 
-Extended debugging can be enabled by using the following experimental flags.
+يمكن تمكين تصحيح الأخطاء الممتد باستخدام الأعلام التجريبية التالية.
 
-``TORCHDYNAMO_EXTENDED_DEBUG_GUARD_ADDED`` - provides extended debug information if the
-string representation of a guard matches this flag value. For example, set it to
-"Ne(s0, 10)" to generate full Python and C++ backtrace whenever guard was issued.
-``TORCHDYNAMO_EXTENDED_DEBUG_CREATE_SYMBOL`` - provides extended debug information when
-a particular symbol is allocated. For example, set this to "u2" to generate full Python
-and C++ backtrace whenever this symbol was created.
-``TORCHDYNAMO_EXTENDED_DEBUG_CPP`` - provides extended debug information (C++ backtrace)
-for all extended debug settings as well as errors. For example, set this to "1". The C++
-backtrace is slow and very spammy so it is not included by default with extended debugging.
+``TORCHDYNAMO_EXTENDED_DEBUG_GUARD_ADDED`` - يوفر معلومات تصحيح الأخطاء الممتدة إذا تطابق التمثيل النصي للضمان قيمة هذا العلم. على سبيل المثال، قم بتعيينه على "Ne(s0, 10)" لتوليد تتبع مكدس Python وC++ الكامل كلما تم إصدار الضمان.
+``TORCHDYNAMO_EXTENDED_DEBUG_CREATE_SYMBOL`` - يوفر معلومات تصحيح الأخطاء الممتدة عند تخصيص رمز معين. على سبيل المثال، قم بتعيين هذا إلى "u2" لتوليد تتبع مكدس Python وC++ الكامل كلما تم إنشاء هذا الرمز.
+``TORCHDYNAMO_EXTENDED_DEBUG_CPP`` - يوفر معلومات تصحيح الأخطاء الممتدة (تتبع مكدس C++)
+لجميع إعدادات تصحيح الأخطاء الممتدة بالإضافة إلى الأخطاء. على سبيل المثال، قم بتعيين هذا إلى "1". تتبع مكدس C++ بطيء جدًا ومزعج للغاية، لذلك لا يتم تضمينه بشكل افتراضي مع تصحيح الأخطاء الممتد.
 
-Cold Start Timing and Cache Corruption Debugging
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+تصحيح أخطاء توقيت بدء التشغيل البارد والفساد في ذاكرة التخزين المؤقت
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to measure the cold start compilation time or debug a cache corruption,
-it is possible pass ``TORCHINDUCTOR_FORCE_DISABLE_CACHES=1`` or set
-``torch._inductor.config.force_disable_caches = True`` which will override any
-other caching config option and disable all compile time caching.
+من أجل قياس وقت تجميع بدء التشغيل البارد أو تصحيح أخطاء تلف ذاكرة التخزين المؤقت،
+من الممكن تمرير ``TORCHINDUCTOR_FORCE_DISABLE_CACHES=1`` أو تعيين
+``torch._inductor.config.force_disable_caches = True`` الذي سيؤدي إلى تجاوز أي
+خيار تكوين ذاكرة التخزين المؤقت الأخرى وتعطيل جميع ذاكرات التخزين المؤقت في وقت التجميع.
