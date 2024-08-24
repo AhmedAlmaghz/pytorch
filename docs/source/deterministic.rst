@@ -1,28 +1,18 @@
-torch.utils.deterministic
-=========================
 .. py:module:: torch.utils.deterministic
 .. currentmodule:: torch.utils.deterministic
 
 .. attribute:: fill_uninitialized_memory
 
-    A :class:`bool` that, if True, causes uninitialized memory to be filled with
-    a known value when :meth:`torch.use_deterministic_algorithms()` is set to
-    ``True``. Floating point and complex values are set to NaN, and integer
-    values are set to the maximum value.
+   إن :class:`bool`، إذا كان True، يتسبب في ملء الذاكرة غير المُهيأة بقيمة معروفة عندما يتم تعيين :meth:`torch.use_deterministic_algorithms()` إلى True. يتم تعيين القيم العائمة والمعقدة إلى NaN، والقيم الصحيحة إلى القيمة القصوى.
 
-    Default: ``True``
+   الافتراضي: ``True``
 
-    Filling uninitialized memory is detrimental to performance. So if your
-    program is valid and does not use uninitialized memory as the input to an
-    operation, then this setting can be turned off for better performance and
-    still be deterministic.
+   إن ملء الذاكرة غير المُهيأة يضر بالأداء. لذلك، إذا كان برنامجك صالحًا ولا يستخدم الذاكرة غير المُهيأة كمدخلات لعملية ما، فيمكن إيقاف تشغيل هذا الإعداد لتحقيق أداء أفضل مع الحفاظ على الحتمية.
 
-    The following operations will fill uninitialized memory when this setting is
-    turned on:
+   ستملأ العمليات التالية الذاكرة غير المُهيأة عند تشغيل هذا الإعداد:
 
-        * :func:`torch.Tensor.resize_` when called with a tensor that is not
-          quantized
-        * :func:`torch.empty`
-        * :func:`torch.empty_strided`
-        * :func:`torch.empty_permuted`
-        * :func:`torch.empty_like`
+       * :func:`torch.Tensor.resize_` عند استدعائها مع مصفوفة غير مُكممة
+       * :func:`torch.empty`
+       * :func:`torch.empty_strided`
+       * :func:`torch.empty_permuted`
+       * :func:`torch.empty_like`
