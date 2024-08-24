@@ -1,47 +1,57 @@
-CUDAGraph Trees
+.. Cudagraph الأشجار
+
+CUDAGraph هي ميزة في CUDA تسمح للمطورين ببناء أشجار تعتمد على الرسوم البيانية لمعالجة البيانات بشكل أكثر كفاءة. توفر هذه الميزة طريقة لتنظيم العمليات الحسابية وتنفيذها بشكل متوازٍ على وحدات معالجة الرسوميات (GPUs).
+
+تتيح أشجار CUDAGraph للمطورين وصف الخوارزميات المعقدة وتنفيذها باستخدام بنية شجرية. كل عقدة في الشجرة يمكن أن تمثل عملية حسابية مختلفة، مع إمكانية نقل البيانات بين العقد بفعالية.
+
+تعد أشجار CUDAGraph مفيدة بشكل خاص في تطبيقات التعلم الآلي ومعالجة الرسوميات، حيث يمكن أن تساعد في تحسين استخدام موارد وحدة معالجة الرسوميات، مما يؤدي إلى أوقات تنفيذ أقصر وحوسبة أكثر كفاءة.
+
+يوفر CUDA أدوات ومكتبات لتسهيل إنشاء وإدارة أشجار CUDAGraph. يمكن للمطورين تحديد الخوارزميات المعقدة باستخدام بناء جملة واضح وبديهي، والاستفادة من قدرات الحوسبة المتوازية لوحدات معالجة الرسوميات الحديثة.
+
+توفر أشجار CUDAGraph المرونة والكفاءة في معالجة البيانات على وحدات معالجة الرسوميات، مما يجعلها أداة قوية للمطورين الذين يسعون إلى استغلال قوة الحوسبة لوحدات معالجة الرسوميات في تطبيقاتهم.
 ================
 
-**Background**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**الخلفية**
+~~~~~~~~~~~~~~
 
 CUDAGraph
---------------------
+-------------
 
-For a longer background on CUDAGraphs, read `accelerating pytorch with CUDAGraphs <https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/>`_.
+للحصول على خلفية أكثر تفصيلاً حول CUDAGraphs، اقرأ `تسريع PyTorch باستخدام CUDAGraphs <https://pytorch.org/blog/accelerating-pytorch-with-cuda-graphs/>`_.
 
-`CUDA Graphs <https://developer.nvidia.com/blog/cuda-10-features-revealed/>`_, which made its debut in CUDA 10, let a series of CUDA kernels to be defined and encapsulated as a single unit, i.e., a graph of operations, rather than a sequence of individually-launched operations. It provides a mechanism to launch multiple GPU operations through a single CPU operation, and hence reduces the launching overheads.
+`CUDA Graphs <https://developer.nvidia.com/blog/cuda-10-features-revealed/>`_، التي ظهرت لأول مرة في CUDA 10، تسمح بتعريف سلسلة من نوى CUDA وتغليفها كوحدة واحدة، أي رسم بياني للعمليات، بدلاً من تسلسل من العمليات التي يتم إطلاقها بشكل فردي. يوفر آلية لإطلاق العديد من عمليات GPU من خلال عملية CPU واحدة، وبالتالي يقلل من النفقات العامة للإطلاق.
 
-CUDA Graphs can give large speedups, especially for models with high CPU overhead or small compute. There are a number of limitations from requiring the same kernels to be run with the same arguments and dependencies, and memory addresses.
+يمكن أن توفر CUDA Graphs تسريعًا كبيرًا، خاصة بالنسبة للنماذج ذات النفقات العامة العالية لوحدة المعالجة المركزية أو الحسابات الصغيرة. هناك عدد من القيود بسبب الحاجة إلى تشغيل نفس النواة بنفس الحجج والاعتمادية وعناوين الذاكرة.
 
-- Control Flow is not possible
-- Kernels which trigger host to device syncs (such as .item()) errors
-- All input arguments to kernels are fixed to what they were recorded
-- CUDA Memory addresses are fixed, however the values of the memory at those addresses can change
-- No Essential CPU ops or CPU side effects
+- لا يمكن التحكم في التدفق
+- تسبب النواة التي تطلق عمليات المزامنة من المضيف إلى الجهاز (مثل .item()) أخطاء
+- يتم تثبيت جميع الحجج المدخلة إلى النواة كما كانت مسجلة
+- يتم تثبيت عناوين ذاكرة CUDA، ولكن يمكن تغيير قيم الذاكرة في تلك العناوين
+- لا توجد عمليات CPU أساسية أو آثار جانبية لوحدة المعالجة المركزية
 
-PyTorch CUDAGraph Integration
+دمج PyTorch CUDAGraph
 -----------------------------
 
-PyTorch provides a `convenience wrapper <https://pytorch.org/docs/stable/generated/torch.cuda.CUDAGraph.html>`_ around CUDAGraphs that handles a couple of tricky interactions with PyTorch’s caching allocator.
+يوفر PyTorch `غلاف ملاءمة <https://pytorch.org/docs/stable/generated/torch.cuda.CUDAGraph.html>`_ حول CUDAGraphs التي تتعامل مع بعض التفاعلات المعقدة مع مخصص ذاكرة التخزين المؤقت لـ PyTorch.
 
-The CachingAllocator uses a separate memory pool for all the new allocations. During CUDAGraph recording, memory is accounted for, allocated, and freed exactly as during eager run. On replay, just the kernels are invoked, and there are no changes to the allocator. Subsequent to initial recording, the allocator does not know which memory is actively being used in user programs.
+يستخدم CachingAllocator مجموعة ذاكرة منفصلة لجميع المخصصات الجديدة. أثناء تسجيل CUDAGraph، تتم محاسبة الذاكرة وتخصيصها وإلغاء تخصيصها تمامًا كما هو الحال أثناء التشغيل المتلهف. في إعادة التشغيل، يتم استدعاء النواة فقط، ولا توجد تغييرات على المخصص. بعد التسجيل الأولي، لا يعرف المخصص أي ذاكرة يتم استخدامها بنشاط في برامج المستخدم.
 
-Using a separate memory pool between eager allocations and cudagraph allocations may increase the memory of your program if there is substantial memory allocated to both.
+قد يؤدي استخدام مجموعة ذاكرة منفصلة بين المخصصات المتلهفة وتخصيصات cudagraph إلى زيادة ذاكرة برنامجك إذا كان هناك قدر كبير من الذاكرة المخصصة لكليهما.
 
-Make Graphed Callables
+جعل الدالات قابلة للرسم
 ----------------------
 
-`Make Graphed Callables <https://pytorch.org/docs/stable/generated/torch.cuda.make_graphed_callables.html>`_ is a PyTorch Abstraction to share a single memory pool over a series of callables. Graphed Callables takes advantage of the fact that on CUDA Graph recording, memory is exactly accounted for by the caching allocator to safely share memory between separate CUDA Graph recordings. In each invocation, outputs are preserved as live memory, preventing one callable from overwriting the live memory of another. Graphed Callables can only be invoked in a single order; memory addresses from the first run are burned into the second, and so forth.
+`جعل الدالات قابلة للرسم <https://pytorch.org/docs/stable/generated/torch.cuda.make_graphed_callables.html>`_ هو تجريد لـ PyTorch لمشاركة مجموعة ذاكرة واحدة عبر سلسلة من الدالات القابلة للاستدعاء. تستفيد الدالات القابلة للرسم من حقيقة أنه عند تسجيل CUDA Graph، تتم محاسبة الذاكرة بشكل دقيق بواسطة مخصص ذاكرة التخزين المؤقت لمشاركة الذاكرة بأمان بين تسجيلات CUDA Graph المنفصلة. في كل استدعاء، يتم الاحتفاظ بالإخراج كذاكرة حية، مما يمنع إحدى الدالات القابلة للاستدعاء من الكتابة فوق الذاكرة الحية لدالة أخرى. يمكن استدعاء الدالات القابلة للرسم بتسلسل واحد فقط؛ يتم حرق عناوين الذاكرة من التشغيل الأول في الثاني، وهكذا.
 
-TorchDynamo Previous CUDA Graphs Integration
---------------------------------------------
+دمج TorchDynamo السابق لـ CUDA Graphs
+-----------------------------------
 
-Running with ``cudagraph_trees=False`` does not reuse memory across separate graph captures, which can lead to large memory regressions. Even for a model that has no graph breaks, this has issues. The forward and backward are separate graph captures, so the memory pools for forward and backward are not shared. In particular, memory for activations that are saved in the forward cannot be reclaimed in the backward.
+لا يؤدي التشغيل باستخدام ``cudagraph_trees=False`` إلى إعادة استخدام الذاكرة عبر عمليات التقاط الرسوم البيانية المنفصلة، والتي يمكن أن تؤدي إلى تراجعات كبيرة في الذاكرة. حتى بالنسبة للنموذج الذي لا يحتوي على فواصل رسومية، توجد مشكلات. يعد التوجيه والعودة عبارة عن عمليات التقاط رسومية منفصلة، لذا لا يتم مشاركة مجموعات الذاكرة للأمام والخلف. على وجه الخصوص، لا يمكن استرداد الذاكرة للتنشيطات التي يتم حفظها في الأمام في الخلف.
 
-**CUDAGraph Trees Integration**
+**دمج CUDAGraph Trees**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Like Graph Callables, CUDA Graph Trees use a single memory pool across all graph captures. However, instead of requiring a single sequence of invocations, CUDA Graph Trees create separate trees of CUDA Graph captures. Let’s take a look at an illustrative example:
+مثل الدالات القابلة للرسم، تستخدم CUDA Graph Trees مجموعة ذاكرة واحدة عبر جميع عمليات التقاط الرسوم البيانية. ومع ذلك، بدلاً من طلب تسلسل استدعاءات واحد، تقوم CUDA Graph Trees بإنشاء أشجار منفصلة من عمليات التقاط CUDA Graph. دعنا نلقي نظرة على مثال توضيحي:
 
 .. code-block:: python
 
@@ -49,7 +59,7 @@ Like Graph Callables, CUDA Graph Trees use a single memory pool across all graph
     def foo(x):
         # GRAPH 1
         y = x * x * x
-        # graph break triggered here
+        # يتم تشغيل كسر الرسم البياني هنا
         if y.sum() > 0:
             # GRAPH 2
             z = y ** y
@@ -60,30 +70,30 @@ Like Graph Callables, CUDA Graph Trees use a single memory pool across all graph
         # GRAPH 4
         return z * torch.rand_like(z)
 
-    # the first run warms up each graph, which does things like CuBlas or Triton benchmarking
-    foo(torch.arange(0, 10, device="cuda"))
-    # The second run does a CUDA Graph recording, and replays it
-    foo(torch.arange(0, 10, device="cuda"))
-    # Finally we hit the optimized, CUDA Graph replay path
-    foo(torch.arange(0, 10, device="cuda"))
+    # تعمل الجري الأول على تسخين كل رسم بياني، مما يؤدي إلى أشياء مثل CuBlas أو Triton benchmarking
+    foo(torch.arange(0, 10، device="cuda"))
+    # يقوم التشغيل الثاني بتسجيل CUDA Graph، ثم إعادة تشغيله
+    foo(torch.arange(0, 10، device="cuda"))
+    # أخيرًا، نضرب مسار إعادة تشغيل CUDA Graph المحسن
+    foo(torch.arange(0, 10، device="cuda"))
 
 
-In this example, there are two separate paths that we make through the function: 1 -> 2 -> 4, or 1 -> 3 -> 4.
+في هذا المثال، هناك مساران منفصلان نجريهما عبر الوظيفة: 1 -> 2 -> 4، أو 1 -> 3 -> 4.
 
-We share all of the memory in a single memory pool between separate recordings by building up a tape of CUDA Graph recordings, in this instance, 1 -> 2 -> 4. We add invariants to ensure that memory is always in the same location as it were recorded, and no live tensors exist in user programs that might be overwritten.
+نحن نشارك كل الذاكرة في مجموعة ذاكرة واحدة بين التسجيلات المنفصلة من خلال بناء شريط من تسجيلات CUDA Graph، في هذه الحالة، 1 -> 2 -> 4. نضيف قيودًا لضمان أن تكون الذاكرة دائمًا في نفس الموقع كما كانت مسجلة، وأنه لا توجد توترات حية في برامج المستخدم قد تتم الكتابة فوقها.
 
-- Same constraints from CUDA Graphs apply: same kernels must be invoked with the same arguments (static sizes, addresses, etc)
-- The same pattern of memory must be observed between recording and replay: if a tensor output of one graph dies subsequent to another graph during recording, it must also do so during replay.
-- Live memory in the CUDA pool forces a dependence between two recordings
-- These recordings can only be invoked in a single order 1 - > 2 -> 4
+- تنطبق نفس القيود من CUDA Graphs: يجب استدعاء نفس النواة بنفس الحجج (الأحجام الثابتة والعناوين، إلخ)
+- يجب ملاحظة نفس نمط الذاكرة بين التسجيل وإعادة التشغيل: إذا ماتت مخرجات tensor لواحد graph بعد graph آخر أثناء التسجيل، فيجب أن تفعل ذلك أيضًا أثناء إعادة التشغيل.
+- تفرض الذاكرة الحية في مجموعة CUDA اعتمادًا بين تسجيلين
+- يمكن استدعاء هذه التسجيلات بتسلسل واحد فقط 1 -> 2 -> 4
 
-All of the memory is shared in a single memory pool, so there is no additional memory overhead compared to eager. Now, what happens if we were to hit a new path and run Graph 3?
+يتم مشاركة كل الذاكرة في مجموعة ذاكرة واحدة، لذا لا توجد نفقات عامة إضافية للذاكرة مقارنة بالتشغيل المتلهف. الآن، ماذا يحدث إذا كنا سنضرب مسارًا جديدًا ونشغل Graph 3؟
 
-Graph 1 gets replayed, and then we hit Graph 3, which we have not yet recorded. On graph replays, the private memory pool is not updated, so y is not reflected in the allocator. Without care, we would overwrite it. To support reusing the same memory pool after replaying other graphs, we checkpoint the memory pool back to its state at the end of graph 1. Now that our live tensors are reflected in the caching allocator, we are safe to run a new graph.
+يتم إعادة تشغيل Graph 1، ثم نضرب Graph 3، والذي لم نقم بتسجيله بعد. في عمليات إعادة تشغيل الرسوم البيانية، لا يتم تحديث مجموعة الذاكرة الخاصة، لذا لا يتم عكس y في المخصص. بدون عناية، سنقوم بالكتابة فوقه. لدعم إعادة استخدام مجموعة الذاكرة نفسها بعد إعادة تشغيل الرسوم البيانية الأخرى، نقوم بتشغيل نقطة تفتيش لمجموعة الذاكرة إلى حالتها في نهاية الرسم البياني 1. الآن بعد أن تم عكس التوترات الحية لدينا في مخصص ذاكرة التخزين المؤقت، يمكننا تشغيل رسم بياني جديد بأمان.
 
-First, we would hit the optimized, CUDAGraph.replay() path that we have already recorded in graph 1. Then we would hit Graph 3. Just as before, we will need to warm up the graph once before recording. On the warmup run, the memory addresses are not fixed, so graph 4 will also fallback to the inductor, non-cudagraph invocation.
+أولاً، سنضرب مسار CUDA Graph.replay() المحسن الذي قمنا بتسجيله بالفعل في الرسم البياني 1. ثم سنضرب Graph 3. تمامًا كما هو الحال قبل ذلك، سنحتاج إلى تسخين الرسم البياني مرة واحدة قبل التسجيل. في جريان التسخين، لا يتم تثبيت عناوين الذاكرة، لذا فإن الرسم البياني 4 سوف يتراجع أيضًا إلى مسار الاستقراء، غير استدعاء cudagraph.
 
-The second time we hit graph 3 we are warmed up and ready to record. We record graph 3 and then record graph 4 again since the input memory addresses have changed. This creates a tree of CUDA Graph recordings. A CUDA Graph Tree!
+في المرة الثانية التي نضرب فيها الرسم البياني 3، نكون دافئين وجاهزين للتسجيل. نقوم بتسجيل الرسم البياني 3 ثم نقوم بتسجيل الرسم البياني 4 مرة أخرى نظرًا لتغيير عناوين الذاكرة المدخلة. هذا يخلق شجرة من تسجيلات CUDA Graph. شجرة CUDA Graph!
 
 ::
 
@@ -94,44 +104,33 @@ The second time we hit graph 3 we are warmed up and ready to record. We record g
     4   4
 
 
-Input Mutation Support
+دعم طفرة الإدخال
 ----------------------
 
-Input mutation function refers to a function conducting in-place writes to an input tensor,
-as illustrated below:
+تشير دالة طفرة الإدخال إلى دالة تقوم بكتابات في المكان إلى tensor المدخلة،
+كما هو موضح أدناه:
 
 .. code-block:: python
 
-    def foo(x, y):
-        # mutates input x
+    def foo(x، y):
+        # يغير المدخلات x
         x.add_(1)
         return x + y
 
-Input mutation functions generally lead to challenges for CUDAGraph Trees. Due to the static
-CUDA memory address requirement from CUDAGraph, for each input tensor x, CUDAGraph Trees may
-allocate a static memory address x'. During execution, CUDAGraph Trees first copy the input
-tensor x to the static memory address x', and then replay the recorded CUDAGraph. For input
-mutation function, x' is in-place updated, which is not reflected on the input tensor x since
-x and x' reside on different CUDA memory addresses.
+تؤدي دالات طفرة الإدخال بشكل عام إلى تحديات لـ CUDA Graph Trees. نظرًا لمتطلبات عنوان ذاكرة CUDA الثابتة من CUDAGraph، بالنسبة لكل tensor مدخلة x، قد تقوم CUDA Graph Trees
+بتخصيص عنوان ذاكرة ثابت x'. أثناء التنفيذ، تقوم CUDA Graph Trees أولاً بنسخ tensor المدخلة x إلى عنوان الذاكرة الثابت x'، ثم إعادة تشغيل CUDAGraph المسجل. بالنسبة لدالة طفرة الإدخال، يتم تحديث x' في المكان، وهو ما لا ينعكس على tensor المدخلة x نظرًا لأن x و x' يقيمون في عناوين ذاكرة CUDA منفصلة.
 
-A closer look at input mutation functions reveals that there are three types of inputs:
+إن إلقاء نظرة فاحصة على دالات طفرة الإدخال يكشف أنه توجد ثلاثة أنواع من المدخلات:
 
-* **inputs from eager**: These tensors we assume will vary input tensor addresses from
-  execution to execution. Because cudagraphs freeze memory   addresses, we need to copy these
-  inputs to a static address tensor prior to graph recording and execution.
-* **Parameters and buffers**: These tensors we assume (and runtime-check) have the same tensor
-  addresses on every execution. We do not need to copy over their contents because the recorded
-  memory address will be the same as the executed memory address.
-* **Tensors which are prior outputs from CUDAGraph Trees**: Because the output tensor addresses
-  of a cudagraph are fixed, if we run CUDAGraph1, then run CUDAGraph2, the inputs which came from
-  CUDAGraph1 into CUDAGraph2 will have a fixed memory address. These inputs, like parameters and
-  buffers, do not require copying over to a static address tensor. We check to make sure that
-  these inputs are stable at runtime, and if they're not we will re-record.
+* **الإدخالات من المتلهف**: نفترض أن هذه التوترات ستختلف عناوين tensor من
+  تنفيذ إلى تنفيذ. لأن cudagraphs تجمد عناوين الذاكرة، نحتاج إلى نسخ هذه
+  الإدخالات إلى tensor عنوان ثابت قبل تسجيل الرسم البياني والتنفيذ.
+* **المعلمات والبوفرات**: نفترض (ونفحص وقت التشغيل) أن هذه التوترات لها نفس عناوين tensor
+  في كل تنفيذ. لا نحتاج إلى نسخ محتوياتها لأن عنوان الذاكرة المسجل سيكون هو نفسه
+  عنوان الذاكرة المنفذة.
+* **التوترات التي هي مخرجات سابقة من CUDAGraph Trees**: نظرًا لأن عناوين tensor الإخراج من cudagraph ثابتة، إذا قمنا بتشغيل CUDAGraph1، ثم قمنا بتشغيل CUDAGraph2، فستكون المدخلات التي جاءت من CUDAGraph1 إلى CUDAGraph2 لها عنوان ذاكرة ثابت. لا تتطلب هذه الإدخالات، مثل المعلمات والبوفرات، نسخها إلى tensor عنوان ثابت. نحن نتأكد من أن هذه الإدخالات مستقرة في وقت التشغيل، وإذا لم تكن كذلك، فسنعيد التسجيل.
 
-CUDAGraph Trees support input mutation on parameters and buffers, and tensors which are prior
-outputs from CUDAGraph Trees. For mutation on inputs from eager, CUDAGraph Trees will run the
-function without CUDAGraph and emit *skipping due to mutated inputs* log. The following example
-shows CUDAGraph Trees' support for tensors which are prior outputs from CUDAGraph Trees.
+تدعم CUDAGraph Trees طفرة الإدخال على المعلمات والبوفرات، والتوترات التي هي مخرجات سابقة من CUDAGraph Trees. بالنسبة لطفرة الإدخال على الإدخالات من المتلهف، ستقوم CUDAGraph Trees بتشغيل الدالة بدون CUDAGraph وإصدار *تخطي بسبب سجلات الإدخال المطفرة*. يوضح المثال التالي دعم CUDAGraph Trees للتوترات التي هي مخرجات سابقة من CUDAGraph Trees.
 
 
 .. code-block:: python
@@ -146,97 +145,85 @@ shows CUDAGraph Trees' support for tensors which are prior outputs from CUDAGrap
     def mut(x):
         return x.add_(2)
 
-    # Enable input mutation support
+    # تمكين دعم طفرة الإدخال
     torch._inductor.config.triton.cudagraph_support_input_mutation = True
 
     for i in range(3):
         torch.compiler.cudagraph_mark_step_begin()
-        inp = torch.rand([4], device="cuda")
+        inp = torch.rand([4]، device="cuda")
 
-        # CUDAGraph is applied since `foo` does not mutate `inp`
+        # يتم تطبيق CUDAGraph نظرًا لأن "foo" لا يغير "inp"
         tmp = foo(inp)
-        # Although `mut` mutates `tmp`, which is an output of a CUDAGraph
-        # managed function. So CUDAGraph is still applied.
+        # على الرغم من أن "mut" يغير "tmp"، وهو مخرج دالة يديرها CUDAGraph
+        # لذلك يتم تطبيق CUDAGraph أيضًا.
         mut(tmp)
 
 
     torch.compiler.cudagraph_mark_step_begin()
-    inp = torch.rand([4], device="cuda")
+    inp = torch.rand([4]، device="cuda")
 
     tmp = foo(inp)
-    # While `tmp` is a CUDAGraph Tree managed function's output, `tmp.clone()`
-    # is not. So CUDAGraph is not applied to `mut` and there is a log
-    # `skipping cudagraphs due to mutated inputs`
+    # في حين أن "tmp" هو مخرج دالة شجرة CUDAGraph، فإن "tmp.clone()"
+    # ليس كذلك. لذلك لا يتم تطبيق CUDAGraph على "mut" وهناك سجل
+    # "تخطي cudagraphs بسبب إدخالات مطفرة"
     mut(tmp.clone())
 
 
-To enable CUDAGraph Trees for a function mutating inputs from eager, please re-write
-the function to avoid input mutation.
+لتمكين CUDAGraph Trees لدالة تطفو المدخلات من المتلهف، يرجى إعادة كتابة
+الدالة لتجنب طفرة الإدخال.
 
-.. note:: Enable input mutation support by setting
+.. ملاحظة:: تمكين دعم طفرة الإدخال عن طريق تعيين
   `torch._inductor.config.cudagraph_support_input_mutation = True <https://github.com/pytorch/pytorch/blob/main/torch/_inductor/config.py#L662>`_
-  for "reduce-overhead" mode.
+  لوضع "reduce-overhead".
 
 
-Dynamic Shape Support
----------------------
+دعم الشكل الديناميكي
+-------------
 
-`Dynamic shape <https://pytorch.org/docs/stable/torch.compiler_dynamic_shapes.html>`_
-means that an input tensor has different shapes across function calls. Since CUDAGraph
-requires fixed tensor addresses, CUDAGraph Trees re-record CUDAGraph for every unique
-shape of an input tensor. This leads to multiple CUDAGraphs for a single inductor graph.
-When there are limited shapes (e.g., batch sizes in inference), it is profitable to
-re-record CUDAGraphs. However, if input tensor shapes change frequently or even on
-every invocation, re-recording CUDAGraph may not be profitable. Nvidia uses 64 KB of
-device memory per kernel launch in CUDAGraph, up until CUDA 12.4 and Driver Version 550+.
-This memory cost can be significant with many CUDAGraph re-recordings.
+`الشكل الديناميكي <https://pytorch.org/docs/stable/torch.compiler_dynamic_shapes.html>`_
+يعني أن tensor المدخلة لها أشكال مختلفة عبر استدعاءات الدالة. نظرًا لأن CUDAGraph
+يتطلب عناوين tensor ثابتة، تقوم CUDAGraph Trees بإعادة تسجيل CUDAGraph لكل شكل فريد
+من tensor المدخلة. يؤدي ذلك إلى وجود عدة CUDAGraphs لرسم بياني واحد للاستقراء.
+عندما تكون هناك أشكال محدودة (على سبيل المثال، أحجام الدُفعات في الاستدلال)، يكون من المجدي
+إعادة تسجيل CUDAGraphs. ومع ذلك، إذا تغيرت أشكال tensor المدخلة بشكل متكرر أو حتى في
+كل استدعاء، فقد لا يكون إعادة تسجيل CUDAGraph مربحًا. تستخدم Nvidia 64 كيلوبايت من
+ذاكرة الجهاز لكل عملية إطلاق kernel في CUDAGraph، حتى CUDA 12.4 وDriver Version 550+.
+يمكن أن تكون هذه التكلفة كبيرة مع العديد من عمليات إعادة تسجيل CUDAGraph.
 
-For functions with frequently changing input tensor shapes, we suggest padding input
-tensors to a few fixed tensor shapes to still enjoy benefits from CUDAGraph. In addition,
-setting  `torch._inductor.config.triton.cudagraph_skip_dynamic_graphs=True <https://github.com/pytorch/pytorch/blob/main/torch/_inductor/config.py#L653>`_
-allows to skip cudagraphing functions with dynamic shape inputs and only cudagraphing
-functions with static input tensor shapes.
+بالنسبة للوظائف ذات أشكال tensor المدخلة المتغيرة بشكل متكرر، نقترح استخدام التوترات المدخلة ذات الأشكال الثابتة القليلة للاستمتاع بفوائد CUDAGraph. بالإضافة إلى ذلك،
+يتيح تعيين `torch._inductor.config.triton.cudagraph_skip_dynamic_graphs=True <https://github.com/pytorch/pytorch/blob/main/torch/_inductor/config.py#L653>`_
+تخطي وظائف cudagraphing ذات المدخلات الديناميكية والقيام فقط بوظائف cudagraphing
+مع أشكال tensor المدخلة الثابتة.
 
 
-NCCL Support
+دعم NCCL
 ------------
 
-CUDAGraph Trees support functions with nccl operators. While CUDAGraph Trees perform per-device
-record for CUDAGraph, NCCL support allows cross-device communication.
+تدعم CUDAGraph Trees الوظائف التي تحتوي على مشغلات nccl. بينما تقوم CUDAGraph Trees بأداء تسجيل لكل جهاز لـ CUDAGraph، يسمح دعم NCCL بالاتصال عبر الأجهزة.
 
 .. code-block:: python
 
     @torch.compile(mode="reduce-overhead")
     def func(x):
         y = x * x
-        y = torch.distributed.all_reduce(y, op=torch.distributed.ReduceOp.SUM)
+        y = torch.distributed.all_reduce(y، op=torch.distributed.ReduceOp.SUM)
         x = torch.nn.functional.silu(x)
         return x * y
 
 
-Reasons for Skipping CUDAGraph
-------------------------------
+أسباب تخطي CUDAGraph
+------------------------
 
-Since CUDAGraph has requirements such as static input tensor addresses and not supporting
-CPU operators, CUDAGraph Trees check whether a function satisfies these requirements and
-may skip CUDAGraph when necessary. Here, we list common reasons for skipping CUDAGraph.
+نظرًا لأن CUDAGraph لديه متطلبات مثل عناوين ثابتة للمدخلات وعدم دعم مشغلات وحدة المعالجة المركزية، فإن CUDAGraph Trees يتحقق مما إذا كانت الدالة تستوفي هذه المتطلبات وقد تتخطى CUDAGraph عند الضرورة. وفيما يلي، نقدم قائمة بالأسباب الشائعة لتخطي CUDAGraph.
 
-* **Input mutation**: CUDAGraph Trees skip functions that in-place mutates eager input.
-  In-place mutating parameters and buffers, or output tensors from CUDAGraph Tree managed
-  functions are still supported. Please see *Input Mutation Support* section for more details.
-* **CPU operators**: Functions containing CPU operator are skipped. Please split the
-  function into multiple functions and apply CUDAGraph Trees on functions with only GPU operators.
-* **Multi-device operators**: A function is skipped if it contains operators on multiple
-  devices. Currently, CUDAGraph is applied on a per-device basis. Please use supported
-  libraries such as NCCL for cross-device communication. Please see *NCCL Support*
-  section for more details.
-* **Free unbacked symbols**: Free unbacked symbols usually happen during
-  `dynamic shapes <https://pytorch.org/docs/stable/torch.compiler_dynamic_shapes.html>`_.
-  CUDAGraph Trees currently record a CUDAGraph for every unique input tensor shapes.
-  Please see *Dynamic Shape Support* for more details.
-* **Incompatible operators**: CUDAGraph Trees skip a function if it contain incompatible
-  operators. Please replace these operators in a function with supported operators. We
-  show an exhaustive list of incompatible operators:
+* **تعديل الإدخال**: تتخطى CUDAGraph Trees الدوال التي تقوم بتعديل الإدخال في مكانه.
+  لا يزال تعديل المعلمات والذاكرات المؤقتة في مكانها، أو إخراج المنسوجات من الدوال التي تديرها CUDAGraph Tree مدعومًا. يرجى الاطلاع على قسم "دعم تعديل الإدخال" لمزيد من التفاصيل.
+* **مشغلات وحدة المعالجة المركزية**: يتم تخطي الدوال التي تحتوي على مشغل وحدة المعالجة المركزية. يرجى تقسيم الدالة إلى دوال متعددة وتطبيق CUDAGraph Trees على الدوال التي تحتوي على مشغلات GPU فقط.
+* **مشغلات متعددة الأجهزة**: يتم تخطي الدالة إذا كانت تحتوي على مشغلات على أجهزة متعددة. حاليًا، يتم تطبيق CUDAGraph على أساس كل جهاز على حدة. يرجى استخدام المكتبات المدعومة مثل NCCL للتواصل بين الأجهزة. يرجى الاطلاع على قسم "دعم NCCL" لمزيد من التفاصيل.
+* **الرموز الحرة غير المدعومة**: تحدث الرموز الحرة غير المدعومة عادة أثناء "الأشكال الديناميكية <https://pytorch.org/docs/stable/torch.compiler_dynamic_shapes.html>".
+  تقوم CUDAGraph Trees حاليًا بتسجيل CUDAGraph لكل شكل فريد من أشكال المنسوجات المدخلة.
+  يرجى الاطلاع على قسم "دعم الشكل الديناميكي" لمزيد من التفاصيل.
+* **مشغلات غير متوافقة**: تتخطى CUDAGraph Trees الدالة إذا كانت تحتوي على مشغلات غير متوافقة. يرجى استبدال هذه المشغلات في الدالة بالمشغلات المدعومة. نقدم قائمة شاملة بالمشغلات غير المتوافقة:
 
 
 .. code-block:: python
@@ -252,7 +239,7 @@ may skip CUDAGraph when necessary. Here, we list common reasons for skipping CUD
     aten._assert_scalar
 
 
-The following operators are incompatible when `torch.are_deterministic_algorithms_enabled() <https://pytorch.org/docs/stable/generated/torch.are_deterministic_algorithms_enabled.html>`_.
+المشغلات التالية غير متوافقة عندما `torch.are_deterministic_algorithms_enabled() <https://pytorch.org/docs/stable/generated/torch.are_deterministic_algorithms_enabled.html>`_.
 
 
 .. code-block:: python
@@ -260,7 +247,7 @@ The following operators are incompatible when `torch.are_deterministic_algorithm
     aten._fused_moving_avg_obs_fq_helper.default
     aten._fused_moving_avg_obs_fq_helper_functional.default
     aten.multinomial.default
-    fbgemm.dense_to_jagged.default
+    fbgemm.dense_to_jaggged.default
     fbgemm.jagged_to_padded_dense.default
     run_and_save_rng_state
     run_with_rng_state
@@ -268,12 +255,12 @@ The following operators are incompatible when `torch.are_deterministic_algorithm
     aten._assert_scalar
 
 
-Limitations
------------
+القيود
+----
 
-Because CUDA Graph fixes memory addresses, CUDA Graphs do not have a great way of handling live tensors from a previous invocation.
+نظرًا لأن CUDA Graph يقوم بتثبيت عناوين الذاكرة، فإن CUDA Graphs لا تملك طريقة جيدة للتعامل مع المنسوجات الحية من استدعاء سابق.
 
-Let’s say we are benchmarking running inference with the following code:
+لنفترض أننا نقوم باختبار الأداء لتشغيل الاستدلال باستخدام الكود التالي:
 
 .. code-block:: python
 
@@ -290,31 +277,31 @@ Let’s say we are benchmarking running inference with the following code:
     print(y1)
     # RuntimeError: Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run.
 
-In the Separate CUDA Graph implementation, the output from the first invocation will be overwritten by the second invocation. In CUDAGraph
-Trees, we don’t want to add unintended dependencies between iterations that would cause us to not hit the hot path, nor do we want we want
-to prematurely free memory from a prior invocation. Our heuristics are in inference we start a new iteration on each invocation for
-torch.compile, and in training we do the same so long as there is not a pending backward that has not been invoked. If those heuristics
-are wrong, you can mark the start of a new iteration with
-`torch.compiler.mark_step_begin() <https://pytorch.org/docs/stable/generated/torch.compiler.cudagraph_mark_step_begin.html>`_, or clone
-tensors of a prior iteration (outside of torch.compile) before you begin the next run.
+في تنفيذ CUDA Graph المنفصل، سيتم الكتابة فوق الإخراج من الاستدعاء الأول بواسطة الاستدعاء الثاني. في CUDAGraph
+Trees، لا نريد إضافة تبعيات غير مقصودة بين الحلقات التي قد تمنعنا من الوصول إلى المسار السريع، ولا نريد
+تحرير الذاكرة بشكل مبكر من استدعاء سابق. تنص افتراضاتنا على أنه في الاستدلال، نبدأ حلقة جديدة في كل استدعاء لـ
+torch.compile، وفي التدريب نفعل الشيء نفسه طالما لم يتم استدعاء التخلف إلى الوراء. إذا كانت هذه الافتراضات
+خاطئة، يمكنك وضع علامة على بداية حلقة جديدة باستخدام
+`torch.compiler.mark_step_begin() <https://pytorch.org/docs/stable/generated/torch.compiler.cudagraph_mark_step_begin.html>`_، أو استنساخ
+المنسوجات من تكرار سابق (خارج torch.compile) قبل بدء الجري التالي.
 
 
-Comparisons
------------
+مقارنات
+-------
 
 .. list-table::
    :widths: 20 40 40
    :header-rows: 1
 
-   * - Footguns
-     - Separate CudaGraph
+   * - الأخطاء
+     - CUDA Graph المنفصل
      - CUDAGraph Trees
-   * - Memory Can Increase
-     - On each graph compilation (new sizes, etc.)
-     - If you are also running non-cudagraph memory
-   * - Recordings
-     - On any new invocation of a graph
-     - Will re-record on any new, unique path you take through your program
-   * - Footguns
-     - Invocation of one graph will overwrite prior invocation
-     - Cannot persist memory between separate runs through your model - one training loop training, or one run of inference
+   * - يمكن أن تزداد الذاكرة
+     - مع كل تجميع للرسم البياني (أحجام جديدة، إلخ)
+     - إذا كنت تقوم أيضًا بتشغيل ذاكرة غير CUDAGraph
+   * - التسجيلات
+     - مع أي استدعاء جديد للرسم البياني
+     - سيتم إعادة التسجيل مع أي مسار جديد فريد تقوم به خلال برنامجك
+   * - الأخطاء
+     - سيؤدي استدعاء رسم بياني واحد إلى الكتابة فوق الاستدعاء السابق
+     - لا يمكن الاحتفاظ بالذاكرة بين عمليات تشغيل منفصلة عبر نموذجك - حلقة تدريب واحدة، أو تشغيل استدلال واحد
