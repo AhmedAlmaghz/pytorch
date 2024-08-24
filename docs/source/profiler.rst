@@ -3,12 +3,11 @@
 torch.profiler
 ==============
 
-Overview
+نظرة عامة
 --------
 .. automodule:: torch.profiler
 
-
-API Reference
+مرجع واجهة برمجة التطبيقات
 -------------
 
 .. autoclass:: torch.profiler._KinetoProfile
@@ -27,8 +26,8 @@ API Reference
 
 .. autofunction:: torch.profiler.tensorboard_trace_handler
 
-Intel Instrumentation and Tracing Technology APIs
--------------------------------------------------
+واجهات برمجة التطبيقات لتكنولوجيا Intel Instrumentation and Tracing
+----------------------------------------------------------
 
 .. autofunction:: torch.profiler.itt.is_available
 
@@ -38,8 +37,8 @@ Intel Instrumentation and Tracing Technology APIs
 
 .. autofunction:: torch.profiler.itt.range_pop
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. يحتاج هذا الموديول إلى توثيق. نقوم بإضافته هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.profiler.itt
 .. py:module:: torch.profiler.profiler
 .. py:module:: torch.profiler.python_tracer
