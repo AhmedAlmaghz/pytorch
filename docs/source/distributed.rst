@@ -1,12 +1,11 @@
 .. role:: hidden
     :class: hidden-section
 
-Distributed communication package - torch.distributed
-=====================================================
+حزمة الاتصال الموزع - torch.distributed
 
 .. note ::
-    Please refer to `PyTorch Distributed Overview <https://pytorch.org/tutorials/beginner/dist_overview.html>`__
-    for a brief introduction to all features related to distributed training.
+   يرجى الرجوع إلى `نظرة عامة على PyTorch Distributed <https://pytorch.org/tutorials/beginner/dist_overview.html>`__
+   للتعرف على جميع الميزات المتعلقة بالتدريب الموزع.
 
 .. automodule:: torch.distributed
 .. currentmodule:: torch.distributed
@@ -14,171 +13,160 @@ Distributed communication package - torch.distributed
 Backends
 --------
 
-``torch.distributed`` supports three built-in backends, each with
-different capabilities. The table below shows which functions are available
-for use with CPU / CUDA tensors.
-MPI supports CUDA only if the implementation used to build PyTorch supports it.
-
+تدعم ``torch.distributed`` ثلاث backends مدمجة، لكل منها قدرات مختلفة. يوضح الجدول أدناه الوظائف المتاحة
+للاستخدام مع CPU / CUDA tensors. يدعم MPI CUDA فقط إذا كان التنفيذ المستخدم لبناء PyTorch يدعمه.
 
 +----------------+-----------+-----------+-----------+
 | Backend        | ``gloo``  | ``mpi``   | ``nccl``  |
 +----------------+-----+-----+-----+-----+-----+-----+
 | Device         | CPU | GPU | CPU | GPU | CPU | GPU |
 +================+=====+=====+=====+=====+=====+=====+
-| send           | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| send           | ✓   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| recv           | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| recv           | ✓   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| broadcast      | ✓   | ✓   | ✓   | ?   | ✘   | ✓   |
+| broadcast      | ✓   | ✓   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| all_reduce     | ✓   | ✓   | ✓   | ?   | ✘   | ✓   |
+| all_reduce     | ✓   | ✓   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| reduce         | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| reduce         | ✓   | ✘   | ✓  Multiplier | ✘   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| all_gather     | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| all_gather     | ✓   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| gather         | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| gather         | ✓   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| scatter        | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| scatter        | ✓   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
 | reduce_scatter | ✘   | ✘   | ✘   | ✘   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| all_to_all     | ✘   | ✘   | ✓   | ?   | ✘   | ✓   |
+| all_to_all     | ✘   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
-| barrier        | ✓   | ✘   | ✓   | ?   | ✘   | ✓   |
+| barrier        | ✓   | ✘   | ✓   | ؟   | ✘   | ✓   |
 +----------------+-----+-----+-----+-----+-----+-----+
 
+Backends التي تأتي مع PyTorch
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Backends that come with PyTorch
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-PyTorch distributed package supports Linux (stable), MacOS (stable), and Windows (prototype).
-By default for Linux, the Gloo and NCCL backends are built and included in PyTorch
-distributed (NCCL only when building with CUDA). MPI is an optional backend that can only be
-included if you build PyTorch from source. (e.g. building PyTorch on a host that has MPI
-installed.)
+تدعم حزمة PyTorch distributed أنظمة Linux (مستقرة) وMacOS (مستقرة) وWindows (تجريبية).
+بشكل افتراضي لنظام Linux، يتم بناء backends Gloo وNCCL وتضمينها في PyTorch
+distributed (NCCL فقط عند البناء باستخدام CUDA). MPI هو backend اختياري لا يمكن تضمينه إلا إذا قمت ببناء PyTorch من المصدر. (على سبيل المثال، بناء PyTorch على مضيف يحتوي على MPI
+مثبت.)
 
 .. note ::
-    As of PyTorch v1.8, Windows supports all collective communications backend but NCCL,
-    If  the `init_method` argument of :func:`init_process_group` points to a file it must adhere
-    to the following schema:
+   اعتبارًا من PyTorch v1.8، تدعم Windows جميع backends الاتصالات الجماعية باستثناء NCCL،
+   إذا أشارت حجة `init_method` لـ :func:`init_process_group` إلى ملف، فيجب أن يلتزم
+   بالمخطط التالي:
 
-    - Local file system, ``init_method="file:///d:/tmp/some_file"``
-    - Shared file system, ``init_method="file://////{machine_name}/{share_folder_name}/some_file"``
+   - نظام الملفات المحلي، ``init_method="file:///d:/tmp/some_file"``
+   - نظام الملفات المشترك، ``init_method="file://////{machine_name}/{share_folder_name}/some_file"``
 
-    Same as on Linux platform, you can enable TcpStore by setting environment variables,
-    MASTER_ADDR and MASTER_PORT.
+   مثل منصة Linux، يمكنك تمكين TcpStore عن طريق تعيين متغيرات البيئة،
+   MASTER_ADDR وMASTER_PORT.
 
-Which backend to use?
+أي backend يجب استخدامه؟
 ^^^^^^^^^^^^^^^^^^^^^
 
-In the past, we were often asked: "which backend should I use?".
+في الماضي، كنا نسأل في كثير من الأحيان: "أي backend يجب أن أستخدم؟".
 
-- Rule of thumb
+- قاعدة عامة
 
-  - Use the NCCL backend for distributed **GPU** training
-  - Use the Gloo backend for distributed **CPU** training.
+  - استخدم backend NCCL للتدريب الموزع **GPU**
+  - استخدم backend Gloo للتدريب الموزع **CPU**.
 
-- GPU hosts with InfiniBand interconnect
+- مضيفي GPU مع اتصال InfiniBand
 
-  - Use NCCL, since it's the only backend that currently supports
-    InfiniBand and GPUDirect.
+  - استخدم NCCL، لأنه backend الوحيد الذي يدعم حاليًا
+    InfiniBand وGPUDirect.
 
-- GPU hosts with Ethernet interconnect
+- مضيفي GPU مع اتصال Ethernet
 
-  - Use NCCL, since it currently provides the best distributed GPU
-    training performance, especially for multiprocess single-node or
-    multi-node distributed training. If you encounter any problem with
-    NCCL, use Gloo as the fallback option. (Note that Gloo currently
-    runs slower than NCCL for GPUs.)
+  - استخدم NCCL، لأنه يوفر حاليًا أفضل أداء للتدريب الموزع لـ GPU
+    خاصة للتدريب الموزع أحادي العقدة أو متعدد العقد. إذا واجهتك أي مشكلة مع
+    NCCL، استخدم Gloo كخيار احتياطي. (ملاحظة: Gloo أبطأ حاليًا من NCCL لـ GPUs.)
 
-- CPU hosts with InfiniBand interconnect
+- مضيفي CPU مع اتصال InfiniBand
 
-  - If your InfiniBand has enabled IP over IB, use Gloo, otherwise,
-    use MPI instead. We are planning on adding InfiniBand support for
-    Gloo in the upcoming releases.
+  - إذا كان InfiniBand الخاص بك قد مكن IP عبر IB، فاستخدم Gloo، وإلا
+    استخدم MPI بدلاً من ذلك. نخطط لإضافة دعم InfiniBand لـ
+    Gloo في الإصدارات القادمة.
 
-- CPU hosts with Ethernet interconnect
+- مضيفي CPU مع اتصال Ethernet
 
-  - Use Gloo, unless you have specific reasons to use MPI.
+  - استخدم Gloo، ما لم يكن لديك أسباب محددة لاستخدام MPI.
 
-Common environment variables
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+متغيرات البيئة الشائعة
+^^^^^^^^^^^^^^
 
-Choosing the network interface to use
-"""""""""""""""""""""""""""""""""""""
+اختيار واجهة الشبكة لاستخدامها
+"""""""""""""""""""
 
-By default, both the NCCL and Gloo backends will try to find the right network interface to use.
-If the automatically detected interface is not correct, you can override it using the following
-environment variables (applicable to the respective backend):
+بشكل افتراضي، سيحاول كل من backends NCCL وGloo العثور على واجهة الشبكة الصحيحة لاستخدامها.
+إذا كانت الواجهة التي تم اكتشافها تلقائيًا غير صحيحة، فيمكنك تجاوزها باستخدام متغيرات البيئة التالية
+(قابلة للتطبيق على backend المقابل):
 
-* **NCCL_SOCKET_IFNAME**, for example ``export NCCL_SOCKET_IFNAME=eth0``
-* **GLOO_SOCKET_IFNAME**, for example ``export GLOO_SOCKET_IFNAME=eth0``
+* **NCCL_SOCKET_IFNAME**، على سبيل المثال ``export NCCL_SOCKET_IFNAME=eth0``
+* **GLOO_SOCKET_IFNAME**، على سبيل المثال ``export GLOO_SOCKET_IFNAME=eth0``
 
-If you're using the Gloo backend, you can specify multiple interfaces by separating
-them by a comma, like this: ``export GLOO_SOCKET_IFNAME=eth0,eth1,eth2,eth3``.
-The backend will dispatch operations in a round-robin fashion across these interfaces.
-It is imperative that all processes specify the same number of interfaces in this variable.
+إذا كنت تستخدم backend Gloo، فيمكنك تحديد واجهات متعددة عن طريق الفصل
+عنهم بفاصلة، مثل هذا: ``export GLOO_SOCKET_IFNAME=eth0,eth1,eth2,eth3``.
+سيقوم backend بتنفيذ العمليات بطريقة مستديرة روبين عبر هذه الواجهات. من الضروري أن تحدد جميع العمليات نفس عدد الواجهات في هذا المتغير.
 
-Other NCCL environment variables
-""""""""""""""""""""""""""""""""
+متغيرات بيئة NCCL الأخرى
+""""""""""""""""""
 
-**Debugging** - in case of NCCL failure, you can set ``NCCL_DEBUG=INFO`` to print an explicit
-warning message as well as basic NCCL initialization information.
+**التصحيح** - في حالة فشل NCCL، يمكنك تعيين ``NCCL_DEBUG=INFO`` لطباعة رسالة تحذير صريحة
+وكذلك معلومات التهيئة الأساسية لـ NCCL.
 
-You may also use ``NCCL_DEBUG_SUBSYS`` to get more details about a specific
-aspect of NCCL. For example, ``NCCL_DEBUG_SUBSYS=COLL`` would print logs of
-collective calls, which may be helpful when debugging hangs, especially those
-caused by collective type or message size mismatch. In case of topology
-detection failure, it would be helpful to set ``NCCL_DEBUG_SUBSYS=GRAPH``
-to inspect the detailed detection result and save as reference if further help
-from NCCL team is needed.
+يمكنك أيضًا استخدام ``NCCL_DEBUG_SUBSYS`` للحصول على مزيد من التفاصيل حول جانب محدد
+من NCCL. على سبيل المثال، ستطبع ``NCCL_DEBUG_SUBSYS=COLL`` سجلات
+المكالمات الجماعية، والتي قد تكون مفيدة عند تصحيح الأعطال، خاصة تلك
+التي تسببها عدم تطابق نوع الرسالة الجماعية أو حجمها. في حالة فشل اكتشاف الطوبولوجيا، سيكون من المفيد تعيين ``NCCL_DEBUG_SUBSYS=GRAPH``
+للتفتيش على نتيجة الكشف التفصيلية وحفظها كمرجع إذا كانت هناك حاجة إلى مزيد من المساعدة
+من فريق NCCL.
 
-**Performance tuning** - NCCL performs automatic tuning based on its topology detection to save users'
-tuning effort. On some socket-based systems, users may still try tuning
-``NCCL_SOCKET_NTHREADS`` and ``NCCL_NSOCKS_PERTHREAD`` to increase socket
-network bandwidth. These two environment variables have been pre-tuned by NCCL
-for some cloud providers, such as AWS or GCP.
+**ضبط الأداء** - يقوم NCCL بضبط تلقائي بناءً على اكتشاف الطوبولوجيا الخاصة به لتوفير جهد الضبط للمستخدمين
+. على بعض الأنظمة المستندة إلى المقبس، قد يحاول المستخدمون ضبطها على الرغم من ذلك
+``NCCL_SOCKET_NTHREADS`` و ``NCCL_NSOCKS_PERTHREAD`` لزيادة عرض النطاق الترددي للشبكة المقبس. تم ضبط هذين متغيري البيئة مسبقًا بواسطة NCCL
+لمزودي الخدمات السحابية مثل AWS أو GCP.
 
-For a full list of NCCL environment variables, please refer to
-`NVIDIA NCCL's official documentation <https://docs.nvidia.com/deeplearning/sdk/nccl-developer-guide/docs/env.html>`_
+للاطلاع على القائمة الكاملة لمتغيرات بيئة NCCL، يرجى الرجوع إلى
+`الوثائق الرسمية لـ NVIDIA NCCL <https://docs.nvidia.com/deeplearning/sdk/nccl-developer-guide/docs/env.html>`_
 
 
 .. _distributed-basics:
 
-Basics
+أساسيات
 ------
 
-The `torch.distributed` package provides PyTorch support and communication primitives
-for multiprocess parallelism across several computation nodes running on one or more
-machines. The class :func:`torch.nn.parallel.DistributedDataParallel` builds on this
-functionality to provide synchronous distributed training as a wrapper around any
-PyTorch model. This differs from the kinds of parallelism provided by
-:doc:`multiprocessing` and :func:`torch.nn.DataParallel` in that it supports
-multiple network-connected machines and in that the user must explicitly launch a separate
-copy of the main training script for each process.
+توفر حزمة `torch.distributed` دعم PyTorch وبدائيات الاتصال
+للتعددية المتوازية عبر عدة عقد حسابية تعمل على جهاز واحد أو أكثر
+الآلات. تبني فئة :func:`torch.nn.parallel.DistributedDataParallel` على هذا
+الوظائف لتوفير التدريب الموزع المتزامن كغلاف حول أي
+نموذج PyTorch. يختلف هذا عن أنواع التوازي التي يوفرها
+:doc:`multiprocessing` و :func:`torch.nn.DataParallel` في أنه يدعم
+العديد من الأجهزة المتصلة بالشبكة وفي أن المستخدم يجب أن يبدأ صراحةً نسخة منفصلة
+من النص الرئيسي لنص البرنامج النصي للتدريب لكل عملية.
 
-In the single-machine synchronous case, `torch.distributed` or the
-:func:`torch.nn.parallel.DistributedDataParallel` wrapper may still have advantages over other
-approaches to data-parallelism, including :func:`torch.nn.DataParallel`:
+في حالة العقدة الواحدة المتزامنة، قد يكون لـ `torch.distributed` أو
+:func:`torch.nn.parallel.DistributedDataParallel` مزايا على أساليب أخرى
+للتعددية، بما في ذلك :func:`torch.nn.DataParallel`:
 
-* Each process maintains its own optimizer and performs a complete optimization step with each
-  iteration. While this may appear redundant, since the gradients have already been gathered
-  together and averaged across processes and are thus the same for every process, this means
-  that no parameter broadcast step is needed, reducing time spent transferring tensors between
-  nodes.
-* Each process contains an independent Python interpreter, eliminating the extra interpreter
-  overhead and "GIL-thrashing" that comes from driving several execution threads, model
-  replicas, or GPUs from a single Python process. This is especially important for models that
-  make heavy use of the Python runtime, including models with recurrent layers or many small
-  components.
+* تحتفظ كل عملية بمثبتها الخاص وتنفذ خطوة تحسين كاملة مع كل
+  تكرار. في حين أن هذا قد يبدو مكرراً، لأن التدرجات قد تم جمعها بالفعل
+  معًا وتمت متوسطها عبر العمليات وهي نفسها لكل عملية، وهذا يعني
+  أن خطوة بث المعلمة غير مطلوبة، مما يقلل من الوقت المستغرق في نقل المنسوجات بين
+  العقد.
+* تحتوي كل عملية على مترجم Python مستقل، مما يؤدي إلى القضاء على النفقات العامة الإضافية للمترجم
+  وعرقلة "GIL" التي تأتي من تشغيل عدة خيوط تنفيذ أو نماذج
+  المكررات أو GPUs من عملية Python واحدة. هذا مهم بشكل خاص للنماذج التي
+  الاستخدام المكثف لوقت تشغيل Python، بما في ذلك النماذج ذات الطبقات المتكررة أو العديد من المكونات الصغيرة.
 
-Initialization
---------------
+التهيئة
+-----
 
-The package needs to be initialized using the :func:`torch.distributed.init_process_group`
-or :func:`torch.distributed.device_mesh.init_device_mesh` function before calling any other methods.
-Both block until all processes have joined.
+يجب تهيئة الحزمة باستخدام دالة :func:`torch.distributed.init_process_group`
+أو :func:`torch.distributed.device_mesh.init_device_mesh` قبل استدعاء أي طرق أخرى.
+كلاهما يمنع حتى تنضم جميع العمليات.
 
 .. autofunction:: is_available
 
@@ -198,91 +186,62 @@ Both block until all processes have joined.
 
 --------------------------------------------------------------------------------
 
-Currently three initialization methods are supported:
+حاليا، هناك ثلاث طرق للتهيئة مدعومة:
 
-TCP initialization
-^^^^^^^^^^^^^^^^^^
+التهيئة باستخدام بروتوكول TCP
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-There are two ways to initialize using TCP, both requiring a network address
-reachable from all processes and a desired ``world_size``. The first way
-requires specifying an address that belongs to the rank 0 process. This
-initialization method requires that all processes have manually specified ranks.
+هناك طريقتان للتهيئة باستخدام بروتوكول TCP، وكلتاهما تتطلب عنوان شبكة يمكن الوصول إليه من جميع العمليات (processes) وحجم "world_size" المرغوب فيه. الطريقة الأولى تتطلب تحديد عنوان ينتمي إلى العملية ذات الرتبة 0 (rank 0). تتطلب طريقة التهيئة هذه أن يكون لدى جميع العمليات رتب محددة يدويًا.
 
-Note that multicast address is not supported anymore in the latest distributed
-package. ``group_name`` is deprecated as well.
+ملاحظة: لم يعد عنوان البث المجموعاتي (multicast address) مدعومًا في الحزمة الموزعة (distributed package) الأحدث. كما أن "group_name" مهملة أيضًا.
 
 ::
 
     import torch.distributed as dist
 
-    # Use address of one of the machines
+    # استخدام عنوان إحدى الآلات
     dist.init_process_group(backend, init_method='tcp://10.1.1.20:23456',
                             rank=args.rank, world_size=4)
 
-Shared file-system initialization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التهيئة باستخدام نظام ملفات مشترك
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Another initialization method makes use of a file system that is shared and
-visible from all machines in a group, along with a desired ``world_size``. The URL should start
-with ``file://`` and contain a path to a non-existent file (in an existing
-directory) on a shared file system. File-system initialization will automatically
-create that file if it doesn't exist, but will not delete the file. Therefore, it
-is your responsibility to make sure that the file is cleaned up before the next
-:func:`init_process_group` call on the same file path/name.
+تستخدم طريقة التهيئة الأخرى نظام ملفات مشتركًا ومرئيًا من جميع الآلات في مجموعة، إلى جانب حجم "world_size" المرغوب فيه. يجب أن يبدأ عنوان URL (محدد موقع الموارد الموحد) بـ "file://" وأن يحتوي على مسار إلى ملف غير موجود (في دليل موجود) على نظام ملفات مشترك. ستعمل التهيئة باستخدام نظام الملفات على إنشاء هذا الملف تلقائيًا إذا لم يكن موجودًا، ولكنها لن تقوم بحذفه. لذلك، من مسؤوليتك التأكد من تنظيف الملف قبل إجراء المكالمة التالية لـ :func:`init_process_group` على نفس مسار/اسم الملف.
 
-Note that automatic rank assignment is not supported anymore in the latest
-distributed package and ``group_name`` is deprecated as well.
+ملاحظة: لم يعد تعيين الرتبة التلقائي (automatic rank assignment) مدعومًا في الحزمة الموزعة الأحدث، كما أن "group_name" مهملة أيضًا.
 
 .. warning::
-    This method assumes that the file system supports locking using ``fcntl`` - most
-    local systems and NFS support it.
+    تفترض هذه الطريقة أن نظام الملفات يدعم القفل باستخدام "fcntl" - معظم الأنظمة المحلية وأنظمة ملفات الشبكة (NFS) تدعمه.
 
 .. warning::
-    This method will always create the file and try its best to clean up and remove
-    the file at the end of the program. In other words, each initialization with
-    the file init method will need a brand new empty file in order for the initialization
-    to succeed. If the same file used by the previous initialization (which happens not
-    to get cleaned up) is used again, this is unexpected behavior and can often cause
-    deadlocks and failures. Therefore, even though this method will try its best to clean up
-    the file, if the auto-delete happens to be unsuccessful, it is your responsibility
-    to ensure that the file is removed at the end of the training to prevent the same
-    file to be reused again during the next time. This is especially important
-    if you plan to call :func:`init_process_group` multiple times on the same file name.
-    In other words, if the file is not removed/cleaned up and you call
-    :func:`init_process_group` again on that file, failures are expected.
-    The rule of thumb here is that, make sure that the file is non-existent or
-    empty every time :func:`init_process_group` is called.
+    ستعمل هذه الطريقة دائمًا على إنشاء الملف وتحاول بذل قصارى جهدها لتنظيفه وإزالته في نهاية البرنامج. وبعبارة أخرى، فإن كل تهيئة باستخدام طريقة التهيئة باستخدام الملف تتطلب ملفًا جديدًا فارغًا لكي تنجح عملية التهيئة. إذا تم استخدام نفس الملف الذي استخدمته عملية التهيئة السابقة (والذي لم يتم تنظيفه) مرة أخرى، فقد يؤدي ذلك إلى حدوث سلوك غير متوقع ويمكن أن يتسبب في حدوث توقف تام (deadlocks) وأخطاء. لذلك، على الرغم من أن هذه الطريقة ستحاول بذل قصارى جهدها لتنظيف الملف، إذا حدث أن فشلت عملية الحذف التلقائي، فمن مسؤوليتك التأكد من إزالة الملف في نهاية التدريب لمنع إعادة استخدام نفس الملف مرة أخرى في المرة التالية. هذا مهم بشكل خاص إذا كنت تخطط لاستدعاء :func:`init_process_group` عدة مرات على نفس اسم الملف. وبعبارة أخرى، إذا لم يتم إزالة/تنظيف الملف واستدعاء :func:`init_process_group` مرة أخرى على ذلك الملف، فمن المتوقع حدوث أخطاء. القاعدة العامة هنا هي التأكد من أن الملف غير موجود أو فارغ في كل مرة يتم فيها استدعاء :func:`init_process_group`.
 
 ::
 
     import torch.distributed as dist
 
-    # rank should always be specified
+    # يجب تحديد الرتبة دائمًا
     dist.init_process_group(backend, init_method='file:///mnt/nfs/sharedfile',
                             world_size=4, rank=args.rank)
 
-Environment variable initialization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التهيئة باستخدام متغيرات البيئة
+^^^^^^^^^^^^^^^^^^^
 
-This method will read the configuration from environment variables, allowing
-one to fully customize how the information is obtained. The variables to be set
-are:
+ستقوم هذه الطريقة بقراءة التهيئة من متغيرات البيئة، مما يسمح بتخصيص كيفية الحصول على المعلومات بشكل كامل. المتغيرات التي يجب تعيينها هي:
 
-* ``MASTER_PORT`` - required; has to be a free port on machine with rank 0
-* ``MASTER_ADDR`` - required (except for rank 0); address of rank 0 node
-* ``WORLD_SIZE`` - required; can be set either here, or in a call to init function
-* ``RANK`` - required; can be set either here, or in a call to init function
+* ``MASTER_PORT`` - مطلوب؛ يجب أن يكون منفذًا متاحًا على الآلة ذات الرتبة 0
+* ``MASTER_ADDR`` - مطلوب (باستثناء الرتبة 0)؛ عنوان العقدة ذات الرتبة 0
+* ``WORLD_SIZE`` - مطلوب؛ يمكن تعيينه إما هنا، أو في مكالمة دالة التهيئة
+* ``RANK`` - مطلوب؛ يمكن تعيينه إما هنا، أو في مكالمة دالة التهيئة
 
-The machine with rank 0 will be used to set up all connections.
+سيتم استخدام الآلة ذات الرتبة 0 لإعداد جميع الاتصالات.
 
-This is the default method, meaning that ``init_method`` does not have to be specified (or
-can be ``env://``).
+هذه هي الطريقة الافتراضية، مما يعني أنه لا يلزم تحديد "init_method" (أو يمكن أن يكون "env://").
 
-Post-Initialization
--------------------
+ما بعد التهيئة
+----------
 
-Once :func:`torch.distributed.init_process_group` was run, the following functions can be used. To
-check whether the process group has already been initialized use :func:`torch.distributed.is_initialized`.
+بمجرد تشغيل :func:`torch.distributed.init_process_group`، يمكن استخدام الوظائف التالية. للتحقق مما إذا كان قد تم تهيئة مجموعة العمليات بالفعل، استخدم الدالة :func:`torch.distributed.is_initialized`.
 
 .. autoclass:: Backend
     :members:
@@ -293,48 +252,26 @@ check whether the process group has already been initialized use :func:`torch.di
 
 .. autofunction:: get_world_size
 
-Shutdown
---------
+الإيقاف
+-----
 
-It is important to clean up resources on exit by calling :func:`destroy_process_group`.
+من المهم تنظيف الموارد عند الخروج عن طريق استدعاء :func:`destroy_process_group`.
 
-The simplest pattern to follow is to destroy every process group and backend by calling
-:func:`destroy_process_group()` with the default value of None for the `group` argument, at a
-point in the training script where communications are no longer needed, usually near the
-end of main().  The call should be made once per trainer-process, not at the outer
-process-launcher level.
+أبسط نمط يمكن اتباعه هو تدمير كل مجموعات العمليات والخلفيات (backends) عن طريق استدعاء :func:`destroy_process_group()` مع القيمة الافتراضية "None" لحجة "group"، في نقطة في نص التدريب حيث لم تعد الاتصالات مطلوبة، وعادة ما تكون بالقرب من نهاية الدالة "main()". يجب إجراء المكالمة مرة واحدة لكل عملية مدرب، وليس على مستوى مطلق العملية الخارجي.
 
-if :func:`destroy_process_group` is not called by all ranks in a pg within the timeout duration,
-especially when there are multiple process-groups in the application e.g. for N-D parallelism,
-hangs on exit are possible.  This is because the destructor for ProcessGroupNCCL calls ncclCommAbort,
-which must be called collectively, but the order of calling ProcessGroupNCCL's destructor if called
-by python's GC is not deterministic. Calling :func:`destroy_process_group` helps by ensuring
-ncclCommAbort is called in a consistent order across ranks, and avoids calling ncclCommAbort
-during ProcessGroupNCCL's destructor.
+إذا لم يتم استدعاء :func:`destroy_process_group` من قبل جميع الرتب في مجموعة عمليات ضمن مدة المهلة الزمنية، خاصة عند وجود مجموعات عمليات متعددة في التطبيق، على سبيل المثال، للموازاة متعددة الأبعاد، فقد تحدث توقفات عند الخروج. ويرجع ذلك إلى أن دالة الهدم لـ "ProcessGroupNCCL" تستدعي "ncclCommAbort"، والتي يجب استدعاؤها بشكل جماعي، ولكن ترتيب استدعاء دالة الهدم لـ "ProcessGroupNCCL" إذا تم استدعاؤها بواسطة جامع القمامة (GC) في بايثون غير محدد. يساعد استدعاء :func:`destroy_process_group` من خلال ضمان استدعاء "ncclCommAbort" بترتيب متسق عبر الرتب، وتجنب استدعاء "ncclCommAbort" أثناء دالة الهدم لـ "ProcessGroupNCCL".
 
-Reinitialization
-^^^^^^^^^^^^^^^^
+إعادة التهيئة
+^^^^^^^^
 
-`destroy_process_group` can also be used to destroy individual process groups.  One use
-case could be fault tolerant training, where a process group may be destroyed and then
-a new one initialized during runtime.  In this case, it's critical to synchronize the trainer
-processes using some means other than torch.distributed primitives _after_ calling destroy and
-before subsequently initializing.  This behavior is currently unsupported/untested, due to
-the difficulty of achieving this synchronization, and is considered a known issue.  Please file
-a github issue or RFC if this is a use case that's blocking you.
+يمكن أيضًا استخدام "destroy_process_group" لتدمير مجموعات العمليات الفردية. إحدى حالات الاستخدام قد تكون التدريب المتسامح مع الأخطاء (fault-tolerant training)، حيث قد يتم تدمير مجموعة عمليات ثم تهيئة مجموعة جديدة أثناء وقت التشغيل. في هذه الحالة، من الضروري مزامنة عمليات التدريب باستخدام بعض الوسائل الأخرى غير بدائيات "torch.distributed" _بعد_ استدعاء التدمير وقبل التهيئة اللاحقة. هذا السلوك غير مدعوم/غير مجرب حاليًا، بسبب صعوبة تحقيق هذه المزامنة، ويعتبر مشكلة معروفة. يرجى إرسال طلب سحب (pull request) أو طلب ميزة (feature request) على جيثب (GitHub) إذا كان هذا الاستخدام يمنعك.
 
 --------------------------------------------------------------------------------
 
-Distributed Key-Value Store
----------------------------
+التخزين الموزع القائم على القيمة-المفتاح
+--------------------------
 
-The distributed package comes with a distributed key-value store, which can be
-used to share information between processes in the group as well as to
-initialize the distributed package in
-:func:`torch.distributed.init_process_group` (by explicitly creating the store
-as an alternative to specifying ``init_method``.) There are 3 choices for
-Key-Value Stores: :class:`~torch.distributed.TCPStore`,
-:class:`~torch.distributed.FileStore`, and :class:`~torch.distributed.HashStore`.
+تأتي الحزمة الموزعة مع متجر قيمة-مفتاح موزع، والذي يمكن استخدامه لمشاركة المعلومات بين العمليات في المجموعة وكذلك لتهيئة الحزمة الموزعة في :func:`torch.distributed.init_process_group` (عن طريق إنشاء المتجر بشكل صريح كبديل لتحديد "init_method"). هناك 3 خيارات لمتاجر القيمة-المفتاح: :class:`~torch.distributed.TCPStore`، و:class:`~torch.distributed.FileStore`، و:class:`~torch.distributed.HashStore`.
 
 .. autoclass:: Store
 .. autoclass:: TCPStore
@@ -351,16 +288,10 @@ Key-Value Stores: :class:`~torch.distributed.TCPStore`,
 .. autofunction:: torch.distributed.Store.delete_key
 .. autofunction:: torch.distributed.Store.set_timeout
 
-Groups
+المجموعات
 ------
 
-By default collectives operate on the default group (also called the world) and
-require all processes to enter the distributed function call. However, some workloads can benefit
-from more fine-grained communication. This is where distributed groups come
-into play. :func:`~torch.distributed.new_group` function can be
-used to create new groups, with arbitrary subsets of all processes. It returns
-an opaque group handle that can be given as a ``group`` argument to all collectives
-(collectives are distributed functions to exchange information in certain well-known programming patterns).
+بشكل افتراضي، تعمل العمليات الجماعية على المجموعة الافتراضية (المعروفة أيضًا باسم العالم) وتتطلب من جميع العمليات الدخول في مكالمة الدالة الموزعة. ومع ذلك، يمكن لبعض أعباء العمل الاستفادة من الاتصال الأكثر دقة. وهنا تأتي مجموعات التوزيع للعب. يمكن استخدام الدالة :func:`~torch.distributed.new_group` لإنشاء مجموعات جديدة، مع مجموعات فرعية تعسفية من جميع العمليات. تقوم الدالة بإرجاع مقبض مجموعة غير شفاف يمكن تمريره كحجة "group" إلى جميع العمليات الجماعية (العمليات الجماعية هي وظائف موزعة لتبادل المعلومات في أنماط برمجة معينة معروفة).
 
 
 .. autofunction:: new_group
@@ -372,31 +303,25 @@ an opaque group handle that can be given as a ``group`` argument to all collecti
 .. autofunction:: get_process_group_ranks
 
 
-DeviceMesh
+شبكة الأجهزة
 ----------
 
-DeviceMesh is a higher level abstraction that manages process groups (or NCCL communicators).
-It allows user to easily create inter node and intra node process groups without worrying about
-how to set up the ranks correctly for different sub process groups, and it helps manage those
-distributed process group easily. :func:`~torch.distributed.device_mesh.init_device_mesh` function can be
-used to create new DeviceMesh, with a mesh shape describing the device topology.
+شبكة الأجهزة (DeviceMesh) هي طبقة تجريد أعلى تقوم بإدارة مجموعات العمليات (أو موصلات NCCL). تسمح للمستخدم بإنشاء مجموعات عمليات بين العقد وداخل العقد بسهولة دون القلق بشأن كيفية تعيين الرتب بشكل صحيح لمجموعات العمليات الفرعية المختلفة، كما تساعد في إدارة مجموعات العمليات الموزعة بسهولة. يمكن استخدام الدالة :func:`~torch.distributed.device_mesh.init_device_mesh` لإنشاء شبكة أجهزة جديدة، مع شكل شبكة يصف طوبولوجيا الجهاز.
 
 .. autoclass:: torch.distributed.device_mesh.DeviceMesh
 
-Point-to-point communication
-----------------------------
+الاتصال من نقطة إلى نقطة
+-------------------
 
 .. autofunction:: send
 
 .. autofunction:: recv
 
-:func:`~torch.distributed.isend` and :func:`~torch.distributed.irecv`
-return distributed request objects when used. In general, the type of this object is unspecified
-as they should never be created manually, but they are guaranteed to support two methods:
+تعيد الدالتان :func:`~torch.distributed.isend` و:func:`~torch.distributed.irecv` كائنات طلب موزعة عند استخدامها. بشكل عام، نوع هذا الكائن غير محدد لأنه لا ينبغي أبدًا إنشاؤه يدويًا، ولكنه يدعم طريقتين مضمونتين:
 
-* ``is_completed()`` - returns True if the operation has finished
-* ``wait()`` - will block the process until the operation is finished.
-  ``is_completed()`` is guaranteed to return True once it returns.
+* ``is_completed()`` - تعيد القيمة "True" إذا تم الانتهاء من العملية
+* ``wait()`` - ستؤدي إلى توقف العملية حتى تنتهي العملية.
+  يتم ضمان إعادة "is_completed()" للقيمة "True" بمجرد إعادتها.
 
 .. autofunction:: isend
 
@@ -410,62 +335,47 @@ as they should never be created manually, but they are guaranteed to support two
 
 .. autoclass:: P2POp
 
-Synchronous and asynchronous collective operations
---------------------------------------------------
-Every collective operation function supports the following two kinds of operations,
-depending on the setting of the ``async_op`` flag passed into the collective:
+العمليات الجماعية المتزامنة وغير المتزامنة
+-----------------------------
+تدعم كل دالة من دوال العمليات الجماعية النوعين التاليين من العمليات، وذلك حسب إعداد مؤشر "async_op" الذي يتم تمريره إلى العملية الجماعية:
 
-**Synchronous operation** - the default mode, when ``async_op`` is set to ``False``.
-When the function returns, it is guaranteed that
-the collective operation is performed. In the case of CUDA operations, it is not guaranteed
-that the CUDA operation is completed, since CUDA operations are asynchronous. For CPU collectives, any
-further function calls utilizing the output of the collective call will behave as expected. For CUDA collectives,
-function calls utilizing the output on the same CUDA stream will behave as expected. Users must take care of
-synchronization under the scenario of running under different streams. For details on CUDA semantics such as stream
-synchronization, see `CUDA Semantics <https://pytorch.org/docs/stable/notes/cuda.html>`__.
-See the below script to see examples of differences in these semantics for CPU and CUDA operations.
+**العملية المتزامنة** - الوضع الافتراضي، عندما يكون "async_op" مضبوطًا على "False". عندما تعيد الدالة النتيجة، يكون من المضمون أن العملية الجماعية قد تم تنفيذها. في حالة عمليات CUDA، لا يمكن ضمان إتمام عملية CUDA، لأن عمليات CUDA غير متزامنة. وبالنسبة للعمليات الجماعية على وحدة المعالجة المركزية (CPU)، فإن أي استدعاءات لاحقة للدوال التي تستخدم ناتج الاستدعاء الجماعي ستتصرف كما هو متوقع. وبالنسبة للعمليات الجماعية على CUDA، فإن استدعاءات الدوال التي تستخدم النتيجة على نفس تدفق CUDA ستتصرف كما هو متوقع. ويجب على المستخدمين مراعاة المزامنة في حالة التشغيل على تدفقات مختلفة. لمزيد من التفاصيل حول دلاليات CUDA مثل مزامنة التدفق، راجع `دلاليات CUDA <https://pytorch.org/docs/stable/notes/cuda.html>`__.
+راجع النص البرمجي أدناه لمشاهدة أمثلة على الاختلافات في هذه الدلالات لعمليات وحدة المعالجة المركزية (CPU) وCUDA.
 
-**Asynchronous operation** - when ``async_op`` is set to True. The collective operation function
-returns a distributed request object. In general, you don't need to create it manually and it
-is guaranteed to support two methods:
+**العملية غير المتزامنة** - عندما يكون "async_op" مضبوطًا على "True". تعيد دالة العملية الجماعية كائن طلب موزع. بشكل عام، لا تحتاج إلى إنشائه يدويًا ومن المضمون أنه يدعم طريقتين:
 
-* ``is_completed()`` - in the case of CPU collectives, returns ``True`` if completed. In the case of CUDA operations,
-  returns ``True`` if the operation has been successfully enqueued onto a CUDA stream and the output can be utilized on the
-  default stream without further synchronization.
-* ``wait()`` - in the case of CPU collectives, will block the process until the operation is completed. In the case
-  of CUDA collectives, will block until the operation has been successfully enqueued onto a CUDA stream and the
-  output can be utilized on the default stream without further synchronization.
-* ``get_future()`` - returns ``torch._C.Future`` object. Supported for NCCL, also supported for most operations on GLOO
-  and MPI, except for peer to peer operations.
-  Note: as we continue adopting Futures and merging APIs, ``get_future()`` call might become redundant.
+* ``is_completed()`` - في حالة العمليات الجماعية على وحدة المعالجة المركزية (CPU)، تعيد القيمة "True" إذا تم إتمام العملية. وفي حالة عمليات CUDA، تعيد القيمة "True" إذا تم وضع العملية بنجاح في طابور انتظار تدفق CUDA وأصبح من الممكن استخدام النتيجة على التدفق الافتراضي دون مزامنة إضافية.
+* ``wait()`` - في حالة العمليات الجماعية على وحدة المعالجة المركزية (CPU)، ستؤدي إلى تعليق العملية حتى يتم إتمام العملية. وفي حالة العمليات الجماعية على CUDA، ستؤدي إلى التعليق حتى يتم وضع العملية بنجاح في طابور انتظار تدفق CUDA وأصبح من الممكن استخدام النتيجة على التدفق الافتراضي دون مزامنة إضافية.
+* ``get_future()`` - تعيد كائن "torch._C.Future". مدعوم لـ NCCL، كما أنه مدعوم لمعظم العمليات على GLOO و MPI، باستثناء العمليات من ند لند.
+  ملاحظة: مع استمرارنا في اعتماد Futures ودمج واجهات برمجة التطبيقات (APIs)، قد تصبح مكالمة "get_future()" زائدة عن الحاجة.
 
-**Example**
+**مثال**
 
-The following code can serve as a reference regarding semantics for CUDA operations when using distributed collectives.
-It shows the explicit need to synchronize when using collective outputs on different CUDA streams:
+يمكن استخدام الكود التالي كمرجع فيما يتعلق بدلالات عمليات CUDA عند استخدام العمليات الجماعية الموزعة.
+فهو يوضح الحاجة الصريحة إلى المزامنة عند استخدام النواتج الجماعية على تدفقات CUDA مختلفة:
 
 ::
 
-    # Code runs on each rank.
+    # يتم تشغيل الكود على كل رتبة.
     dist.init_process_group("nccl", rank=rank, world_size=2)
     output = torch.tensor([rank]).cuda(rank)
     s = torch.cuda.Stream()
     handle = dist.all_reduce(output, async_op=True)
-    # Wait ensures the operation is enqueued, but not necessarily complete.
+    # تضمن عملية الانتظار وضع العملية في طابور الانتظار، ولكن ليس بالضرورة إتمامها.
     handle.wait()
-    # Using result on non-default stream.
+    # استخدام النتيجة على تدفق غير افتراضي.
     with torch.cuda.stream(s):
         s.wait_stream(torch.cuda.default_stream())
         output.add_(100)
     if rank == 0:
-        # if the explicit call to wait_stream was omitted, the output below will be
-        # non-deterministically 1 or 101, depending on whether the allreduce overwrote
-        # the value after the add completed.
+        # إذا تم حذف الاستدعاء الصريح لـ wait_stream، فإن النتيجة أدناه ستكون
+        # بشكل غير محدد إما 1 أو 101، اعتمادًا على ما إذا كانت عملية الجمع من جميع المصادر (all_reduce) قد استبدلت
+        # القيمة بعد إتمام عملية الإضافة.
         print(output)
 
 
-Collective functions
---------------------
+دوال العمليات الجماعية
+----------------
 
 .. autofunction:: broadcast
 
@@ -507,16 +417,16 @@ Collective functions
 
 .. class:: reduce_op
 
-    Deprecated enum-like class for reduction operations: ``SUM``, ``PRODUCT``,
-    ``MIN``, and ``MAX``.
+    فئة منتهية الصلاحية تشبه الفئات التعدادية لعمليات التخفيض: ``SUM``، ``PRODUCT``،
+    ``MIN``، و ``MAX``.
 
-    :class:`~torch.distributed.ReduceOp` is recommended to use instead.
+    يوصى باستخدام الفئة :class:`~torch.distributed.ReduceOp` بدلاً من ذلك.
 
-Profiling Collective Communication
------------------------------------------
+تحليل ملفات تعريف عمليات الاتصال الجماعي
+------------------------------
 
-Note that you can use ``torch.profiler`` (recommended, only available after 1.8.1)  or ``torch.autograd.profiler`` to profile collective communication and point-to-point communication APIs mentioned here. All out-of-the-box backends (``gloo``,
-``nccl``, ``mpi``) are supported and collective communication usage will be rendered as expected in profiling output/traces. Profiling your code is the same as any regular torch operator:
+يرجى ملاحظة أنه يمكنك استخدام ``torch.profiler`` (موصى به، متوفر فقط بعد الإصدار 1.8.1) أو ``torch.autograd.profiler`` لتحليل ملفات تعريف عمليات الاتصال الجماعي والاتصال من نقطة إلى نقطة المذكورة هنا. جميع المكتبات الخلفية المدمجة (``gloo``،
+``nccl``، ``mpi``) مدعومة، وسيتم عرض استخدام الاتصال الجماعي كما هو متوقع في ملفات تعريف الإخراج/التتبع. ويتم تحليل الكود الخاص بك بنفس طريقة تحليل أي مشغل Torch عادي:
 
 ::
 
@@ -526,96 +436,83 @@ Note that you can use ``torch.profiler`` (recommended, only available after 1.8.
         tensor = torch.randn(20, 10)
         dist.all_reduce(tensor)
 
-Please refer to the `profiler documentation <https://pytorch.org/docs/main/profiler.html>`__ for a full overview of profiler features.
+يرجى الرجوع إلى `توثيق المحلل <https://pytorch.org/docs/main/profiler.html>`__ للحصول على نظرة عامة كاملة على ميزات المحلل.
 
 
-Multi-GPU collective functions
-------------------------------
+دوال العمليات الجماعية متعددة وحدات معالجة الرسوميات (GPU)
+-----------------------------------------
 
 .. warning::
-    The multi-GPU functions (which stand for multiple GPUs per CPU thread) are
-    deprecated. As of today, PyTorch Distributed's preferred programming model
-    is one device per thread, as exemplified by the APIs in this document. If
-    you are a backend developer and want to support multiple devices per thread,
-    please contact PyTorch Distributed's maintainers.
+    تم إيقاف استخدام دوال العمليات الجماعية متعددة وحدات معالجة الرسوميات (GPU) (والتي تعني استخدام وحدات معالجة رسوميات متعددة لكل خيط وحدة المعالجة المركزية). واعتبارًا من اليوم، فإن نموذج البرمجة المفضل في PyTorch Distributed هو استخدام وحدة واحدة لكل خيط، كما هو موضح في واجهات برمجة التطبيقات (APIs) في هذه الوثيقة. إذا كنت مطورًا لمكتبة خلفية وترغب في دعم أجهزة متعددة لكل خيط، يرجى التواصل مع القائمين على صيانة PyTorch Distributed.
 
 
 .. _distributed-launch:
 
-Third-party backends
+المكتبات الخلفية من أطراف أخرى
 --------------------
 
-Besides the builtin GLOO/MPI/NCCL backends, PyTorch distributed supports
-third-party backends through a run-time register mechanism.
-For references on how to develop a third-party backend through C++ Extension,
-please refer to `Tutorials - Custom C++ and CUDA Extensions <https://pytorch.org/
-tutorials/advanced/cpp_extension.html>`_ and
-``test/cpp_extensions/cpp_c10d_extension.cpp``. The capability of third-party
-backends are decided by their own implementations.
+بالإضافة إلى المكتبات الخلفية المدمجة GLOO/MPI/NCCL، تدعم PyTorch Distributed
+المكتبات الخلفية من أطراف أخرى من خلال آلية تسجيل وقت التشغيل.
+للاطلاع على المراجع حول كيفية تطوير مكتبة خلفية من طرف آخر من خلال ملحق C++،
+يرجى الرجوع إلى `الدروس - ملحقات C++ و CUDA المخصصة <https://pytorch.org/
+tutorials/advanced/cpp_extension.html>`_ و
+``test/cpp_extensions/cpp_c10d_extension.cpp``. تعتمد قدرات المكتبات الخلفية من أطراف أخرى على تنفيذها الخاص.
 
-The new backend derives from ``c10d::ProcessGroup`` and registers the backend
-name and the instantiating interface through :func:`torch.distributed.Backend.register_backend`
-when imported.
+تشتق المكتبة الخلفية الجديدة من الفئة ``c10d::ProcessGroup`` وتسجل اسم المكتبة الخلفية والواجهة المنشئة لها من خلال الدالة :func:`torch.distributed.Backend.register_backend`
+عند استيرادها.
 
-When manually importing this backend and invoking :func:`torch.distributed.init_process_group`
-with the corresponding backend name, the ``torch.distributed`` package runs on
-the new backend.
+عند استيراد هذه المكتبة الخلفية يدويًا واستدعاء الدالة :func:`torch.distributed.init_process_group`
+مع اسم المكتبة الخلفية المقابل، تعمل حزمة "torch.distributed" على المكتبة الخلفية الجديدة.
 
 .. warning::
-    The support of third-party backend is experimental and subject to change.
+    إن دعم المكتبات الخلفية من أطراف أخرى هو دعم تجريبي وقد يخضع للتغيير.
 
-Launch utility
---------------
+أداة الإطلاق
+--------
 
-The `torch.distributed` package also provides a launch utility in
-`torch.distributed.launch`. This helper utility can be used to launch
-multiple processes per node for distributed training.
+توفر حزمة `torch.distributed` أيضًا أداة مساعدة للإطلاق في
+`torch.distributed.launch`. يمكن استخدام أداة المساعدة هذه لإطلاق
+عمليات متعددة لكل عقدة في التدريب الموزع.
 
 
 .. automodule:: torch.distributed.launch
 
 
-Spawn utility
--------------
+أداة الاستدعاء
+---------
 
-The :ref:`multiprocessing-doc` package also provides a ``spawn``
-function in :func:`torch.multiprocessing.spawn`. This helper function
-can be used to spawn multiple processes. It works by passing in the
-function that you want to run and spawns N processes to run it. This
-can be used for multiprocess distributed training as well.
+توفر حزمة :ref:`multiprocessing-doc` أيضًا دالة "spawn"
+في :func:`torch.multiprocessing.spawn`. يمكن استخدام دالة المساعدة
+هذه لاستدعاء عمليات متعددة. تعمل من خلال تمرير الدالة التي تريد تشغيلها،
+وتقوم باستدعاء N عملية لتشغيلها. يمكن استخدام ذلك أيضًا في التدريب الموزع.
 
-For references on how to use it, please refer to `PyTorch example - ImageNet
-implementation <https://github.com/pytorch/examples/tree/master/imagenet>`_
+للاطلاع على المراجع حول كيفية استخدامها، يرجى الرجوع إلى `مثال PyTorch - تنفيذ ImageNet
+<https://github.com/pytorch/examples/tree/master/imagenet>`_
 
-Note that this function requires Python 3.4 or higher.
+يرجى ملاحظة أن هذه الدالة تتطلب الإصدار 3.4 من Python أو أعلى.
 
-Debugging ``torch.distributed`` applications
+تصحيح أخطاء تطبيقات ``torch.distributed``
+تحتوي مكتبة "تورتش" على مجموعة من الأدوات لمساعدتك في تصحيح تطبيقاتك الموزعة. يمكن أن يكون تصحيح التطبيقات الموزعة أمرًا صعبًا بسبب صعوبة فهم التعليق أو التوقف أو السلوك غير المتسق عبر الرتب. فيما يلي بعض الأدوات التي يمكن أن تساعدك في تصحيح تطبيقاتك:
+
 ------------------------------------------------------
 
-Debugging distributed applications can be challenging due to hard to understand hangs, crashes, or inconsistent behavior across ranks. ``torch.distributed`` provides
-a suite of tools to help debug training applications in a self-serve fashion:
+**نقطة توقف بايثون (Python Breakpoint)**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Python Breakpoint
-^^^^^^^^^^^^^^^^^
+من المريح للغاية استخدام أداة تصحيح أخطاء بايثون في بيئة موزعة، ولكن نظرًا لأنها لا تعمل بشكل افتراضي، فإن الكثير من المستخدمين لا يستخدمونها على الإطلاق. تقدم مكتبة "تورتش" غلافًا مخصصًا حول أداة "بي دي بي" (pdb) التي تسهل عملية التصحيح.
 
-It is extremely convenient to use python's debugger in a distributed environment, but because it does not work out of the box many people do not use it at all.
-PyTorch offers a customized wrapper around pdb that streamlines the process.
+تجعل ``torch.distributed.breakpoint`` هذه العملية سهلة. داخليًا، يقوم بتخصيص سلوك نقطة التوقف في ``pdb`` بطريقتين، ولكنه يعمل بشكل طبيعي مثل أداة "بي دي بي".
 
-`torch.distributed.breakpoint` makes this process easy.  Internally, it customizes `pdb`'s breakpoint behavior in two ways but otherwise behaves as normal `pdb`.
-1. Attaches the debugger only on one rank (specified by the user).
-2. Ensures all other ranks stop, by using a `torch.distributed.barrier()` that will release once the debugged rank issues a `continue`
-3. Reroutes stdin from the child process such that it connects to your terminal.
+1. يقوم بتشغيل أداة التصحيح فقط على رتبة واحدة (يحددها المستخدم).
+2. يضمن توقف جميع الرتب الأخرى، وذلك باستخدام ``torch.distributed.barrier()`` التي ستطلق بمجرد إصدار الرتبة التي يتم تصحيحها أمر "متابعة".
+3. يعيد توجيه الإدخال المعياري من العملية الفرعية بحيث يتصل بنهاية طرفيتك.
 
-To use it, simply issue `torch.distributed.breakpoint(rank)` on all ranks, using the same value for `rank` in each case.
+لاستخدامه، ما عليك سوى تنفيذ ``torch.distributed.breakpoint(rank)`` على جميع الرتب، باستخدام نفس القيمة لـ ``rank`` في كل حالة.
 
-Monitored Barrier
-^^^^^^^^^^^^^^^^^
+**حاجز مراقب (Monitored Barrier)**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As of v1.10, :func:`torch.distributed.monitored_barrier` exists as an alternative to :func:`torch.distributed.barrier` which fails with helpful information about which rank may be faulty
-when crashing, i.e. not all ranks calling into :func:`torch.distributed.monitored_barrier` within the provided timeout. :func:`torch.distributed.monitored_barrier` implements a host-side
-barrier using ``send``/``recv`` communication primitives in a process similar to acknowledgements, allowing rank 0 to report which rank(s) failed to acknowledge
-the barrier in time. As an example, consider the following function where rank 1 fails to call into :func:`torch.distributed.monitored_barrier` (in practice this could be due
-to an application bug or hang in a previous collective):
+اعتبارًا من الإصدار 1.10، توجد وظيفة ``torch.distributed.monitored_barrier`` كبديل لـ ``torch.distributed.barrier`` والتي تفشل بمعلومات مفيدة حول الرتبة التي قد تكون معطلة عند التعطل، أي عندما لا تقوم جميع الرتب بالاتصال بوظيفة ``torch.distributed.monitored_barrier`` ضمن المهلة الزمنية المحددة. تقوم وظيفة ``torch.distributed.monitored_barrier`` بتنفيذ حاجز على جانب المضيف باستخدام أوامر الاتصال الأساسية "إرسال" و"استقبال" بطريقة مشابهة للتأكيدات، مما يسمح للرتبة 0 بالإبلاغ عن الرتب التي فشلت في التأكيد على الحاجز في الوقت المحدد. على سبيل المثال، ضع في اعتبارك الوظيفة التالية حيث تفشل الرتبة 1 في الاتصال بوظيفة ``torch.distributed.monitored_barrier`` (في الممارسة العملية، قد يكون ذلك بسبب وجود خلل في التطبيق أو تعليق في عملية جماعية سابقة):
 
 ::
 
@@ -640,7 +537,7 @@ to an application bug or hang in a previous collective):
         os.environ["MASTER_PORT"] = "29501"
         mp.spawn(worker, nprocs=2, args=())
 
-The following error message is produced on rank 0, allowing the user to determine which rank(s) may be faulty and investigate further:
+يتم إنتاج رسالة الخطأ التالية على الرتبة 0، مما يسمح للمستخدم بتحديد الرتب المعطلة المحتملة وإجراء المزيد من التحقيق:
 
 ::
 
@@ -649,16 +546,12 @@ The following error message is produced on rank 0, allowing the user to determin
   [gloo/transport/tcp/pair.cc:598] Connection closed by peer [2401:db00:eef0:1100:3560:0:1c05:25d]:8594
 
 
-``TORCH_DISTRIBUTED_DEBUG``
+**TORCH_DISTRIBUTED_DEBUG**
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With ``TORCH_CPP_LOG_LEVEL=INFO``, the environment variable ``TORCH_DISTRIBUTED_DEBUG``  can be used to trigger additional useful logging and collective synchronization checks to ensure all ranks
-are synchronized appropriately. ``TORCH_DISTRIBUTED_DEBUG`` can be set to either ``OFF`` (default), ``INFO``, or ``DETAIL`` depending on the debugging level
-required. Please note that the most verbose option, ``DETAIL`` may impact the application performance and thus should only be used when debugging issues.
+عند تعيين ``TORCH_CPP_LOG_LEVEL=INFO``، يمكن استخدام متغير البيئة ``TORCH_DISTRIBUTED_DEBUG`` لتشغيل تسجيل المعلومات المفيدة وفحوصات المزامنة الجماعية الإضافية للتأكد من أن جميع الرتب متزامنة بشكل مناسب. يمكن تعيين ``TORCH_DISTRIBUTED_DEBUG`` إلى إما ``OFF`` (افتراضي)، أو ``INFO``، أو ``DETAIL`` اعتمادًا على مستوى التصحيح المطلوب. يرجى ملاحظة أن الخيار الأكثر تفصيلاً، وهو ``DETAIL``، قد يؤثر على أداء التطبيق، وبالتالي يجب استخدامه فقط عند تصحيح المشكلات.
 
-Setting ``TORCH_DISTRIBUTED_DEBUG=INFO`` will result in additional debug logging when models trained with :func:`torch.nn.parallel.DistributedDataParallel` are initialized, and
-``TORCH_DISTRIBUTED_DEBUG=DETAIL`` will additionally log runtime performance statistics a select number of iterations. These runtime statistics
-include data such as forward time, backward time, gradient communication time, etc. As an example, given the following application:
+سيؤدي تعيين ``TORCH_DISTRIBUTED_DEBUG=INFO`` إلى تسجيل معلومات التصحيح الإضافية عند تهيئة النماذج التي تم تدريبها باستخدام ``torch.nn.parallel.DistributedDataParallel``. وسيؤدي تعيين ``TORCH_DISTRIBUTED_DEBUG=DETAIL`` أيضًا إلى تسجيل إحصائيات الأداء في الوقت الفعلي لعدد محدد من الحلقات. تتضمن إحصائيات وقت التشغيل هذه بيانات مثل وقت الحساب للأمام، ووقت الحساب للخلف، ووقت اتصال التدرج، وما إلى ذلك. على سبيل المثال، بالنظر إلى التطبيق التالي:
 
 ::
 
@@ -707,7 +600,7 @@ include data such as forward time, backward time, gradient communication time, e
         ] = "DETAIL"  # set to DETAIL for runtime logging.
         mp.spawn(worker, nprocs=2, args=())
 
-The following logs are rendered at initialization time:
+يتم تقديم سجلات التصحيح التالية في وقت التهيئة:
 
 ::
 
@@ -740,7 +633,7 @@ The following logs are rendered at initialization time:
   torch_distributed_debug: INFO
 
 
-The following logs are rendered during runtime (when ``TORCH_DISTRIBUTED_DEBUG=DETAIL`` is set):
+يتم تقديم سجلات التصحيح التالية أثناء وقت التشغيل (عند تعيين ``TORCH_DISTRIBUTED_DEBUG=DETAIL``):
 
 ::
 
@@ -756,12 +649,7 @@ The following logs are rendered during runtime (when ``TORCH_DISTRIBUTED_DEBUG=D
    Avg backward comm/comp overlap time: 2234674
 
 
-In addition, ``TORCH_DISTRIBUTED_DEBUG=INFO`` enhances crash logging in :func:`torch.nn.parallel.DistributedDataParallel` due to unused parameters in the model. Currently, ``find_unused_parameters=True``
-must be passed into :func:`torch.nn.parallel.DistributedDataParallel` initialization if there are parameters that may be unused in the forward pass, and as of v1.10, all model outputs are required
-to be used in loss computation as :func:`torch.nn.parallel.DistributedDataParallel` does not support unused parameters in the backwards pass. These constraints are challenging especially for larger
-models, thus when crashing with an error, :func:`torch.nn.parallel.DistributedDataParallel` will log the fully qualified name of all parameters that went unused. For example, in the above application,
-if we modify ``loss`` to be instead computed as ``loss = output[1]``, then ``TwoLinLayerNet.a`` does not receive a gradient in the backwards pass, and
-thus results in ``DDP`` failing. On a crash, the user is passed information about parameters which went unused, which may be challenging to manually find for large models:
+بالإضافة إلى ذلك، يعزز ``TORCH_DISTRIBUTED_DEBUG=INFO`` تسجيل الأخطاء عند حدوث تعطل في ``torch.nn.parallel.DistributedDataParallel`` بسبب وجود معلمات غير مستخدمة في النموذج. حاليًا، يجب تمرير ``find_unused_parameters=True`` إلى تهيئة ``torch.nn.parallel.DistributedDataParallel`` إذا كانت هناك معلمات قد لا تستخدم في عملية الحساب للأمام، واعتبارًا من الإصدار 1.10، يجب استخدام جميع نتائج النموذج في حساب الخسارة حيث أن ``torch.nn.parallel.DistributedDataParallel`` لا تدعم المعلمات غير المستخدمة في عملية الحساب للخلف. هذه القيود صعبة خاصة بالنسبة للنماذج الأكبر، لذا عند حدوث خطأ، يقوم ``torch.nn.parallel.DistributedDataParallel`` بتسجيل اسم المؤهل الكامل لجميع المعلمات التي لم تستخدم. على سبيل المثال، في التطبيق أعلاه، إذا قمنا بتعديل حساب الخسارة ليكون ``loss = output[1]``، فإن ``TwoLinLayerNet.a`` لا تتلقى تدرجًا في عملية الحساب للخلف، مما يؤدي إلى فشل ``DDP``. في حالة حدوث خطأ، يتم تمرير معلومات إلى المستخدم حول المعلمات التي لم تستخدم، والتي قد يكون من الصعب العثور عليها يدويًا في النماذج الكبيرة:
 
 
 ::
@@ -775,14 +663,7 @@ thus results in ``DDP`` failing. On a crash, the user is passed information abou
   Parameter indices which did not receive grad for rank 0: 0
 
 
-Setting ``TORCH_DISTRIBUTED_DEBUG=DETAIL`` will trigger additional consistency and synchronization checks on every collective call issued by the user
-either directly or indirectly (such as DDP ``allreduce``). This is done by creating a wrapper process group that wraps all process groups returned by
-:func:`torch.distributed.init_process_group` and :func:`torch.distributed.new_group` APIs. As a result, these APIs will return a wrapper process group that can be used exactly like a regular process
-group, but performs consistency checks before dispatching the collective to an underlying process group. Currently, these checks include a :func:`torch.distributed.monitored_barrier`,
-which ensures all ranks complete their outstanding collective calls and reports ranks which are stuck. Next, the collective itself is checked for consistency by
-ensuring all collective functions match and are called with consistent tensor shapes. If this is not the case, a detailed error report is included when the
-application crashes, rather than a hang or uninformative error message. As an example, consider the following function which has mismatched input shapes into
-:func:`torch.distributed.all_reduce`:
+سيؤدي تعيين ``TORCH_DISTRIBUTED_DEBUG=DETAIL`` إلى تشغيل فحوصات الاتساق والمزامنة الإضافية لكل مكالمة جماعية يصدرها المستخدم، سواء بشكل مباشر أو غير مباشر (مثل DDP ``allreduce``). يتم ذلك من خلال إنشاء مجموعة عمليات مغلفة تقوم بلف جميع مجموعات العمليات التي تم إرجاعها بواسطة واجهات برمجة التطبيقات ``torch.distributed.init_process_group`` و``torch.distributed.new_group``. ونتيجة لذلك، ستعيد واجهات برمجة التطبيقات هذه مجموعة عمليات مغلفة يمكن استخدامها تمامًا مثل مجموعة عمليات عادية، ولكنها تقوم بفحوصات الاتساق قبل إرسال الجماعي إلى مجموعة عمليات أساسية. تشمل هذه الفحوصات حاليًا حاجزًا مراقبًا ``torch.distributed.monitored_barrier``، والذي يضمن إكمال جميع الرتب لمكالماتها الجماعية المعلقة والإبلاغ عن الرتب التي تعلق. بعد ذلك، يتم فحص الجماعي نفسه للاتساق من خلال التأكد من تطابق جميع وظائف الجماعي واستدعائها بأشكال متسقة من التنسيقات. إذا لم يكن الأمر كذلك، يتم تضمين تقرير خطأ مفصل عند تعطل التطبيق، بدلاً من التعليق أو رسالة خطأ غير مفيدة. على سبيل المثال، ضع في اعتبارك الوظيفة التالية التي تحتوي على أشكال إدخال غير متطابقة في ``torch.distributed.all_reduce``:
 
 ::
 
@@ -802,12 +683,11 @@ application crashes, rather than a hang or uninformative error message. As an ex
     if __name__ == "__main__":
         os.environ["MASTER_ADDR"] = "localhost"
         os.environ["MASTER_PORT"] = "29501"
-        os.environ["TORCH_CPP_LOG_LEVEL"]="INFO"
+        os seedu["TORCH_CPP_LOG_LEVEL"]="INFO"
         os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"
         mp.spawn(worker, nprocs=2, args=())
 
-With the ``NCCL`` backend, such an application would likely result in a hang which can be challenging to root-cause in nontrivial scenarios. If the user enables
-``TORCH_DISTRIBUTED_DEBUG=DETAIL`` and reruns the application, the following error message reveals the root cause:
+مع دعم خلفية "إن سي سي إل" (NCCL)، من المحتمل أن يؤدي مثل هذا التطبيق إلى تعليق قد يكون من الصعب تحديد سببه في السيناريوهات غير البديهية. إذا قام المستخدم بتمكين ``TORCH_DISTRIBUTED_DEBUG=DETAIL`` وأعاد تشغيل التطبيق، فإن رسالة الخطأ التالية تكشف عن السبب الجذري:
 
 ::
 
@@ -816,55 +696,48 @@ With the ``NCCL`` backend, such an application would likely result in a hang whi
     [ torch.LongTensor{1} ]
 
 .. note::
-    For fine-grained control of the debug level during runtime the functions :func:`torch.distributed.set_debug_level`, :func:`torch.distributed.set_debug_level_from_env`, and
-    :func:`torch.distributed.get_debug_level` can also be used.
+    للحصول على تحكم دقيق في مستوى التصحيح أثناء وقت التشغيل، يمكن أيضًا استخدام وظائف ``torch.distributed.set_debug_level`` و``torch.distributed.set_debug_level_from_env`` و``torch.distributed.get_debug_level``.
 
-In addition, `TORCH_DISTRIBUTED_DEBUG=DETAIL` can be used in conjunction with `TORCH_SHOW_CPP_STACKTRACES=1` to log the entire callstack when a collective desynchronization is detected. These
-collective desynchronization checks will work for all applications that use ``c10d`` collective calls backed by process groups created with the
-:func:`torch.distributed.init_process_group` and :func:`torch.distributed.new_group` APIs.
+بالإضافة إلى ذلك، يمكن استخدام ``TORCH_DISTRIBUTED_DEBUG=DETAIL`` بالتزامن مع ``TORCH_SHOW_CPP_STACKTRACES=1`` لتسجيل المكدس الكامل عند اكتشاف عدم تزامن جماعي. ستعمل فحوصات عدم التزامن الجماعي هذه لجميع التطبيقات التي تستخدم مكالمات جماعية "سي10دي" (c10d) المدعومة بواسطة مجموعات العمليات التي تم إنشاؤها باستخدام واجهات برمجة التطبيقات ``torch.distributed.init_process_group`` و``torch.distributed.new_group``.
 
-Logging
--------
-
-In addition to explicit debugging support via :func:`torch.distributed.monitored_barrier` and ``TORCH_DISTRIBUTED_DEBUG``, the underlying C++ library of ``torch.distributed`` also outputs log
-messages at various levels. These messages can be helpful to understand the execution state of a distributed training job and to troubleshoot problems such as network connection failures. The
-following matrix shows how the log level can be adjusted via the combination of ``TORCH_CPP_LOG_LEVEL`` and ``TORCH_DISTRIBUTED_DEBUG`` environment variables.
+تسجيل
+بالإضافة إلى الدعم الصريح للتصحيح من خلال ``torch.distributed.monitored_barrier`` و ``TORCH_DISTRIBUTED_DEBUG``، فإن مكتبة C++ الأساسية لـ ``torch.distributed`` تقوم أيضًا بإخراج رسائل السجل بمستويات مختلفة. يمكن أن تكون هذه الرسائل مفيدة لفهم حالة التنفيذ لمهمة تدريب موزعة ولاستكشاف أخطاء مشكلات مثل أخطاء اتصال الشبكة.
 
 +-------------------------+-----------------------------+------------------------+
-| ``TORCH_CPP_LOG_LEVEL`` | ``TORCH_DISTRIBUTED_DEBUG`` |   Effective Log Level  |
+| ``TORCH_CPP_LOG_LEVEL`` | ``TORCH_DISTRIBUTED_DEBUG`` |   مستوى السجل الفعّال  |
 +=========================+=============================+========================+
-| ``ERROR``               | ignored                     | Error                  |
+| ``ERROR``               | يتم تجاهله                     | خطأ                  |
 +-------------------------+-----------------------------+------------------------+
-| ``WARNING``             | ignored                     | Warning                |
+| ``WARNING``             | يتم تجاهله                     | تحذير                |
 +-------------------------+-----------------------------+------------------------+
-| ``INFO``                | ignored                     | Info                   |
+| ``INFO``                | يتم تجاهله                     | معلومات               |
 +-------------------------+-----------------------------+------------------------+
-| ``INFO``                | ``INFO``                    | Debug                  |
+| ``INFO``                | ``INFO``                    | تصحيح                  |
 +-------------------------+-----------------------------+------------------------+
-| ``INFO``                | ``DETAIL``                  | Trace (a.k.a. All)     |
+| ``INFO``                | ``DETAIL``                  | تتبع (المعروف أيضًا باسم الكل)     |
 +-------------------------+-----------------------------+------------------------+
 
-Distributed components raise custom Exception types derived from `RuntimeError`:
+ترفع المكونات الموزعة أنواع استثناء مخصصة مشتقة من `RuntimeError`:
 
-- `torch.distributed.DistError`: This is the base type of all distributed exceptions.
-- `torch.distributed.DistBackendError`: This exception is thrown when a backend-specific error occurs. For example, if
-  the `NCCL` backend is used and the user attempts to use a GPU that is not available to the `NCCL` library.
-- `torch.distributed.DistNetworkError`: This exception is thrown when networking
-  libraries encounter errors (ex: Connection reset by peer)
-- `torch.distributed.DistStoreError`: This exception is thrown when the Store encounters
-  an error (ex: TCPStore timeout)
+- `torch.distributed.DistError`: هذا هو النوع الأساسي لجميع الاستثناءات الموزعة.
+- `torch.distributed.DistBackendError`: يتم إلقاء هذا الاستثناء عندما يحدث خطأ محدد للخلفية. على سبيل المثال، إذا
+  تم استخدام خلفية `NCCL` ويحاول المستخدم استخدام وحدة معالجة رسومية (GPU) غير متوفرة لمكتبة `NCCL`.
+- `torch.distributed.DistNetworkError`: يتم إلقاء هذا الاستثناء عندما تواجه مكتبات الشبكات
+  أخطاء (مثال: إعادة تعيين الاتصال بواسطة النظراء)
+- `torch.distributed.DistStoreError`: يتم إلقاء هذا الاستثناء عندما يواجه المتجر
+  خطأ (مثال: انتهاء مهلة TCPStore)
 
 .. autoclass:: torch.distributed.DistError
 .. autoclass:: torch.distributed.DistBackendError
 .. autoclass:: torch.distributed.DistNetworkError
 .. autoclass:: torch.distributed.DistStoreError
 
-If you are running single node training, it may be convenient to interactively breakpoint your script.  We offer a way to conveniently breakpoint a single rank:
+إذا كنت تقوم بالتدريب على عقدة واحدة، فقد يكون من الملائم وضع نقطة توقف في البرنامج النصي الخاص بك. نوفر طريقة ملائمة لوضع نقطة توقف في رتبة واحدة:
 
 .. autofunction:: torch.distributed.breakpoint
 
-.. Distributed modules that are missing specific entries.
-.. Adding them here for tracking purposes until they are more permanently fixed.
+.. الوحدات الموزعة الناقصة لإدخالات محددة.
+.. نقوم بإضافتها هنا لأغراض التتبع حتى يتم إصلاحها بشكل دائم.
 .. py:module:: torch.distributed.algorithms
 .. py:module:: torch.distributed.algorithms.ddp_comm_hooks
 .. py:module:: torch.distributed.algorithms.model_averaging
