@@ -1,41 +1,41 @@
 .. _torch_nccl_environment_variables:
 
-PYTORCH ProcessGroupNCCL Environment Variables
+متغيرات بيئة PYTORCH ProcessGroupNCCL
 ==============================================
-For more information on the environment variables, see `ProcessGroupNCCL Environment Variables <https://github.com/pytorch/pytorch/blob/main/torch/csrc/distributed/c10d/ProcessGroupNCCL.hpp>`_.
+لمزيد من المعلومات حول متغيرات البيئة، راجع `متغيرات بيئة ProcessGroupNCCL <https://github.com/pytorch/pytorch/blob/main/torch/csrc/distributed/c10d/ProcessGroupNCCL.hpp>`_.
 
 .. list-table::
   :header-rows: 1
 
-  * - Variable
-    - Description
+  * - المتغير
+    - الوصف
   * - ``TORCH_NCCL_ASYNC_ERROR_HANDLING``
-    - Control how we perform Async Error Handling with NCCL when an exception is observed in watchdog. If set to 0, no handling of asynchronous NCCL errors. If set to 1, aborting NCCL communicator and tearing down process upon error. If set to 2, only abort NCCL communicator and if set to 3, tearing down process without aborting NCCL communicator. By default, it is set to 3.
+    - التحكم في كيفية تعاملنا مع الأخطاء غير المتزامنة مع NCCL عند حدوث استثناء في المراقبة. إذا تم تعيينه على 0، فلن يتم التعامل مع الأخطاء غير المتزامنة لـ NCCL. إذا تم تعيينه على 1، سيتم إيقاف محول NCCL وإنهاء العملية عند حدوث خطأ. إذا تم تعيينه على 2، سيتم فقط إيقاف محول NCCL، وإذا تم تعيينه على 3، سيتم إنهاء العملية دون إيقاف محول NCCL. افتراضيًا، يتم تعيينه على 3.
   * - ``TORCH_NCCL_HIGH_PRIORITY``
-    - Control whether to use high priority stream for the NCCL communicator.
+    - التحكم فيما إذا كان سيتم استخدام تدفق عالي الأولوية لمحول NCCL.
   * - ``TORCH_NCCL_BLOCKING_WAIT``
-    - Control whether or not wait() is blocking or non-blocking.
+    - التحكم فيما إذا كان wait() كتلة أو غير حظر.
   * - ``TORCH_NCCL_DUMP_ON_TIMEOUT``
-    - Control whether dumping debug info on watchdog timeout or exception is detected. This variable must be set together with TORCH_NCCL_TRACE_BUFFER_SIZE larger than 0.
+    - التحكم فيما إذا كان سيتم تفريغ معلومات التصحيح عند مهلة المراقبة أو اكتشاف استثناء. يجب تعيين هذا المتغير مع TORCH_NCCL_TRACE_BUFFER_SIZE أكبر من 0.
   * - ``TORCH_NCCL_DESYNC_DEBUG``
-    - Control whether Desync Debug is enabled. This is helpful in figuring out the culprit rank of collective desync.
+    - التحكم فيما إذا كان تصحيح عدم التزامن ممكّنًا. هذا مفيد في معرفة ترتيب المخطئ في عدم التزامن الجماعي.
   * - ``TORCH_NCCL_ENABLE_TIMING``
-    - If set to ``1``, enable recording start-events for all ProcessGroupNCCL collectives, and compute accurate collective timing per-collective.
+    - إذا تم تعيينه على "1"، قم بتمكين تسجيل أحداث البدء لجميع المجموعات الفرعية لـ ProcessGroupNCCL، واحسب الوقت الجماعي الدقيق لكل مجموعة.
   * - ``TORCH_NCCL_ENABLE_MONITORING``
-    - If set to ``1``,enable monitoring thread which aborts the process when the ProcessGroupNCCL Watchdog thread gets stuck and no heartbeat is detected after TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC. This can happen due to calling CUDA/NCCL APIs that may hang. It is Useful to prevent jobs being stuck for a prolonged time than necessary tying up cluster resources.
+    - إذا تم تعيينه على "1"، قم بتمكين مؤشر الترابط للمراقبة الذي يقوم بإنهاء العملية عندما يعلق مؤشر ترابط المراقبة التابع لـ ProcessGroupNCCL ولا يتم اكتشاف أي إشارة بعد TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC. قد يحدث هذا بسبب استدعاء واجهات برمجة تطبيقات CUDA/NCCL التي قد تعلق. من المفيد منع الوظائف من التوقف لفترة أطول من الوقت اللازم لربط موارد المجموعة.
   * - ``TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC``
-    - Control the watchdog heartbeat timeout period after which the monitoring thread will abort the process.
+    - التحكم في فترة مهلة نبض القلب للمراقبة بعد انتهاء صلاحية مؤشر الترابط للمراقبة وإنهاء العملية.
   * - ``TORCH_NCCL_TRACE_BUFFER_SIZE``
-    - The maximum number of events we store in the flight recorder's ring buffer. One event could be the start or end of a collective, for example. Set to 0 to disable the tracebuffer and debugging info dump.
+    - العدد الأقصى للأحداث التي نخزنها في مخزن الحلقات الخاص بمسجل الطيران. يمكن أن يكون أحد الأحداث، على سبيل المثال، بداية أو نهاية جماعية. قم بتعيين 0 لتعطيل مخزن التعقب وتفريغ معلومات التصحيح.
   * - ``TORCH_NCCL_TRACE_CPP_STACK``
-    - Whether to collect cpp stack traces for flight recorder. Default value is False.
+    - ما إذا كان سيتم جمع آثار المكدس cpp لمسجل الطيران. القيمة الافتراضية هي False.
   * - ``TORCH_NCCL_COORD_CHECK_MILSEC``
-    - Control the interval inside the monitoring thread to check the coordinated signal from other ranks, e.g. to dump the debugging information. Default value is 1000 ms.
+    - التحكم في الفاصل الزمني داخل مؤشر ترابط المراقبة للتحقق من الإشارة المنسقة من الرتب الأخرى، على سبيل المثال، لتفريغ معلومات التصحيح. القيمة الافتراضية هي 1000 مللي ثانية.
   * - ``TORCH_NCCL_WAIT_TIMEOUT_DUMP_MILSEC``
-    - Control how much extra time we will wait for dumping the debugging info before we exit and throws timeout exception.
+    - التحكم في مقدار الوقت الإضافي الذي سننتظره لتفريغ معلومات التصحيح قبل الخروج وإلقاء استثناء المهلة.
   * - ``TORCH_NCCL_DEBUG_INFO_TEMP_FILE``
-    - The file into which the debugging info would be dumped.
+    - الملف الذي سيتم تفريغ معلومات التصحيح فيه.
   * - ``TORCH_NCCL_DEBUG_INFO_PIPE_FILE``
-    - The pipe file to trigger debugging dump manually, write anything into the pipe would trigger the dump.
+    - ملف الأنابيب لتشغيل تفريغ التصحيح يدويًا، سيؤدي كتابة أي شيء في الأنبوب إلى تشغيل التفريغ.
   * - ``TORCH_NCCL_NAN_CHECK``
-    - Control whether to enable NAN check for the input, Error would be thrown if NAN is detected.
+    - التحكم فيما إذا كان سيتم تمكين فحص NAN للإدخال، سيتم إلقاء خطأ إذا تم اكتشاف NAN.
