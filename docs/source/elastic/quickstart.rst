@@ -1,7 +1,7 @@
-Quickstart
+بدء الاستخدام
 ===========
 
-To launch a **fault-tolerant** job, run the following on all nodes.
+لتشغيل مهمة **متسامحة مع الأخطاء** ، قم بتشغيل ما يلي على جميع العقد.
 
 .. code-block:: bash
 
@@ -15,8 +15,8 @@ To launch a **fault-tolerant** job, run the following on all nodes.
        YOUR_TRAINING_SCRIPT.py (--arg1 ... train script args...)
 
 
-To launch an **elastic** job, run the following on at least ``MIN_SIZE`` nodes
-and at most ``MAX_SIZE`` nodes.
+لتشغيل مهمة **مرنة** ، قم بتشغيل ما يلي على الأقل ``MIN_SIZE`` عقد
+وعلى الأكثر ``MAX_SIZE`` عقد.
 
 .. code-block:: bash
 
@@ -30,32 +30,30 @@ and at most ``MAX_SIZE`` nodes.
         YOUR_TRAINING_SCRIPT.py (--arg1 ... train script args...)
 
 .. note::
-   TorchElastic models failures as membership changes. When a node fails,
-   this is treated as a "scale down" event. When the failed node is replaced by
-   the scheduler, it is a "scale up" event. Hence for both fault tolerant
-   and elastic jobs, ``--max-restarts`` is used to control the total number of
-   restarts before giving up, regardless of whether the restart was caused
-   due to a failure or a scaling event.
+   تعتبر TorchElastic الأخطاء على أنها تغييرات في العضوية. عندما يفشل عقدة ،
+   يتم التعامل مع هذا على أنه حدث "الخفض". عندما يستبدل المجدول العقدة الفاشلة ، فهو حدث "التصعيد". وبالتالي ، لكل من المهام المتسامحة مع الأخطاء
+   والمرنة ، يتم استخدام ``--max-restarts`` للتحكم في العدد الإجمالي
+   إعادة التشغيل قبل الاستسلام ، بغض النظر عما إذا كان إعادة التشغيل ناتجًا
+   بسبب فشل أو حدث تغيير الحجم.
 
-``HOST_NODE_ADDR``, in form <host>[:<port>] (e.g. node1.example.com:29400),
-specifies the node and the port on which the C10d rendezvous backend should be
-instantiated and hosted. It can be any node in your training cluster, but
-ideally you should pick a node that has a high bandwidth.
-
-.. note::
-   If no port number is specified ``HOST_NODE_ADDR`` defaults to 29400.
+``HOST_NODE_ADDR`` ، على الشكل <host> [: <port>] (على سبيل المثال node1.example.com:29400) ،
+يحدد العقدة والمنفذ الذي يجب أن يتم عليه إنشاء وتشغيل C10d
+خلفية اللقاء. يمكن أن تكون أي عقدة في مجموعة العقد التدريبية الخاصة بك ، ولكن
+من الناحية المثالية ، يجب عليك اختيار عقدة ذات نطاق ترددي عالي.
 
 .. note::
-   The ``--standalone`` option can be passed to launch a single node job with a
-   sidecar rendezvous backend. You don’t have to pass ``--rdzv-id``,
-   ``--rdzv-endpoint``, and ``--rdzv-backend`` when the ``--standalone`` option
-   is used.
-
+   إذا لم يتم تحديد رقم المنفذ ، فإن ``HOST_NODE_ADDR`` الافتراضي هو 29400.
 
 .. note::
-   Learn more about writing your distributed training script
-   `here <train_script.html>`_.
+   يمكن تمرير خيار ``--standalone`` لبدء مهمة عقدة واحدة مع
+   خادم واجهة برمجة التطبيقات اللقاء. لا يلزم تمرير ``--rdzv-id`` ،
+   ``--rdzv-endpoint`` ، و ``--rdzv-backend`` عند استخدام
+   يتم استخدام خيار "مستقل".
 
-If ``torchrun`` does not meet your requirements you may use our APIs directly
-for more powerful customization. Start by taking a look at the
-`elastic agent <agent.html>`_ API.
+.. note::
+   تعرف على المزيد حول كتابة نص البرنامج النصي الموزع
+   `هنا <train_script.html>`_.
+
+إذا لم يكن ``torchrun`` متوافقًا مع متطلباتك ، فيمكنك استخدام واجهات برمجة التطبيقات الخاصة بنا مباشرةً
+لمزيد من التخصيص القوي. ابدأ بإلقاء نظرة على
+واجهة برمجة تطبيقات `elastic agent <agent.html>`_ .
