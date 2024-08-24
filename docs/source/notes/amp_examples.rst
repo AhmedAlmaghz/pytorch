@@ -1,86 +1,82 @@
 .. _amp-examples:
 
-Automatic Mixed Precision examples
-=======================================
+أمثلة الدقة المختلطة التلقائية
 
+-----------------
 .. currentmodule:: torch.amp
 
-Ordinarily, "automatic mixed precision training" means training with
-:class:`torch.autocast` and :class:`torch.amp.GradScaler` together.
+عادةً، يعني "التدريب المختلط التلقائي الدقة" التدريب باستخدام :class:`torch.autocast` و :class:`torch.amp.GradScaler` معًا.
 
-Instances of :class:`torch.autocast` enable autocasting for chosen regions.
-Autocasting automatically chooses the precision for GPU operations to improve performance
-while maintaining accuracy.
+تتيح حالات :class:`torch.autocast` التحويل التلقائي للدقة المختلطة للمناطق المختارة.
+يختار التحويل التلقائي للدقة المختلطة تلقائيًا الدقة لعمليات GPU لتحسين الأداء مع الحفاظ على الدقة.
 
-Instances of :class:`torch.amp.GradScaler` help perform the steps of
-gradient scaling conveniently.  Gradient scaling improves convergence for networks with ``float16`` (by default on CUDA and XPU)
-gradients by minimizing gradient underflow, as explained :ref:`here<gradient-scaling>`.
+تساعد حالات :class:`torch.amp.GradScaler` في تنفيذ خطوات
+تدرج التدرج بسهولة. تحسين التقارب للشبكات مع ``float16`` (بشكل افتراضي على CUDA و XPU)
+التدرجات عن طريق تقليل تدرج التدفق، كما هو موضح :ref:`هنا<gradient-scaling>`.
 
-:class:`torch.autocast` and :class:`torch.amp.GradScaler` are modular.
-In the samples below, each is used as its individual documentation suggests.
+:class:`torch.autocast` و :class:`torch.amp.GradScaler` قابلة للتطوير.
+في العينات أدناه، يتم استخدام كل منها كما تشير وثائقه الفردية.
 
-(Samples here are illustrative.  See the
-`Automatic Mixed Precision recipe <https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html>`_
-for a runnable walkthrough.)
+(العينات هنا توضيحية.  راجع
+`وصفة الدقة المختلطة التلقائية <https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html>`_
+للمشي القابل للتنفيذ.)
 
 .. contents:: :local:
 
-Typical Mixed Precision Training
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التدريب النموذجي على الدقة المختلطة
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
-    # Creates model and optimizer in default precision
+    # إنشاء نموذج ومحسن في الدقة الافتراضية
     model = Net().cuda()
     optimizer = optim.SGD(model.parameters(), ...)
 
-    # Creates a GradScaler once at the beginning of training.
+    # إنشاء GradScaler مرة واحدة في بداية التدريب.
     scaler = GradScaler()
 
     for epoch in epochs:
         for input, target in data:
             optimizer.zero_grad()
 
-            # Runs the forward pass with autocasting.
+            # تشغيل التمرير للأمام مع التحويل التلقائي للدقة المختلطة.
             with autocast(device_type='cuda', dtype=torch.float16):
                 output = model(input)
                 loss = loss_fn(output, target)
 
-            # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
-            # Backward passes under autocast are not recommended.
-            # Backward ops run in the same dtype autocast chose for corresponding forward ops.
+            # تدرج المقاييس. يدعو backward() على الخسارة المُدرجة لإنشاء تدرجات مُدرجة.
+            # لا يوصى بعمليات backward تحت autocast.
+            # تعمل عمليات backward في نفس dtype التي اختارتها autocast لعمليات forward المقابلة.
             scaler.scale(loss).backward()
 
-            # scaler.step() first unscales the gradients of the optimizer's assigned params.
-            # If these gradients do not contain infs or NaNs, optimizer.step() is then called,
-            # otherwise, optimizer.step() is skipped.
+            # أولاً يقوم scaler.step() بإلغاء تدرج تدرجات المعلمات المعينة للمحسن.
+            # إذا لم تحتوي هذه التدرجات على infs أو NaNs، يتم استدعاء optimizer.step()،
+            # وإلا، يتم تخطي optimizer.step().
             scaler.step(optimizer)
 
-            # Updates the scale for next iteration.
+            # تحديث المقياس للتكرار التالي.
             scaler.update()
 
 .. _working-with-unscaled-gradients:
 
-Working with Unscaled Gradients
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+العمل مع التدرجات غير المُدرجة
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-All gradients produced by ``scaler.scale(loss).backward()`` are scaled.  If you wish to modify or inspect
-the parameters' ``.grad`` attributes between ``backward()`` and ``scaler.step(optimizer)``,  you should
-unscale them first.  For example, gradient clipping manipulates a set of gradients such that their global norm
-(see :func:`torch.nn.utils.clip_grad_norm_`) or maximum magnitude (see :func:`torch.nn.utils.clip_grad_value_`)
-is :math:`<=` some user-imposed threshold.  If you attempted to clip *without* unscaling, the gradients' norm/maximum
-magnitude would also be scaled, so your requested threshold (which was meant to be the threshold for *unscaled*
-gradients) would be invalid.
+جميع التدرجات التي ينتجها ``scaler.scale(loss).backward()`` مُدرجة.  إذا كنت ترغب في تعديل أو فحص
+صفات ``.grad`` للمعلمات بين ``backward()`` و ``scaler.step(optimizer)``، يجب عليك
+قم بإلغاء تدرجها أولاً. على سبيل المثال، تتلاعب قصاصة التدرج بمجموعة من التدرجات بحيث يكون معيارها العالمي
+(راجع :func:`torch.nn.utils.clip_grad_norm_`) أو الحد الأقصى للقيمة (راجع :func:`torch.nn.utils.clip_grad_value_`)
+هو :math:`<=` بعض عتبات المستخدم المفروضة.  إذا حاولت القص *بدون* إلغاء التدرج، فسيتم أيضًا تدرج معيار التدرج/القيمة القصوى، لذا فإن عتبة الطلب (التي كان من المفترض أن تكون عتبة للتدرجات *غير المُدرجة*) ستكون غير صالحة.
 
-``scaler.unscale_(optimizer)`` unscales gradients held by ``optimizer``'s assigned parameters.
-If your model or models contain other parameters that were assigned to another optimizer
-(say ``optimizer2``), you may call ``scaler.unscale_(optimizer2)`` separately to unscale those
-parameters' gradients as well.
+``scaler.unscale_(optimizer)`` يلغي تدرج التدرجات التي تحتفظ بها معلمات "optimizer".
+إذا احتوى نموذجك أو نماذجك على معلمات أخرى تم تعيينها لمحسن آخر
+(قل "optimizer2")، فيمكنك استدعاء ``scaler.unscale_(optimizer2)`` بشكل منفصل لإلغاء تدرج تلك
+تدرجات المعلمات أيضًا.
 
-Gradient clipping
------------------
+قص التدرج
+--------
 
-Calling ``scaler.unscale_(optimizer)`` before clipping enables you to clip unscaled gradients as usual::
+يسمح استدعاء ``scaler.unscale_(optimizer)`` قبل القص بقص التدرجات غير المُدرجة كالمعتاد::
 
     scaler = GradScaler()
 
@@ -92,49 +88,48 @@ Calling ``scaler.unscale_(optimizer)`` before clipping enables you to clip unsca
                 loss = loss_fn(output, target)
             scaler.scale(loss).backward()
 
-            # Unscales the gradients of optimizer's assigned params in-place
+            # يلغي تدرج تدرجات المعلمات المعينة للمحسن في المكان
             scaler.unscale_(optimizer)
 
-            # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+            # نظرًا لأن تدرجات المعلمات المعينة للمحسن غير مُدرجة، فالقص كالمعتاد:
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
 
-            # optimizer's gradients are already unscaled, so scaler.step does not unscale them,
-            # although it still skips optimizer.step() if the gradients contain infs or NaNs.
+            # تدرجات المحسن غير مُدرجة بالفعل، لذا لا يقوم scaler.step بإلغاء تدرجها،
+            # على الرغم من أنه لا يزال يتخطى optimizer.step() إذا كانت التدرجات تحتوي على infs أو NaNs.
             scaler.step(optimizer)
 
-            # Updates the scale for next iteration.
+            # تحديث المقياس للتكرار التالي.
             scaler.update()
 
-``scaler`` records that ``scaler.unscale_(optimizer)`` was already called for this optimizer
-this iteration, so ``scaler.step(optimizer)`` knows not to redundantly unscale gradients before
-(internally) calling ``optimizer.step()``.
+يسجل "scaler" أن ``scaler.unscale_(optimizer)`` تم استدعاؤه بالفعل لهذا المحسن
+هذا التكرار، لذا فإن ``scaler.step(optimizer)`` يعرف عدم إلغاء تدرج التدرجات بشكل زائد
+قبل (داخليًا) استدعاء ``optimizer.step()``.
 
 .. currentmodule:: torch.amp.GradScaler
 
 .. warning::
-    :meth:`unscale_<unscale_>` should only be called once per optimizer per :meth:`step<step>` call,
-    and only after all gradients for that optimizer's assigned parameters have been accumulated.
-    Calling :meth:`unscale_<unscale_>` twice for a given optimizer between each :meth:`step<step>` triggers a RuntimeError.
+    :meth:`unscale_<unscale_>` يجب استدعاء مرة واحدة فقط لكل محسن لكل مكالمة :meth:`step<step>`،
+    وفقط بعد تراكم جميع التدرجات لمعلمات المحسن المعين.
+    يؤدي استدعاء :meth:`unscale_<unscale_>` مرتين لمحسن معين بين كل مكالمة :meth:`step<step>` إلى تشغيل RuntimeError.
 
 
-Working with Scaled Gradients
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+العمل مع التدرجات المُدرجة
+^^^^^^^^^^^^^^^^^^^
 
-Gradient accumulation
----------------------
+تراكم التدرج
+----------
 
-Gradient accumulation adds gradients over an effective batch of size ``batch_per_iter * iters_to_accumulate``
-(``* num_procs`` if distributed).  The scale should be calibrated for the effective batch, which means inf/NaN checking,
-step skipping if inf/NaN grads are found, and scale updates should occur at effective-batch granularity.
-Also, grads should remain scaled, and the scale factor should remain constant, while grads for a given effective
-batch are accumulated.  If grads are unscaled (or the scale factor changes) before accumulation is complete,
-the next backward pass will add scaled grads to unscaled grads (or grads scaled by a different factor)
-after which it's impossible to recover the accumulated unscaled grads :meth:`step<step>` must apply.
+يضيف تراكم التدرج التدرجات عبر دفعة فعالة بحجم "batch_per_iter * iters_to_accumulate"
+("* num_procs" إذا كان موزعًا). يجب معايرة المقياس للدفعة الفعالة، مما يعني التحقق من inf/NaN،
+تخطي الخطوة إذا تم العثور على تدرجات inf/NaN، وتحديثات المقياس يجب أن تحدث على مستوى الدفعة الفعالة.
+أيضًا، يجب أن تظل التدرجات مُدرجة، ويجب أن يظل عامل التدرج ثابتًا، أثناء تراكم التدرجات لدفعة فعالة معينة.  إذا تم إلغاء تدرج التدرجات (أو تغيير عامل التدرج) قبل اكتمال التراكم،
+ستضيف عملية backward التالية التدرجات المُدرجة إلى التدرجات غير المُدرجة (أو التدرجات المُدرجة بعامل مختلف)
+بعد ذلك، يصبح من المستحيل استرداد التدرجات المتراكمة غير المُدرجة التي يجب أن تطبقها الخطوة :meth:`step<step>`.
 
-Therefore, if you want to :meth:`unscale_<unscale_>` grads (e.g., to allow clipping unscaled grads),
-call :meth:`unscale_<unscale_>` just before :meth:`step<step>`, after all (scaled) grads for the upcoming
-:meth:`step<step>` have been accumulated.  Also, only call :meth:`update<update>` at the end of iterations
-where you called :meth:`step<step>` for a full effective batch::
+لذلك، إذا كنت ترغب في :meth:`unscale_<unscale_>` التدرجات (على سبيل المثال، للسماح بقص التدرجات غير المُدرجة)،
+استدعاء :meth:`unscale_<unscale_>` قبل :meth:`step<step>` مباشرةً، بعد تراكم جميع (المُدرجة) التدرجات لـ
+:meth:`step<step>` القادم. أيضًا، قم بالاتصال فقط :meth:`update<update>` في نهاية التكرارات
+حيث قمت بالاتصال :meth:`step<step>` لدفعة فعالة كاملة::
 
     scaler = GradScaler()
 
@@ -145,11 +140,11 @@ where you called :meth:`step<step>` for a full effective batch::
                 loss = loss_fn(output, target)
                 loss = loss / iters_to_accumulate
 
-            # Accumulates scaled gradients.
+            # تراكم التدرجات المُدرجة.
             scaler.scale(loss).backward()
 
             if (i + 1) % iters_to_accumulate == 0:
-                # may unscale_ here if desired (e.g., to allow clipping unscaled gradients)
+                # قد تقوم بإلغاء التدرج هنا إذا كنت ترغب في ذلك (على سبيل المثال، للسماح بقص التدرجات غير المُدرجة)
 
                 scaler.step(optimizer)
                 scaler.update()
@@ -157,14 +152,14 @@ where you called :meth:`step<step>` for a full effective batch::
 
 .. currentmodule:: torch.amp
 
-Gradient penalty
-----------------
+عقوبة التدرج
+-----------
 
-A gradient penalty implementation commonly creates gradients using
-:func:`torch.autograd.grad`, combines them to create the penalty value,
-and adds the penalty value to the loss.
+تنفيذ العقوبة التدرجية عادةً ما يقوم بإنشاء تدرجات باستخدام
+:func: `torch.autograd.grad` ، ودمجها لإنشاء قيمة العقوبة،
+ويضيف قيمة العقوبة إلى الخسارة.
 
-Here's an ordinary example of an L2 penalty without gradient scaling or autocasting::
+فيما يلي مثال عادي لعقوبة L2 بدون قياس التدرج أو التحويل التلقائي::
 
     for epoch in epochs:
         for input, target in data:
@@ -172,12 +167,12 @@ Here's an ordinary example of an L2 penalty without gradient scaling or autocast
             output = model(input)
             loss = loss_fn(output, target)
 
-            # Creates gradients
+            # إنشاء التدرجات
             grad_params = torch.autograd.grad(outputs=loss,
                                               inputs=model.parameters(),
                                               create_graph=True)
 
-            # Computes the penalty term and adds it to the loss
+            # حساب مصطلح العقوبة وإضافته إلى الخسارة
             grad_norm = 0
             for grad in grad_params:
                 grad_norm += grad.pow(2).sum()
@@ -186,19 +181,18 @@ Here's an ordinary example of an L2 penalty without gradient scaling or autocast
 
             loss.backward()
 
-            # clip gradients here, if desired
+            # قص التدرجات هنا، إذا رغبت في ذلك
 
             optimizer.step()
 
-To implement a gradient penalty *with* gradient scaling, the ``outputs`` Tensor(s)
-passed to :func:`torch.autograd.grad` should be scaled.  The resulting gradients
-will therefore be scaled, and should be unscaled before being combined to create the
-penalty value.
+لتنفيذ عقوبة التدرج *مع* قياس التدرج، يجب تحجيم تنسور (s)
+الناتجة التي يتم تمريرها إلى: func: `torch.autograd.grad`. لذلك، ستكون التدرجات الناتجة محددة النطاق، ويجب إلغاء تحجيمها قبل دمجها لإنشاء
+قيمة العقوبة.
 
-Also, the penalty term computation is part of the forward pass, and therefore should be
-inside an :class:`autocast` context.
+أيضًا، يمثل حساب مصطلح العقوبة جزءًا من عملية التغذية الأمامية، وبالتالي يجب أن يكون
+داخل سياق :class: `autocast`.
 
-Here's how that looks for the same L2 penalty::
+هكذا يبدو الأمر بالنسبة لعقوبة L2 العادية::
 
     scaler = GradScaler()
 
@@ -209,17 +203,17 @@ Here's how that looks for the same L2 penalty::
                 output = model(input)
                 loss = loss_fn(output, target)
 
-            # Scales the loss for autograd.grad's backward pass, producing scaled_grad_params
+            # تحجيم الخسارة لخلفي autograd.grad ، مما ينتج عنه scaled_grad_params
             scaled_grad_params = torch.autograd.grad(outputs=scaler.scale(loss),
                                                      inputs=model.parameters(),
                                                      create_graph=True)
 
-            # Creates unscaled grad_params before computing the penalty. scaled_grad_params are
-            # not owned by any optimizer, so ordinary division is used instead of scaler.unscale_:
+            # إنشاء grad_params غير محددة النطاق قبل حساب العقوبة. لا يتم امتلاك scaled_grad_params
+            # بواسطة أي محسن، لذلك يتم استخدام القسمة العادية بدلاً من scaler.unscale_:
             inv_scale = 1./scaler.get_scale()
             grad_params = [p * inv_scale for p in scaled_grad_params]
 
-            # Computes the penalty term and adds it to the loss
+            # حساب مصطلح العقوبة وإضافته إلى الخسارة
             with autocast(device_type='cuda', dtype=torch.float16):
                 grad_norm = 0
                 for grad in grad_params:
@@ -227,28 +221,28 @@ Here's how that looks for the same L2 penalty::
                 grad_norm = grad_norm.sqrt()
                 loss = loss + grad_norm
 
-            # Applies scaling to the backward call as usual.
-            # Accumulates leaf gradients that are correctly scaled.
+            # تطبيق التحجيم على مكالمة الخلفي كما هو معتاد.
+            # تراكم التدرجات الورقية التي يتم تحجيمها بشكل صحيح.
             scaler.scale(loss).backward()
 
-            # may unscale_ here if desired (e.g., to allow clipping unscaled gradients)
+            # قد unscale_ هنا إذا رغبت في ذلك (على سبيل المثال، للسماح بقص التدرجات غير المحددة النطاق)
 
-            # step() and update() proceed as usual.
+            # تتقدم الخطوة () والتحديث () كما هو معتاد.
             scaler.step(optimizer)
             scaler.update()
 
 
-Working with Multiple Models, Losses, and Optimizers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+العمل مع نماذج وخسائر ومحسنات متعددة
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: torch.amp.GradScaler
 
-If your network has multiple losses, you must call :meth:`scaler.scale<scale>` on each of them individually.
-If your network has multiple optimizers, you may call :meth:`scaler.unscale_<unscale_>` on any of them individually,
-and you must call :meth:`scaler.step<step>` on each of them individually.
+إذا كانت شبكتك تحتوي على خسائر متعددة، فيجب عليك استدعاء: meth: `scaler.scale <scale>` على كل منها بشكل فردي.
+إذا كانت شبكتك تحتوي على محسنات متعددة، فيمكنك استدعاء: meth: `scaler.unscale_ <unscale_>` على أي منها بشكل فردي،
+ويجب عليك استدعاء: meth: `scaler.step <step>` على كل منها بشكل فردي.
 
-However, :meth:`scaler.update<update>` should only be called once,
-after all optimizers used this iteration have been stepped::
+ومع ذلك، يجب استدعاء: meth: `scaler.update <update>` مرة واحدة فقط،
+بعد أن يتم تنفيذ جميع المحسنات المستخدمة في هذه الحلقة::
 
     scaler = torch.amp.GradScaler()
 
@@ -262,13 +256,13 @@ after all optimizers used this iteration have been stepped::
                 loss0 = loss_fn(2 * output0 + 3 * output1, target)
                 loss1 = loss_fn(3 * output0 - 5 * output1, target)
 
-            # (retain_graph here is unrelated to amp, it's present because in this
-            # example, both backward() calls share some sections of graph.)
+            # (retain_graph هنا لا علاقة له بـ amp ، فهو موجود لأن في هذا
+            # المثال، يشارك كلا الاستدعاءين بعض أجزاء الرسم البياني.)
             scaler.scale(loss0).backward(retain_graph=True)
             scaler.scale(loss1).backward()
 
-            # You can choose which optimizers receive explicit unscaling, if you
-            # want to inspect or modify the gradients of the params they own.
+            # يمكنك اختيار المحسنات التي تتلقى unscaling صريح، إذا كنت
+            # تريد فحص أو تعديل التدرجات من المعلمات التي تمتلكها.
             scaler.unscale_(optimizer0)
 
             scaler.step(optimizer0)
@@ -276,115 +270,114 @@ after all optimizers used this iteration have been stepped::
 
             scaler.update()
 
-Each optimizer checks its gradients for infs/NaNs and makes an independent decision
-whether or not to skip the step.  This may result in one optimizer skipping the step
-while the other one does not.  Since step skipping occurs rarely (every several hundred iterations)
-this should not impede convergence.  If you observe poor convergence after adding gradient scaling
-to a multiple-optimizer model, please report a bug.
+يفحص كل محسن التدرجات الخاصة به بحثًا عن infs/NaNs ويتخذ قرارًا مستقلًا
+ما إذا كان سيتم تخطي الخطوة أم لا. قد يؤدي ذلك إلى تخطي أحد المحسنات للخطوة
+في حين أن الآخر لا يفعل ذلك. نظرًا لأن تخطي الخطوة يحدث نادرًا (كل بضع مئات من الحلقات)
+هذا لا ينبغي أن يعوق التقارب. إذا لاحظت تقاربًا ضعيفًا بعد إضافة قياس التدرج
+إلى نموذج متعدد المحسنات، يرجى الإبلاغ عن خطأ.
 
 .. currentmodule:: torch.amp
 
 .. _amp-multigpu:
 
-Working with Multiple GPUs
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+العمل مع وحدات معالجة الرسومات المتعددة
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The issues described here only affect :class:`autocast`.  :class:`GradScaler`\ 's usage is unchanged.
+المشكلات الموضحة هنا تؤثر فقط على: class: `autocast`. لا يتغير استخدام :class: `GradScaler`.
 
 .. _amp-dataparallel:
 
-DataParallel in a single process
---------------------------------
+DataParallel في عملية واحدة
+-------------------------
 
-Even if :class:`torch.nn.DataParallel` spawns threads to run the forward pass on each device.
-The autocast state is propagated in each one and the following will work::
+حتى إذا كان :class: `torch.nn.DataParallel` يولد خيوطًا لتشغيل التغذية الأمامية على كل جهاز.
+يتم نشر حالة autocast في كل منها وسيعمل ما يلي::
 
     model = MyModel()
     dp_model = nn.DataParallel(model)
 
-    # Sets autocast in the main thread
+    # تعيين autocast في الخيط الرئيسي
     with autocast(device_type='cuda', dtype=torch.float16):
-        # dp_model's internal threads will autocast.
+        # سوف تُمكِّن خيوط dp_model الداخلية autocast.
         output = dp_model(input)
-        # loss_fn also autocast
+        # loss_fn autocast أيضًا
         loss = loss_fn(output)
 
-DistributedDataParallel, one GPU per process
---------------------------------------------
+DistributedDataParallel ، وحدة معالجة رسومات واحدة لكل عملية
+----------------------------------------------------
 
-:class:`torch.nn.parallel.DistributedDataParallel`'s documentation recommends one GPU per process for best
-performance.  In this case, ``DistributedDataParallel`` does not spawn threads internally,
-so usages of :class:`autocast` and :class:`GradScaler` are not affected.
+يوصي توثيق :class: `torch.nn.parallel.DistributedDataParallel` بوحدة معالجة رسومات واحدة لكل عملية للحصول على أفضل
+الأداء. في هذه الحالة، لا يقوم "DistributedDataParallel" بإنشاء خيوط داخلية،
+لذلك لا تتأثر استخدامات :class: `autocast` و: class: `GradScaler`.
 
-DistributedDataParallel, multiple GPUs per process
---------------------------------------------------
+DistributedDataParallel ، وحدات معالجة الرسومات المتعددة لكل عملية
+------------------------------------------------------
 
-Here :class:`torch.nn.parallel.DistributedDataParallel` may spawn a side thread to run the forward pass on each
-device, like :class:`torch.nn.DataParallel`.  :ref:`The fix is the same<amp-dataparallel>`:
-apply autocast as part of your model's ``forward`` method to ensure it's enabled in side threads.
+هنا، قد يقوم :class: `torch.nn.parallel.DistributedDataParallel` بإنشاء خيط جانبي لتشغيل التغذية الأمامية على كل
+جهاز، مثل :class: `torch.nn.DataParallel`. الإصلاح هو نفسه:
+قم بتطبيق autocast كجزء من طريقة "forward" للنموذج لضمان تمكينه في الخيوط الجانبية.
 
 .. _amp-custom-examples:
 
-Autocast and Custom Autograd Functions
+Autocast و Custom Autograd Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If your network uses :ref:`custom autograd functions<extending-autograd>`
-(subclasses of :class:`torch.autograd.Function`), changes are required for
-autocast compatibility if any function
+إذا كانت شبكتك تستخدم: ref: `custom autograd functions <extending-autograd>`
+(فئات فرعية من: class: `torch.autograd.Function`)، تكون التغييرات مطلوبة
+توافق autocast إذا كان أي دالة
 
-* takes multiple floating-point Tensor inputs,
-* wraps any autocastable op (see the :ref:`Autocast Op Reference<autocast-op-reference>`), or
-* requires a particular ``dtype`` (for example, if it wraps
-  `CUDA extensions <https://pytorch.org/tutorials/advanced/cpp_extension.html>`_
-  that were only compiled for ``dtype``).
+* يأخذ مدخلات Tensor العائمة متعددة،
+* يلتف أي عملية autocastable (راجع: ref: `Autocast Op Reference <autocast-op-reference>`)، أو
+* يتطلب "dtype" معين (على سبيل المثال، إذا كان يلتف
+  `ملحقات CUDA <https://pytorch.org/tutorials/advanced/cpp_extension.html>`_
+  التي تم تجميعها فقط لـ "dtype").
 
-In all cases, if you're importing the function and can't alter its definition, a safe fallback
-is to disable autocast and force execution in ``float32`` ( or ``dtype``) at any points of use where errors occur::
+في جميع الحالات، إذا كنت تقوم باستيراد الدالة ولا يمكنك تغيير تعريفها، فإن التراجع الآمن
+هو تعطيل autocast وإجبار التنفيذ في "float32" (أو "dtype") في أي نقاط الاستخدام التي تحدث فيها الأخطاء::
 
     with autocast(device_type='cuda', dtype=torch.float16):
         ...
         with autocast(device_type='cuda', dtype=torch.float16, enabled=False):
             output = imported_function(input1.float(), input2.float())
 
-If you're the function's author (or can alter its definition) a better solution is to use the
-:func:`torch.amp.custom_fwd` and :func:`torch.amp.custom_bwd` decorators as shown in
-the relevant case below.
+إذا كنت مؤلف الدالة (أو يمكنك تغيير تعريفها)، فإن الحل الأفضل هو استخدام
+:func: `مُزينات torch.amp.custom_fwd` و: func: `torch.amp.custom_bwd` كما هو موضح في
+الحالة ذات الصلة أدناه.
 
-Functions with multiple inputs or autocastable ops
---------------------------------------------------
+وظائف مع مدخلات متعددة أو عمليات autocastable
+--------------------------------------
 
-Apply :func:`custom_fwd<custom_fwd>` and :func:`custom_bwd<custom_bwd>` (with no arguments) to ``forward`` and
-``backward`` respectively.  These ensure ``forward`` executes with the current autocast state and ``backward``
-executes with the same autocast state as ``forward`` (which can prevent type mismatch errors)::
+قم بتطبيق: func: `custom_fwd <custom_fwd>` و: func: `custom_bwd <custom_bwd>` (بدون حجج) على "forward" و
+"backward" على التوالي. تضمن هذه الدوال تشغيل "forward" مع حالة autocast الحالية وتشغيل "backward"
+مع نفس حالة autocast مثل "forward" (والذي يمكن أن يمنع أخطاء عدم تطابق النوع)::
 
     class MyMM(torch.autograd.Function):
         @staticmethod
         @custom_fwd
-        def forward(ctx, a, b):
-            ctx.save_for_backward(a, b)
+        def forward(ctx, a، b):
+            ctx.save_for_backward(a، b)
             return a.mm(b)
         @staticmethod
         @custom_bwd
-        def backward(ctx, grad):
-            a, b = ctx.saved_tensors
-            return grad.mm(b.t()), a.t().mm(grad)
+        def backward(ctx، grad):
+            a، b = ctx.saved_tensors
+            return grad.mm(b.t())، a.t().mm(grad)
 
-Now ``MyMM`` can be invoked anywhere, without disabling autocast or manually casting inputs::
+الآن يمكن استدعاء "MyMM" في أي مكان، دون تعطيل autocast أو يدويًا يلقي المدخلات::
 
     mymm = MyMM.apply
 
     with autocast(device_type='cuda', dtype=torch.float16):
         output = mymm(input1, input2)
 
-Functions that need a particular ``dtype``
-------------------------------------------
+وظائف تتطلب "dtype" معين
+-----------------------
 
-Consider a custom function that requires ``torch.float32`` inputs.
-Apply :func:`custom_fwd(device_type='cuda', cast_inputs=torch.float32)<custom_fwd>` to ``forward``
-and :func:`custom_bwd(device_type='cuda')<custom_bwd>` to ``backward``.
-If ``forward`` runs in an autocast-enabled region, the decorators cast floating-point Tensor
-inputs to ``float32`` on designated device assigned by the argument `device_type <../amp.html>`_,
-`CUDA` in this example, and locally disable autocast during ``forward`` and ``backward``::
+ضع في اعتبارك وظيفة مخصصة تتطلب مدخلات "torch.float32".
+تطبيق: func: `custom_fwd (device_type = 'cuda'، cast_inputs = torch.float32) <custom_fwd>` على "forward"
+و: func: `custom_bwd (device_type = 'cuda') <custom_bwd>` إلى "backward".
+إذا تم تشغيل "forward" في منطقة ممكّنة لـ autocast ، فإن الديكورات تقوم بتحويل تنسورات المدخلات العائمة إلى "float32" على الجهاز المحدد الذي تم تعيينه بواسطة حجة `device_type <../amp.html>`_،
+"CUDA" في هذا المثال، وتعطيل autocast محليًا أثناء "forward" و "backward"::
 
     class MyFloat32Func(torch.autograd.Function):
         @staticmethod
@@ -398,10 +391,10 @@ inputs to ``float32`` on designated device assigned by the argument `device_type
         def backward(ctx, grad):
             ...
 
-Now ``MyFloat32Func`` can be invoked anywhere, without manually disabling autocast or casting inputs::
+الآن يمكن استدعاء "MyFloat32Func" في أي مكان، دون تعطيل autocast أو يدويًا يلقي المدخلات::
 
     func = MyFloat32Func.apply
 
     with autocast(device_type='cuda', dtype=torch.float16):
-        # func will run in float32, regardless of the surrounding autocast state
+        # سيتم تشغيل func في float32، بغض النظر عن حالة autocast المحيطة
         output = func(input)
