@@ -1,17 +1,17 @@
 :github_url: https://github.com/pytorch/elastic
 
-Multiprocessing
-================
+تعدد المعالجة
+==========
 
 .. automodule:: torch.distributed.elastic.multiprocessing
 
-Starting Multiple Workers
----------------------------
+بدء تشغيل عمال متعددين
+----------------------
 
 .. autofunction:: torch.distributed.elastic.multiprocessing.start_processes
 
-Process Context
-----------------
+سياق العملية
+-----------
 
 .. currentmodule:: torch.distributed.elastic.multiprocessing.api
 
