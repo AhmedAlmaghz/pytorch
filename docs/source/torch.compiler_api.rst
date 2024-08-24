@@ -4,10 +4,10 @@
 
 .. _torch.compiler_api:
 
-torch.compiler API reference
-============================
+مرجع واجهة برمجة التطبيقات الخاصة بـ torch.compiler
+==========================================
 
-For a quick overview of ``torch.compiler``, see :ref:`torch.compiler_overview`.
+للاطلاع على نظرة عامة سريعة عن ``torch.compiler``، راجع :ref:`torch.compiler_overview`.
 
 .. autosummary::
     :toctree: generated
