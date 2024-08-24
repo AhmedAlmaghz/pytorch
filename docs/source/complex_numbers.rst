@@ -1,30 +1,29 @@
 .. _complex_numbers-doc:
 
-Complex Numbers
-===============
+الأعداد المركبة
+==========
 
-Complex numbers are numbers that can be expressed in the form :math:`a + bj`, where a and b are real numbers,
-and *j* is called the imaginary unit, which satisfies the equation :math:`j^2 = -1`. Complex numbers frequently occur in mathematics and
-engineering, especially in topics like signal processing. Traditionally many users and libraries (e.g., TorchAudio) have
-handled complex numbers by representing the data in float tensors with shape :math:`(..., 2)` where the last
-dimension contains the real and imaginary values.
+الأعداد المركبة هي أعداد يمكن التعبير عنها بالشكل :math:`a + bj`، حيث a و b أعداد حقيقية،
+و *j* هي الوحدة التخيلية التي تحقق المعادلة :math:`j^2 = -1`. تظهر الأعداد المركبة بشكل متكرر في الرياضيات والهندسة، خاصة في مواضيع مثل معالجة الإشارات. وقد تعامل العديد من المستخدمين والمكتبات (مثل TorchAudio)
+مع الأعداد المركبة عن طريق تمثيل البيانات في مصفوفات ذات نقطة عائمة الشكل :math:`(..., 2)` حيث يحتوي البعد الأخير
+على القيم الحقيقية والتخيلية.
 
-Tensors of complex dtypes provide a more natural user experience while working with complex numbers. Operations on
-complex tensors (e.g., :func:`torch.mv`, :func:`torch.matmul`) are likely to be faster and more memory efficient
-than operations on float tensors mimicking them. Operations involving complex numbers in PyTorch are optimized
-to use vectorized assembly instructions and specialized kernels (e.g. LAPACK, cuBlas).
+توفر المصفوفات ذات الأنواع المعقدة تجربة استخدام أكثر طبيعية عند العمل مع الأعداد المركبة. ومن المرجح أن تكون العمليات على
+المصفوفات المعقدة (مثل :func:`torch.mv`، :func:`torch.matmul`) أسرع وأكثر كفاءة في الذاكرة
+من العمليات على المصفوفات ذات النقطة العائمة التي تحاكيها. وتكون العمليات التي تتضمن أعدادًا مركبة في PyTorch مُحسَّنة
+لاستخدام تعليمات التجميع المتجهة والنوى المتخصصة (مثل LAPACK، cuBlas).
 
 .. note::
-     Spectral operations in the `torch.fft module <https://pytorch.org/docs/stable/fft.html#torch-fft>`_ support
-     native complex tensors.
+     تدعم العمليات الطيفية في وحدة `torch.fft <https://pytorch.org/docs/stable/fft.html#torch-fft>`_
+     المصفوفات المعقدة الأصلية.
 
-.. warning ::
-     Complex tensors is a beta feature and subject to change.
+.. warning::
+     المصفوفات المعقدة هي ميزة تجريبية وقد تتغير.
 
-Creating Complex Tensors
-------------------------
+إنشاء المصفوفات المعقدة
+---------------
 
-We support two complex dtypes: `torch.cfloat` and `torch.cdouble`
+ندعم نوعين معقدين: `torch.cfloat` و`torch.cdouble`
 
 ::
 
@@ -35,20 +34,19 @@ We support two complex dtypes: `torch.cfloat` and `torch.cdouble`
 
 .. note::
 
-     The default dtype for complex tensors is determined by the default floating point dtype.
-     If the default floating point dtype is `torch.float64` then complex numbers are inferred to
-     have a dtype of `torch.complex128`, otherwise they are assumed to have a dtype of `torch.complex64`.
+     نوع البيانات الافتراضي للمصفوفات المعقدة يتحدد بواسطة نوع بيانات النقطة العائمة الافتراضي.
+     إذا كان نوع بيانات النقطة العائمة الافتراضي هو `torch.float64`، فيفترض أن يكون نوع بيانات الأعداد المركبة
+     هو `torch.complex128`، أما إذا كان نوع بيانات النقطة العائمة الافتراضي هو `torch.float32`، فيفترض أن يكون نوع بيانات الأعداد المركبة
+     هو `torch.complex64`.
 
-All factory functions apart from :func:`torch.linspace`, :func:`torch.logspace`, and :func:`torch.arange` are
-supported for complex tensors.
+جميع الدوال البانية باستثناء :func:`torch.linspace`، و:func:`torch.logspace`، و:func:`torch.arange` مدعومة للمصفوفات المعقدة.
 
-Transition from the old representation
---------------------------------------
+الانتقال من التمثيل القديم
+---------------
 
-Users who currently worked around the lack of complex tensors with real tensors of shape :math:`(..., 2)`
-can easily to switch using the complex tensors in their code using :func:`torch.view_as_complex`
-and :func:`torch.view_as_real`. Note that these functions don’t perform any copy and return a
-view of the input tensor.
+يمكن للمستخدمين الذين عملوا حاليًا على التحايل على عدم وجود مصفوفات معقدة باستخدام مصفوفات حقيقية الشكل :math:`(..., 2)`
+التحويل بسهولة إلى استخدام المصفوفات المعقدة في أكوادهم باستخدام :func:`torch.view_as_complex`
+و:func:`torch.view_as_real`. لاحظ أن هذه الدوال لا تقوم بأي نسخة وتُعيد عرض المصفوفة المدخلة.
 
 ::
 
@@ -65,16 +63,16 @@ view of the input tensor.
           [-0.3773,  1.3487],
           [-0.0861, -0.7981]])
 
-Accessing real and imag
+الوصول إلى الجزء الحقيقي والتخيلي
 -----------------------
 
-The real and imaginary values of a complex tensor can be accessed using the :attr:`real` and
+يمكن الوصول إلى القيم الحقيقية والتخيلية للمصفوفة المعقدة باستخدام :attr:`real` و
 :attr:`imag`.
 
 .. note::
-     Accessing `real` and `imag` attributes doesn't allocate any memory, and in-place updates on the
-     `real` and `imag` tensors will update the original complex tensor. Also, the
-     returned `real` and `imag` tensors are not contiguous.
+     لا يقوم الوصول إلى الخصائص `real` و`imag` بتخصيص أي ذاكرة، وستؤدي التحديثات في الموقع على المصفوفات
+     `real` و`imag` إلى تحديث المصفوفة المعقدة الأصلية. أيضًا، المصفوفات
+     `real` و`imag` المعادة غير متجاورتين.
 
 ::
 
@@ -90,10 +88,10 @@ The real and imaginary values of a complex tensor can be accessed using the :att
      >>> y.real.stride()
      (2,)
 
-Angle and abs
+الزاوية والقيمة المطلقة
 -------------
 
-The angle and absolute values of a complex tensor can be computed using :func:`torch.angle` and
+يمكن حساب زاوية وقيمة المصفوفة المعقدة باستخدام :func:`torch.angle` و
 :func:`torch.abs`.
 
 ::
@@ -104,18 +102,18 @@ The angle and absolute values of a complex tensor can be computed using :func:`t
      >>> x1.angle()
      tensor([1.5708, 0.7854])
 
-Linear Algebra
---------------
+الجبر الخطي
+--------
 
-Many linear algebra operations, like :func:`torch.matmul`, :func:`torch.linalg.svd`, :func:`torch.linalg.solve` etc., support complex numbers.
-If you'd like to request an operation we don't currently support, please `search <https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex>`_
-if an issue has already been filed and if not, `file one <https://github.com/pytorch/pytorch/issues/new/choose>`_.
+يدعم العديد من عمليات الجبر الخطي، مثل :func:`torch.matmul`، و:func:`torch.linalg.svd`، و:func:`torch.linalg.solve`، الأعداد المركبة.
+إذا كنت ترغب في طلب عملية لا ندعمها حاليًا، يرجى `البحث <https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex>`_
+عن إصدار موجود بالفعل، وإن لم يكن، `قم بإنشاء إصدار جديد <https://github.com/pytorch/pytorch/issues/new/choose>`_.
 
 
-Serialization
--------------
+التهيئة
+----
 
-Complex tensors can be serialized, allowing data to be saved as complex values.
+يمكن تهيئة المصفوفات المعقدة، مما يسمح بتخزين البيانات كقيم معقدة.
 
 ::
 
@@ -127,17 +125,17 @@ Complex tensors can be serialized, allowing data to be saved as complex values.
 Autograd
 --------
 
-PyTorch supports autograd for complex tensors. The gradient computed is the Conjugate Wirtinger derivative,
-the negative of which is precisely the direction of steepest descent used in Gradient Descent algorithm. Thus,
-all the existing optimizers can be implemented to work out of the box with complex parameters. For more details,
-check out the note :ref:`complex_autograd-doc`.
+تدعم PyTorch Autograd للمصفوفات المعقدة. المشتق المحسوب هو مشتق ويرسترين التآلفي،
+والذي يمثل سالب اتجاه أقصى انحدار المستخدم في خوارزمية الانحدار التدريجي. وبالتالي،
+يمكن تنفيذ جميع المحسنات الموجودة للعمل خارج الصندوق مع المعلمات المعقدة. لمزيد من التفاصيل،
+راجع الملاحظة :ref:`complex_autograd-doc`.
 
 
-Optimizers
-----------
+المحسنات
+------
 
-Semantically, we define stepping through a PyTorch optimizer with complex parameters as being equivalent to stepping
-through the same optimizer on the :func:`torch.view_as_real` equivalent of the complex params. More concretely:
+من الناحية الدلالية، نُعرِّف الانتقال خلال محسن PyTorch بمعلمات معقدة على أنه مكافئ للانتقال خلال نفس المحسن على
+:func:`torch.view_as_real` المكافئ للمعلمات المعقدة. وبشكل أكثر تحديدًا:
 
 ::
 
@@ -148,28 +146,24 @@ through the same optimizer on the :func:`torch.view_as_real` equivalent of the c
      >>> real_optim = torch.optim.AdamW(real_params)
 
 
-`real_optim` and `complex_optim` will compute the same updates on the parameters, though there may be slight numerical
-discrepancies between the two optimizers, similar to numerical discrepancies between foreach vs forloop optimizers
-and capturable vs default optimizers. For more details, see https://pytorch.org/docs/stable/notes/numerical_accuracy.html.
+سيحسب `real_optim` و`complex_optim` نفس التحديثات على المعلمات، على الرغم من أنه قد تكون هناك اختلافات رقمية طفيفة
+بين المحسنين، مماثلة للاختلافات الرقمية بين محسنات foreach مقابل forloop والمحسنات الافتراضية مقابل الافتراضية. لمزيد من التفاصيل، راجع https://pytorch.org/docs/stable/notes/numerical_accuracy.html.
 
-Specifically, while you can think of our optimizer's handling of complex tensors as the same as optimizing over their
-`p.real` and `p.imag` pieces separately, the implementation details are not precisely that. Note that the
-:func:`torch.view_as_real` equivalent will convert a complex tensor to a real tensor with shape :math:`(..., 2)`,
-whereas splitting a complex tensor into two tensors is 2 tensors of size :math:`(...)`. This distinction has no impact on
-pointwise optimizers (like AdamW) but will cause slight discrepancy in optimizers that do global reductions (like LBFGS).
-We currently do not have optimizers that do per-Tensor reductions and thus do not yet define this behavior. Open an issue
-if you have a use case that requires precisely defining this behavior.
+وعلى وجه التحديد، في حين يمكنك اعتبار تعامل محسناتنا مع المصفوفات المعقدة مماثلًا للتحسين على أجزائها `p.real` و`p.imag` بشكل منفصل، فإن تفاصيل التنفيذ ليست كذلك بالضبط. لاحظ أن المكافئ :func:`torch.view_as_real` سيحول مصفوفة معقدة إلى مصفوفة حقيقية الشكل :math:`(..., 2)`،
+في حين أن تقسيم مصفوفة معقدة إلى مصفوفتين هما مصفوفتين من الحجم :math:`(...)`. لا يؤثر هذا التمييز على
+المحسنات النقطية (مثل AdamW) ولكنه سيتسبب في حدوث اختلاف طفيف في المحسنات التي تقوم بتخفيضات عالمية (مثل LBFGS).
+لا توجد لدينا حاليًا محسنات تقوم بتخفيضات لكل مصفوفة، وبالتالي لا نحدد هذا السلوك بعد. قم بإنشاء إصدار إذا كان لديك حالة استخدام تتطلب تحديد هذا السلوك بدقة.
 
 
-We do not fully support the following subsystems:
+لا ندعم الأنظمة الفرعية التالية بالكامل:
 
-* Quantization
+* التكميم
 
 * JIT
 
-* Sparse Tensors
+* المصفوفات المتناثرة
 
-* Distributed
+* موزعة
 
-If any of these would help your use case, please `search <https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex>`_
-if an issue has already been filed and if not, `file one <https://github.com/pytorch/pytorch/issues/new/choose>`_.
+إذا كان أي من هذه الأنظمة الفرعية مفيدًا لحالتك الاستخدام، يرجى `البحث <https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex>`_
+عن إصدار موجود بالفعل، وإن لم يكن، `قم بإنشاء إصدار جديد <https://github.com/pytorch/pytorch/issues/new/choose>`_.
