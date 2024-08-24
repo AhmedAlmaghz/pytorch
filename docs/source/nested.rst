@@ -3,36 +3,34 @@ torch.nested
 
 .. automodule:: torch.nested
 
-Introduction
-++++++++++++
+مقدمة
+++++++
 
 .. warning::
 
-  The PyTorch API of nested tensors is in prototype stage and will change in the near future.
+  واجهة برمجة تطبيقات PyTorch لمجموعة التوابع المضمنة هي في مرحلة النموذج الأولي وستتغير في المستقبل القريب.
 
-NestedTensor allows the user to pack a list of Tensors into a single, efficient datastructure.
+تسمح NestedTensor للمستخدم بتعبئة قائمة من التوابع في بنية بيانات واحدة وكفؤة.
 
-The only constraint on the input Tensors is that their dimension must match.
+القيود الوحيد على التوابع المدخلة هو أن أبعادها يجب أن تتطابق.
 
-This enables more efficient metadata representations and access to purpose built kernels.
+هذا يمكن من تمثيلات بيانات وصفية أكثر كفاءة والوصول إلى نوى مخصصة الغرض.
 
-One application of NestedTensors is to express sequential data in various domains.
-While the conventional approach is to pad variable length sequences, NestedTensor
-enables users to bypass padding. The API for calling operations on a nested tensor is no different
-from that of a regular ``torch.Tensor``, which should allow seamless integration with existing models,
-with the main difference being :ref:`construction of the inputs <construction>`.
+تتمثل إحدى تطبيقات NestedTensors في التعبير عن البيانات التسلسلية في مجالات مختلفة.
+بينما يتمثل النهج التقليدي في استخدام التسلسلات ذات الطول المتغير، فإن NestedTensor
+تمكن المستخدمين من تجاوز الحشو. لا تختلف واجهة برمجة التطبيقات الخاصة باستدعاء العمليات على مجموعة التوابع عن تلك الخاصة بـ "tensor.Tensor" العادية، مما يسمح بالدمج السلس مع النماذج الموجودة،
+مع الاختلاف الرئيسي هو: ref: `<construction> <#construction>`__.
 
-As this is a prototype feature, the :ref:`operations supported <supported operations>` are still
-limited. However, we welcome issues, feature requests and contributions. More information on contributing can be found
-`in this Readme <https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/nested/README.md>`_.
+نظرًا لأن هذه ميزة نموذج أولي، فإن العمليات المدعومة لا تزال
+محدودة. ومع ذلك، نرحب بالقضايا وطلبات الميزات والمساهمات. يمكن العثور على مزيد من المعلومات حول المساهمة في
+"في هذه القراءة <https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/nested/README.md>`_".
 
 .. _construction:
 
-Construction
-++++++++++++
+البناء
++++++
 
-Construction is straightforward and involves passing a list of Tensors to the ``torch.nested.nested_tensor``
-constructor.
+البناء مباشر ويتضمن تمرير قائمة من التوابع إلى تابع البناء "torch.nested.nested_tensor".
 
 >>> a, b = torch.arange(3), torch.arange(5) + 3
 >>> a
@@ -46,7 +44,7 @@ nested_tensor([
     tensor([3, 4, 5, 6, 7])
     ])
 
-Data type, device and whether gradients are required can be chosen via the usual keyword arguments.
+يمكن اختيار نوع البيانات والجهاز وما إذا كانت الخرائط مطلوبة عبر كلمات أساسية اختيارية المعتادة.
 
 >>> nt = torch.nested.nested_tensor([a, b], dtype=torch.float32, device="cuda", requires_grad=True)
 >>> nt
@@ -55,11 +53,11 @@ nested_tensor([
   tensor([3., 4., 5., 6., 7.], device='cuda:0', requires_grad=True)
 ], device='cuda:0', requires_grad=True)
 
-In the vein of ``torch.as_tensor``, ``torch.nested.as_nested_tensor`` can be used to preserve autograd
-history from the tensors passed to the constructor. For more information, refer to the section on
-:ref:`constructor functions`.
+على غرار "torch.as_tensor"، يمكن استخدام "torch.nested.as_nested_tensor" للحفاظ على تاريخ autograd
+من التوابع التي تم تمريرها إلى البناء. لمزيد من المعلومات، راجع القسم الخاص
+: ref: `<constructor functions> <#ctor-func>`__.
 
-In order to form a valid NestedTensor all the passed Tensors need to match in dimension, but none of the other attributes need to.
+لكي تكون مجموعة التوابع صالحة، يجب أن تتطابق جميع التوابع الممرورة في البعد، ولكن لا يلزم أن تتطابق أي من السمات الأخرى.
 
 >>> a = torch.randn(3, 50, 70) # image 1
 >>> b = torch.randn(3, 128, 64) # image 2
@@ -67,7 +65,7 @@ In order to form a valid NestedTensor all the passed Tensors need to match in di
 >>> nt.dim()
 4
 
-If one of the dimensions doesn't match, the constructor throws an error.
+إذا لم يتطابق أحد الأبعاد، يرمي البناء خطأ.
 
 >>> a = torch.randn(50, 128) # text 1
 >>> b = torch.randn(3, 128, 64) # image 2
@@ -76,19 +74,18 @@ Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 RuntimeError: All Tensors given to nested_tensor must have the same dimension. Found dimension 3 for Tensor at index 1 and dimension 2 for Tensor at index 0.
 
-Note that the passed Tensors are being copied into a contiguous piece of memory. The resulting
-NestedTensor allocates new memory to store them and does not keep a reference.
+لاحظ أن التوابع التي يتم تمريرها يتم نسخها في قطعة متجاورة من الذاكرة. تقوم مجموعة التوابع الناتجة
+بتخصيص ذاكرة جديدة لتخزينها ولا تحتفظ بأي مرجع.
 
-At this moment we only support one level of nesting, i.e. a simple, flat list of Tensors. In the future
-we can add support for multiple levels of nesting, such as a list that consists entirely of lists of Tensors.
-Note that for this extension it is important to maintain an even level of nesting across entries so that the resulting NestedTensor
-has a well defined dimension. If you have a need for this feature, please feel encouraged to open a feature request so that
-we can track it and plan accordingly.
+في الوقت الحالي، ندعم مستوى واحد من التضمين فقط، أي قائمة مسطحة بسيطة من التوابع. في المستقبل
+يمكننا إضافة دعم لمستويات متعددة من التضمين، مثل قائمة تتكون بالكامل من قوائم التوابع.
+لاحظ أنه بالنسبة لهذا التمديد، من المهم الحفاظ على مستوى متساوٍ من التضمين عبر الإدخالات بحيث يكون لمجموعة التوابع الناتجة
+بعد محدد جيدًا. إذا كنت بحاجة إلى هذه الميزة، فيرجى تشجيعك على فتح طلب ميزة حتى نتمكن من تتبعها والتخطيط وفقًا لذلك.
 
-size
-+++++++++++++++++++++++++
+الحجم
+++++
 
-Even though a NestedTensor does not support ``.size()`` (or ``.shape``), it supports ``.size(i)`` if dimension i is regular.
+على الرغم من أن مجموعة التوابع لا تدعم "size()" (أو "shape")، إلا أنها تدعم "size(i)" إذا كان البعد i منتظمًا.
 
 >>> a = torch.randn(50, 128) # text 1
 >>> b = torch.randn(32, 128) # text 2
@@ -102,7 +99,7 @@ RuntimeError: Given dimension 1 is irregular and does not have a size.
 >>> nt.size(2)
 128
 
-If all dimensions are regular, the NestedTensor is intended to be semantically indistinguishable from a regular ``torch.Tensor``.
+إذا كانت جميع الأبعاد منتظمة، فإن مجموعة التوابع المقصودة هي دلالياً لا يمكن تمييزها عن "tensor.Tensor" العادي.
 
 >>> a = torch.randn(20, 128) # text 1
 >>> nt = torch.nested.nested_tensor([a, a], dtype=torch.float32)
@@ -119,14 +116,14 @@ torch.Size([2, 20, 128])
 >>> torch.equal(torch.stack(nt.unbind()), torch.stack([a, a]))
 True
 
-In the future we might make it easier to detect this condition and convert seamlessly.
+في المستقبل، قد نجعل من الأسهل اكتشاف هذا الشرط والتحويل بسلاسة.
 
-Please open a feature request if you have a need for this (or any other related feature for that matter).
+يرجى فتح طلب ميزة إذا كنت بحاجة إلى هذه الميزة (أو أي ميزة أخرى ذات صلة في هذا الشأن).
 
-unbind
-+++++++++++++++++++++++++
+فك التجميع
++++++++
 
-``unbind`` allows you to retrieve a view of the constituents.
+يسمح "unbind" باسترداد عرض للمكونات.
 
 >>> import torch
 >>> a = torch.randn(2, 3)
@@ -159,14 +156,14 @@ nested_tensor([
           [ 0.4074,  2.4855,  0.0733,  0.8285]])
 ])
 
-Note that ``nt.unbind()[0]`` is not a copy, but rather a slice of the underlying memory, which represents the first entry or constituent of the NestedTensor.
+لاحظ أن "nt.unbind()[0]" ليس نسخة، ولكنه شريحة من الذاكرة الأساسية، والتي تمثل الإدخال الأول أو المكون لمجموعة التوابع.
 
 .. _constructor functions:
 
-Nested tensor constructor and conversion functions
-++++++++++++++++++++++++++++++++++++++++++++++++++
+تابع بناء مجموعة التوابع ووظائف التحويل
++++++++++++++++++++++++++++
 
-The following functions are related to nested tensors:
+الوظائف التالية مرتبطة بمجموعة التوابع المضمنة:
 
 .. currentmodule:: torch.nested
 
@@ -176,47 +173,47 @@ The following functions are related to nested tensors:
 
 .. _supported operations:
 
-Supported operations
-++++++++++++++++++++++++++
+العمليات المدعومة
++++++++++++
 
-In this section, we summarize the operations that are currently supported on
-NestedTensor and any constraints they have.
+في هذا القسم، نلخص العمليات المدعومة حاليًا على
+NestedTensor وأي قيود عليها.
 
 .. csv-table::
-   :header: "PyTorch operation",  "Constraints"
+   :header: "عملية PyTorch", "قيود"
    :widths: 30, 55
    :delim: ;
 
-   :func:`torch.matmul`;  "Supports matrix multiplication between two (>= 3d) nested tensors where
-   the last two dimensions are matrix dimensions and the leading (batch) dimensions have the same size
-   (i.e. no broadcasting support for batch dimensions yet)."
-   :func:`torch.bmm`; "Supports batch matrix multiplication of two 3-d nested tensors."
-   :func:`torch.nn.Linear`;  "Supports 3-d nested input and a dense 2-d weight matrix."
-   :func:`torch.nn.functional.softmax`; "Supports softmax along all dims except dim=0."
-   :func:`torch.nn.Dropout`; "Behavior is the same as on regular tensors."
-   :func:`torch.Tensor.masked_fill`; "Behavior is the same as on regular tensors."
-   :func:`torch.relu`; "Behavior is the same as on regular tensors."
-   :func:`torch.gelu`; "Behavior is the same as on regular tensors."
-   :func:`torch.silu`; "Behavior is the same as on regular tensors."
-   :func:`torch.abs`; "Behavior is the same as on regular tensors."
-   :func:`torch.sgn`; "Behavior is the same as on regular tensors."
-   :func:`torch.logical_not`; "Behavior is the same as on regular tensors."
-   :func:`torch.neg`; "Behavior is the same as on regular tensors."
-   :func:`torch.sub`; "Supports elementwise subtraction of two nested tensors."
-   :func:`torch.add`; "Supports elementwise addition of two nested tensors. Supports addition of a scalar to a nested tensor."
-   :func:`torch.mul`; "Supports elementwise multiplication of two nested tensors. Supports multiplication of a nested tensor by a scalar."
-   :func:`torch.select`; "Supports selecting along all dimensions."
-   :func:`torch.clone`; "Behavior is the same as on regular tensors."
-   :func:`torch.detach`; "Behavior is the same as on regular tensors."
-   :func:`torch.unbind`; "Supports unbinding along ``dim=0`` only."
-   :func:`torch.reshape`; "Supports reshaping with size of ``dim=0`` preserved (i.e. number of tensors nested cannot be changed).
-   Unlike regular tensors, a size of ``-1`` here means that the existing size is inherited.
-   In particular, the only valid size for a irregular dimension is ``-1``.
-   Size inference is not implemented yet and hence for new dimensions the size cannot be ``-1``."
-   :func:`torch.Tensor.reshape_as`; "Similar constraint as for ``reshape``."
-   :func:`torch.transpose`; "Supports transposing of all dims except ``dim=0``."
-   :func:`torch.Tensor.view`; "Rules for the new shape are similar to that of ``reshape``."
-   :func:`torch.empty_like`; "Behavior is analogous to that of regular tensors; returns a new empty nested tensor (i.e. with uninitialized values) matching the nested structure of the input."
-   :func:`torch.randn_like`; "Behavior is analogous to that of regular tensors; returns a new nested tensor with values randomly initialized according to a standard normal distribution matching the nested structure of the input."
-   :func:`torch.zeros_like`; "Behavior is analogous to that of regular tensors; returns a new nested tensor with all zero values matching the nested structure of the input."
-   :func:`torch.nn.LayerNorm`; "The ``normalized_shape`` argument is restricted to not extend into the irregular dimensions of the NestedTensor."
+   :func:`torch.matmul`;  "يدعم الضرب المصفوفي بين مجموعتين من التوابع (>= 3d) حيث
+   الأبعاد الأخيرة هي أبعاد المصفوفة والأبعاد الأولى (batch) لها نفس الحجم
+   (أي لا يوجد دعم للبث الإذاعي لأبعاد الدفعة حتى الآن)."
+   :func:`torch.bmm`; "يدعم ضرب المصفوفة الدُفعي لمجموعتين من التوابع 3-d."
+   :func:`torch.nn.Linear`;  "يدعم الإدخال 3-d المضمن ومصفوفة الوزن الكثيفة 2-d."
+   :func:`torch.nn.functional.softmax`; "يدعم softmax على طول جميع الأبعاد باستثناء dim=0."
+   :func:`torch.nn.Dropout`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.Tensor.masked_fill`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.relu`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.gelu`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.silu`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.abs`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.sgn`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.logical_not`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.neg`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.sub`; "يدعم الطرح العنصري لمجموعتين من التوابع."
+   :func:`torch.add`; "يدعم الجمع العنصري لمجموعتين من التوابع. يدعم إضافة قيمة قياسية إلى مجموعة التوابع."
+   :func:`torch.mul`; "يدعم الضرب العنصري لمجموعتين من التوابع. يدعم ضرب مجموعة التوابع في قيمة قياسية."
+   :func:`torch.select`; "يدعم الاختيار على طول جميع الأبعاد."
+   :func:`torch.clone`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.detach`; "السلوك هو نفسه كما في التوابع العادية."
+   :func:`torch.unbind`; "يدعم فك التجميع على طول ``dim=0`` فقط."
+   :func:`torch.reshape`; "يدعم إعادة التشكيل مع حجم ``dim=0`` المحفوظ (أي لا يمكن تغيير عدد التوابع المضمنة).
+   على عكس التوابع العادية، يعني الحجم "1" هنا أن الحجم الحالي موروث.
+   على وجه الخصوص، الحجم الصالح الوحيد للبعد غير المنتظم هو "1".
+   لم يتم تنفيذ استدلال الحجم بعد وبالتالي لا يمكن أن يكون الحجم "1" للأبعاد الجديدة."
+   :func:`torch.Tensor.reshape_as`; "قيد مماثل كما هو الحال بالنسبة لـ ``reshape``."
+   :func:`torch.transpose`; "يدعم التحويل عبر جميع الأبعاد باستثناء ``dim=0``."
+   :func:`torch.Tensor.view`; "القواعد الخاصة بشكل جديد مماثلة لتلك الخاصة بـ ``reshape``."
+   :func:`torch.empty_like`; "السلوك مماثل لذلك في التوابع العادية؛ يعيد مجموعة التوابع الفارغة الجديدة (أي مع القيم غير المستهلة) التي تتطابق مع البنية المضمنة للإدخال."
+   :func:`torch.randn_like`; "السلوك مماثل لذلك في التوابع العادية؛ يعيد مجموعة التوابع مع القيم التي يتم تهيئتها بشكل عشوائي وفقًا لتوزيع عادي قياسي يتطابق مع البنية المضمنة للإدخال."
+   :func:`torch.zeros_like`; "السلوك مماثل لذلك في التوابع العادية؛ يعيد مجموعة التوابع ذات القيم الصفرية التي تتطابق مع البنية المضمنة للإدخال."
+   :func:`torch.nn.LayerNorm`; "الحجة ``normalized_shape`` مقيدة بعدم الامتداد إلى الأبعاد غير المنتظمة لمجموعة التوابع."
