@@ -1,136 +1,132 @@
 .. _numerical_accuracy:
 
-Numerical accuracy
-==================
+الدقة الرقمية
+==============
 
-In modern computers, floating point numbers are represented using IEEE 754 standard.
-For more details on floating point arithmetic and IEEE 754 standard, please see
-`Floating point arithmetic <https://en.wikipedia.org/wiki/Floating-point_arithmetic>`_
-In particular, note that floating point provides limited accuracy (about 7 decimal digits
-for single precision floating point numbers, about 16 decimal digits for double precision
-floating point numbers) and that floating point addition and multiplication are not
-associative, so the order of the operations affects the results.
-Because of this, PyTorch is not guaranteed
-to produce bitwise identical results for floating point computations that are
-mathematically identical. Similarly, bitwise identical results are not guaranteed across
-PyTorch releases, individual commits, or different platforms. In particular, CPU and GPU
-results can be different even for bitwise-identical inputs and even after controlling for
-the sources of randomness.
+في أجهزة الكمبيوتر الحديثة، يتم تمثيل الأعداد العشرية العائمة باستخدام معيار IEEE 754.
+للحصول على مزيد من التفاصيل حول الحساب العشري العائم ومعيار IEEE 754، يرجى الاطلاع على
+`حساب عشري عائم <https://en.wikipedia.org/wiki/Floating-point_arithmetic>`_
+وعلى وجه الخصوص، لاحظ أن العشرية العائمة توفر دقة محدودة (حوالي 7 أرقام عشرية
+لأرقام الفاصلة العائمة ذات الدقة الفردية، وحوالي 16 رقم عشري لأرقام الفاصلة العائمة ذات الدقة المزدوجة)
+وأن الجمع والضرب العشريين العائمين غير
+ترابطي، لذلك يؤثر ترتيب العمليات على النتائج.
+بسبب هذا، لا يتم ضمان PyTorch
+لإنتاج نتائج متطابقة بت لكل بت للحسابات العشرية العائمة التي هي
+متطابقة رياضيا. وبالمثل، لا يتم ضمان نتائج متطابقة بت لكل بت عبر
+إصدارات PyTorch، الالتزامات الفردية، أو المنصات المختلفة. وعلى وجه الخصوص، قد تختلف نتائج وحدة المعالجة المركزية ووحدة معالجة الرسومات
+حتى للإدخالات المتطابقة بت لكل بت وحتى بعد التحكم في
+مصادر العشوائية.
 
-Batched computations or slice computations
-------------------------------------------
+عمليات الدفعات أو شرائح العمليات
+--------------------------
 
-Many operations in PyTorch support batched computation, where the same operation is performed
-for the elements of the batches of inputs. An example of this is :meth:`torch.mm` and
-:meth:`torch.bmm`. It is possible to implement batched computation as a loop over batch elements,
-and apply the necessary math operations to the individual batch elements, for efficiency reasons
-we are not doing that, and typically perform computation for the whole batch. The mathematical
-libraries that we are calling, and PyTorch internal implementations of operations can produces
-slightly different results in this case, compared to non-batched computations. In particular,
-let ``A`` and ``B`` be 3D tensors with the dimensions suitable for batched matrix multiplication.
-Then ``(A@B)[0]`` (the first element of the batched result) is not guaranteed to be bitwise
-identical to ``A[0]@B[0]`` (the matrix product of the first elements of the input batches)
-even though mathematically it's an identical computation.
+تدعم العديد من العمليات في PyTorch الحساب الدفعي، حيث يتم تنفيذ نفس العملية
+لعناصر دفعات الإدخالات. ومن أمثلة ذلك :meth:`torch.mm` و
+:meth:`torch.bmm`. من الممكن تنفيذ الحساب الدفعي كحلقة عبر عناصر الدفعة،
+وتطبيق عمليات الرياضيات اللازمة على عناصر الدفعة الفردية، لأسباب تتعلق بالكفاءة
+نحن لا نفعل ذلك، وعادة ما نقوم بأداء الحساب للدفعة بأكملها. قد تنتج المكتبات الرياضية التي نستدعيها، وتنفيذات PyTorch الداخلية للعمليات
+نتائج مختلفة قليلاً في هذه الحالة، مقارنة بالعمليات غير الدفعية. على وجه الخصوص،
+دع ``A`` و ``B`` تكون المنسوجات ثلاثية الأبعاد مع الأبعاد المناسبة للضرب المصفوفي الدفعي.
+ثم ``(A@B) [0]`` (العنصر الأول من نتيجة الدفعة) غير مضمون أن يكون متطابقًا بتًا بـتًا
+إلى ``A [0] @ B [0]`` (ضرب المصفوفة للعناصر الأولى من دفعات الإدخال)
+على الرغم من أنه حسابياً متطابق.
 
-Similarly, an operation applied to a tensor slice is not guaranteed to produce results that are
-identical to the slice of the result of the same operation applied to the full tensor. E.g. let
-``A`` be a 2-dimensional tensor. ``A.sum(-1)[0]`` is not guaranteed to be bitwise equal to
-``A[:,0].sum()``.
+بالمثل، فإن العملية المطبقة على شريحة المنسوجة غير مضمونة لإنتاج نتائج
+مطابقة لشريحة نتيجة العملية نفسها المطبقة على المنسوجة الكاملة. على سبيل المثال، دعنا
+``A`` تكون منسوجة ثنائية الأبعاد. ``A.sum (-1) [0]`` غير مضمون أن يكون متساويًا بتًا مع
+``A [:، 0].sum ()``.
 
+القيم المتطرفة
+----------
 
-Extremal values
----------------
-
-When inputs contain large values such that intermediate results may overflow the range of the
-used datatype, the end result may overflow too, even though it is representable in the original
-datatype. E.g.:
+عندما تحتوي الإدخالات على قيم كبيرة بحيث قد تفيض النتائج الوسيطة نطاق
+نوع البيانات المستخدمة، فقد تفيض النتيجة النهائية أيضًا، على الرغم من أنه يمكن تمثيلها في
+نوع البيانات الأصلي. على سبيل المثال:
 
 .. code:: python
 
     import torch
-    a=torch.tensor([1e20, 1e20]) # fp32 type by default
-    a.norm() # produces tensor(inf)
-    a.double().norm() # produces tensor(1.4142e+20, dtype=torch.float64), representable in fp32
+    a=torch.tensor ([1e20، 1e20]) # نوع fp32 بشكل افتراضي
+    a.norm () # ينتج tensor (inf)
+    a.double (). norm () # ينتج tensor (1.4142e + 20، dtype=torch.float64)، قابل للتمثيل في fp32
 
-.. _Linear Algebra Stability:
+.. _الجبر الخطي:
 
-Linear algebra (``torch.linalg``)
+الجبر الخطي (``torch.linalg``)
 ---------------------------------
 
-Non-finite values
-"""""""""""""""""
+القيم غير المحدودة
+"""""""""""
 
-The external libraries (backends) that ``torch.linalg`` uses provide no guarantees on their behaviour
-when the inputs have non-finite values like ``inf`` or ``NaN``. As such, neither does PyTorch.
-The operations may return a tensor with non-finite values, or raise an exception, or even segfault.
+المكتبات الخارجية (الواجهات الخلفية) التي تستخدمها ``torch.linalg`` لا تقدم أي ضمانات بشأن سلوكها
+عندما تحتوي الإدخالات على قيم غير محدودة مثل ``inf`` أو ``NaN``. وبالتالي، لا تفعل ذلك أيضًا PyTorch.
+قد تعيد العمليات مصفوفة ذات قيم غير محدودة، أو تثير استثناءً، أو حتى تتسبب في حدوث خطأ في تجزئة الذاكرة.
 
-Consider using :func:`torch.isfinite` before calling these functions to detect this situation.
+ضع في اعتبارك استخدام :func:`torch.isfinite` قبل استدعاء هذه الوظائف للكشف عن هذا الموقف.
 
-Extremal values in linalg
-"""""""""""""""""""""""""
+القيم المتطرفة في الجبر الخطي
+"""""""""""""""""""
 
-Functions within ``torch.linalg`` have more `Extremal Values`_ than other PyTorch functions.
+تحتوي الوظائف الموجودة داخل ``torch.linalg`` على المزيد من `القيم المتطرفة`_ أكثر من وظائف PyTorch الأخرى.
 
-:ref:`linalg solvers` and :ref:`linalg inverses` assume that the input matrix ``A`` is invertible. If it is close to
-being non-invertible (for example, if it has a very small singular value), then these algorithms may silently return
-incorrect results. These matrices are said to be `ill-conditioned <https://nhigham.com/2020/03/19/what-is-a-condition-number/>`_.
-If provided with ill-conditioned inputs, the result of these functions they may vary when using the same inputs on different
-devices or when using different backends via the keyword ``driver``.
+يفترض :ref:`linalg solvers` و :ref:`linalg inverses` أن المصفوفة المدخلة ``A`` قابلة للعكس. إذا كان قريبًا من
+أن تكون غير قابلة للعكس (على سبيل المثال، إذا كان لها قيمة ذاتية صغيرة جدًا)، فقد تعيد هذه الخوارزميات بشكل صامت
+نتائج غير صحيحة. يُقال إن هذه المصفوفات `غير جيدة الشرط <https://nhigham.com/2020/03/19/what-is-a-condition-number/>`_.
+إذا تم تزويدها بإدخالات غير جيدة الشرط، فقد تختلف نتائج هذه الوظائف عند استخدام نفس الإدخالات على أجهزة مختلفة
+أو عند استخدام واجهات خلفية مختلفة عبر الكلمة الأساسية ``driver``.
 
-Spectral operations like ``svd``, ``eig``, and ``eigh`` may also return incorrect results (and their gradients may be infinite)
-when their inputs have singular values that are close to each other. This is because the algorithms used to compute these decompositions
-struggle to converge for these inputs.
+قد تعيد العمليات الطيفية مثل ``svd`` و ``eig`` و ``eigh`` أيضًا نتائج غير صحيحة (وقد تكون تدرجاتها غير محدودة)
+عندما تحتوي إدخالاتها على قيم ذاتية قريبة من بعضها البعض. ويرجع ذلك إلى أن الخوارزميات المستخدمة لحساب هذه التحليلات
+تناضل من أجل التقارب لهذه الإدخالات.
 
-Running the computation in ``float64`` (as NumPy does by default) often helps, but it does not solve these issues in all cases.
-Analyzing the spectrum of the inputs via :func:`torch.linalg.svdvals` or their condition number via :func:`torch.linalg.cond`
-may help to detect these issues.
+غالبًا ما يساعد تشغيل الحساب في ``float64`` (كما هو الحال في NumPy بشكل افتراضي)، ولكنه لا يحل هذه المشكلات في جميع الحالات.
+قد يساعد تحليل طيف الإدخالات عبر :func:`torch.linalg.svdvals` أو رقم شرطها عبر :func:`torch.linalg.cond`
+للكشف عن هذه القضايا.
 
+TensorFloat-32(TF32) على أجهزة Nvidia Ampere (والأحدث)
+-------------------------------------------------------
 
-TensorFloat-32(TF32) on Nvidia Ampere (and later) devices
----------------------------------------------------------
+على أجهزة GPU Ampere (والأحدث) من Nvidia، يمكن لـ PyTorch استخدام TensorFloat32 (TF32) لتسريع العمليات المكثفة رياضيًا، خاصة عمليات الضرب المصفوفية والضربات.
+عندما يتم تنفيذ عملية باستخدام نوى Tensor ذات 32 بت، يتم قراءة البتات العشرة الأولى فقط من فاصلة الكلمة المدخلة.
+قد يؤدي هذا إلى تقليل الدقة وإنتاج نتائج مفاجئة (على سبيل المثال، قد يؤدي ضرب مصفوفة بمصفوفة الهوية إلى إنتاج نتائج مختلفة عن الإدخال).
+بشكل افتراضي، يتم تعطيل نوى Tensor ذات 32 بت للضرب المصفوفي وممكنة للضربات، على الرغم من أن معظم أعباء العمل لشبكة العصبية لها نفس سلوك التقارب عند استخدام TF32 كما هو الحال مع fp32.
+نوصي بتمكين نوى Tensor ذات 32 بت للضرب المصفوفي مع ``torch.backends.cuda.matmul.allow_tf32 = True`` إذا لم تكن شبكتك بحاجة إلى دقة الفاصلة العائمة 32 بت الكاملة.
+إذا كانت شبكتك بحاجة إلى دقة الفاصلة العائمة 32 بت الكاملة لكل من الضرب المصفوفي والضربات، فيمكن أيضًا تعطيل نوى Tensor ذات 32 بت للضربات باستخدام ``torch.backends.cudnn.allow_tf32 = False``.
 
-On Ampere (and later) Nvidia GPUs, PyTorch can use TensorFloat32 (TF32) to speed up mathematically intensive operations, in particular matrix multiplications and convolutions.
-When an operation is performed using TF32 tensor cores, only the first 10 bits of the input mantissa are read.
-This may reduce accuracy and produce surprising results (e.g., multiplying a matrix by the identity matrix may produce results that are different from the input).
-By default, TF32 tensor cores are disabled for matrix multiplications and enabled for convolutions, although most neural network workloads have the same convergence behavior when using TF32 as they have with fp32.
-We recommend enabling TF32 tensor cores for matrix multiplications with ``torch.backends.cuda.matmul.allow_tf32 = True`` if your network does not need full float32 precision.
-If your network needs full float32 precision for both matrix multiplications and convolutions, then TF32 tensor cores can also be disabled for convolutions with ``torch.backends.cudnn.allow_tf32 = False``.
+للحصول على مزيد من المعلومات، راجع :ref:`TensorFloat32<tf32_on_ampere>`.
 
-For more information see :ref:`TensorFloat32<tf32_on_ampere>`.
-
-Reduced Precision Reduction for FP16 and BF16 GEMMs
-----------------------------------------------------
-Half-precision GEMM operations are typically done with intermediate accumulations (reduction) in single-precision for numerical accuracy and improved resilience to overflow. For performance, certain GPU architectures, especially more recent ones, allow a few truncations of the intermediate accumulation results to the reduced precision (e.g., half-precision). This change is often benign from the perspective of model convergence, though it may lead to unexpected results (e.g., ``inf`` values when the final result should be be representable in half-precision).
-If reduced-precision reductions are problematic, they can be turned off with
+الدقة المخفضة لعمليات الضرب المصفوفي FP16 و BF16
+-------------------------------------------
+عادةً ما يتم تنفيذ عمليات الضرب المصفوفي ذات الدقة النصفية باستخدام تراكمات وسيطة (تخفيض) بدقة مفردة من أجل الدقة الرقمية وتحسين المرونة ضد الفيض. لأسباب تتعلق بالأداء، تسمح بعض بنيات GPU، خاصةً الأحدث، ببعض عمليات الاقتصاص لنتائج التراكم الوسيطة إلى الدقة المخفضة (على سبيل المثال، الدقة النصفية). غالبًا ما يكون هذا التغيير غير ضار من منظور تقارب النموذج، على الرغم من أنه قد يؤدي إلى نتائج غير متوقعة (على سبيل المثال، قيم "inf" عندما يجب أن تكون النتيجة النهائية قابلة للتمثيل في الدقة النصفية).
+إذا كانت عمليات التخفيض ذات الدقة المخفضة تسبب مشكلات، فيمكن إيقاف تشغيلها باستخدام
 ``torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False``
 
-A similar flag exists for BF16 GEMM operations and is turned on by default. If BF16
-reduced-precision reductions are problematic, they can be turned off with
+يوجد علم مماثل لعمليات الضرب المصفوفي BF16 وهو مُمكّن بشكل افتراضي. إذا كانت عمليات التخفيض ذات الدقة المخفضة لـ BF16 تسبب مشكلات، فيمكن إيقاف تشغيلها باستخدام
 ``torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False``
 
-For more information see :ref:`allow_fp16_reduced_precision_reduction<fp16reducedprecision>` and :ref:`allow_bf16_reduced_precision_reduction<bf16reducedprecision>`
+للحصول على مزيد من المعلومات، راجع :ref:`allow_fp16_reduced_precision_reduction<fp16reducedprecision>` و :ref:`allow_bf16_reduced_precision_reduction<bf16reducedprecision>`
 
 .. _fp16_on_mi200:
 
-Reduced Precision FP16 and BF16 GEMMs and Convolutions on AMD Instinct MI200 devices
-------------------------------------------------------------------------------------
-On AMD Instinct MI200 GPUs, the FP16 and BF16 V_DOT2 and MFMA matrix instructions flush input and output denormal values to zero. FP32 and FP64 MFMA matrix instructions do not flush input and output denormal values to zero. The affected instructions are only used by rocBLAS (GEMM) and MIOpen (convolution) kernels; all other PyTorch operations will not encounter this behavior. All other supported AMD GPUs will not encounter this behavior.
+الدقة المخفضة لعمليات الضرب المصفوفي والضربات FP16 و BF16 على أجهزة AMD Instinct MI200
+----------------------------------------------------------------------------
+على أجهزة GPU AMD Instinct MI200، تقوم تعليمات مصفوفة FP16 و BF16 V_DOT2 و MFMA بمسح قيم الإدخال والإخراج دون القيمة الدنيا إلى الصفر. لا تقوم تعليمات مصفوفة FP32 و FP64 MFMA بمسح قيم الإدخال والإخراج دون القيمة الدنيا إلى الصفر. يتم استخدام التعليمات المتأثرة فقط بواسطة نوى rocBLAS (GEMM) و MIOpen (convolution)؛ لن تواجه جميع عمليات PyTorch الأخرى هذا السلوك. لن تواجه جميع أجهزة AMD GPU الأخرى هذا السلوك.
 
-rocBLAS and MIOpen provide alternate implementations for affected FP16 operations. Alternate implementations for BF16 operations are not provided; BF16 numbers have a larger dynamic range than FP16 numbers and are less likely to encounter denormal values. For the FP16 alternate implementations, FP16 input values are cast to an intermediate BF16 value and then cast back to FP16 output after the accumulate FP32 operations. In this way, the input and output types are unchanged.
+يوفر rocBLAS و MIOpen تنفيذات بديلة للعمليات FP16 المتأثرة. لا يتم توفير تنفيذات بديلة للعمليات BF16؛ تحتوي أرقام BF16 على نطاق ديناميكي أكبر من أرقام FP16 ومن المحتمل أن تواجه قيمًا دون القيمة الدنيا. للتنفيذ البديل لـ FP16، يتم صب قيم الإدخال FP16 إلى قيمة BF16 وسيطة ثم صبها مرة أخرى إلى إخراج FP16 بعد عمليات التراكم FP32. بهذه الطريقة، تظل أنواع الإدخال والإخراج دون تغيير.
 
-When training using FP16 precision, some models may fail to converge with FP16 denorms flushed to zero. Denormal values more frequently occur in the backward pass of training during gradient calculation. PyTorch by default will use the rocBLAS and MIOpen alternate implementations during the backward pass. The default behavior can be overridden using environment variables, ROCBLAS_INTERNAL_FP16_ALT_IMPL and MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP16_ALT_IMPL. The behavior of these environment variables is as follows:
+عند التدريب باستخدام دقة FP16، قد تفشل بعض النماذج في التقارب مع مسح قيم FP16 دون القيمة الدنيا إلى الصفر. تحدث القيم دون القيمة الدنيا بشكل متكرر في تمرير الخلف أثناء حساب التدرج. بشكل افتراضي، ستستخدم PyTorch التنفيذات البديلة لـ rocBLAS و MIOpen أثناء التمرير الخلفي. يمكن تجاوز السلوك الافتراضي باستخدام متغيرات البيئة، ROCBLAS_INTERNAL_FP16_ALT_IMPL و MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP16_ALT_IMPL. سلوك هذه المتغيرات البيئية كما يلي:
 
 +---------------+-----------+-----------+
 |               | forward   | backward  |
 +===============+===========+===========+
-| Env unset     | original  | alternate |
+| غير محدد     | الأصلي  | بديل |
 +---------------+-----------+-----------+
-| Env set to 1  | alternate | alternate |
+| تم تعيينه إلى 1  | بديل | بديل |
 +---------------+-----------+-----------+
-| Env set to 0  | original  | original  |
+| تم تعيينه إلى 0  | الأصلي  | الأصلي  |
 +---------------+-----------+-----------+
 
-The following is the list of operations where rocBLAS may be used:
+فيما يلي قائمة بالعمليات التي قد يتم استخدامها فيها rocBLAS:
 
 * torch.addbmm
 * torch.addmm
@@ -141,17 +137,17 @@ The following is the list of operations where rocBLAS may be used:
 * torch.nn.LSTMCell
 * torch.nn.Linear
 * torch.sparse.addmm
-* the following torch._C._ConvBackend implementations:
+* التنفيذات التالية لـ torch._C._ConvBackend:
 
   * slowNd
   * slowNd_transposed
   * slowNd_dilated
   * slowNd_dilated_transposed
 
-The following is the list of operations where MIOpen may be used:
+فيما يلي قائمة بالعمليات التي قد يتم استخدامها فيها MIOpen:
 
-* torch.nn.Conv[Transpose]Nd
-* the following torch._C._ConvBackend implementations:
+* torch.nn.Conv [Transpose] Nd
+* التنفيذات التالية لـ torch._C._ConvBackend:
 
   * ConvBackend::Miopen
   * ConvBackend::MiopenDepthwise
