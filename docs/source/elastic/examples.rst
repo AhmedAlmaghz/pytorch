@@ -1,4 +1,4 @@
-Examples
+أمثلة
 ==========================
 
-Please refer to the `elastic/examples README <https://github.com/pytorch/elastic/tree/master/examples>`_.
+يرجى الرجوع إلى `README الخاص بأمثلة elastic <https://github.com/pytorch/elastic/tree/master/examples>`_.
