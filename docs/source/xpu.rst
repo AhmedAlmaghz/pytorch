@@ -1,7 +1,10 @@
-torch.xpu
-===================================
-.. automodule:: torch.xpu
-.. currentmodule:: torch.xpu
+.. |torch-xpu| replace:: torch.xpu
+.. _torch.xpu: torch.html#module-torch.xpu"
+
+|torch-xpu|
+===============
+.. automodule:: |torch-xpu|
+.. currentmodule:: |torch-xpu|
 
 .. autosummary::
     :toctree: generated
@@ -25,8 +28,8 @@ torch.xpu
     stream
     synchronize
 
-Random Number Generator
--------------------------
+مولد الأرقام العشوائية
+----------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -41,8 +44,8 @@ Random Number Generator
     set_rng_state
     set_rng_state_all
 
-Streams and events
-------------------
+التدفقات والأحداث
+---------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -51,7 +54,7 @@ Streams and events
     Stream
 
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. نقوم بإضافته هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.xpu.random
 .. py:module:: torch.xpu.streams
