@@ -2,22 +2,22 @@
 
 .. _multiprocessing-doc:
 
-Multiprocessing package - torch.multiprocessing
-===============================================
+حزمة معالجة متعددة - torch.multiprocessing
+=========================================
 
 .. automodule:: torch.multiprocessing
 .. currentmodule:: torch.multiprocessing
 
 .. warning::
 
-    If the main process exits abruptly (e.g. because of an incoming signal),
-    Python's ``multiprocessing`` sometimes fails to clean up its children.
-    It's a known caveat, so if you're seeing any resource leaks after
-    interrupting the interpreter, it probably means that this has just happened
-    to you.
+    إذا خرجت العملية الرئيسية فجأة (على سبيل المثال، بسبب إشارة واردة)،
+    ففي بعض الأحيان تفشل Python's ``multiprocessing`` في تنظيف عملياتها الفرعية.
+    إنه عيب معروف، لذا إذا كنت ترى أي تسرب للموارد بعد
+    مقاطعة المفسر، فهذا يعني على الأرجح أن هذا حدث
+    لك.
 
-Strategy management
--------------------
+إدارة الاستراتيجية
+------------
 
 .. autofunction:: get_all_sharing_strategies
 .. autofunction:: get_sharing_strategy
@@ -26,67 +26,66 @@ Strategy management
 
 .. _multiprocessing-cuda-sharing-details:
 
-Sharing CUDA tensors
+مشاركة ناقلات CUDA
 --------------------
 
-Sharing CUDA tensors between processes is supported only in Python 3, using
-a ``spawn`` or ``forkserver`` start methods.
+يتم دعم مشاركة ناقلات CUDA بين العمليات فقط في Python 3، باستخدام
+أساليب "spawn" أو "forkserver" للبدء.
 
 
-Unlike CPU tensors, the sending process is required to keep the original tensor
-as long as the receiving process retains a copy of the tensor. The refcounting is
-implemented under the hood but requires users to follow the next best practices.
+على عكس ناقلات وحدة المعالجة المركزية (CPU)، يجب على العملية المرسلة الاحتفاظ بالناقلة الأصلية
+طالما تحتفظ العملية المستقبلة بنسخة من الناقلة. يتم تنفيذ العد المرجعي تحت الغطاء ولكنه يتطلب من المستخدمين اتباع أفضل الممارسات التالية.
 
 .. warning::
-    If the consumer process dies abnormally to a fatal signal, the shared tensor
-    could be forever kept in memory as long as the sending process is running.
+    إذا توقفت عملية المستهلك بشكل غير طبيعي بسبب إشارة خطيرة، فقد يتم الاحتفاظ بالناقلة المشتركة
+    إلى الأبد في الذاكرة طالما أن العملية المرسلة قيد التشغيل.
 
 
-1. Release memory ASAP in the consumer.
+1. حرر الذاكرة في المستهلك في أقرب وقت ممكن.
 
 ::
 
-    ## Good
+    ## جيد
     x = queue.get()
-    # do somethings with x
+    # قم بشيء ما مع x
     del x
 
 ::
 
-    ## Bad
+    ## سيء
     x = queue.get()
-    # do somethings with x
-    # do everything else (producer have to keep x in memory)
+    # قم بشيء ما مع x
+    # افعل كل شيء آخر (يجب على المنتج الاحتفاظ بـ x في الذاكرة)
 
-2. Keep producer process running until all consumers exits. This will prevent
-the situation when the producer process releasing memory which is still in use
-by the consumer.
+2. استمر في تشغيل عملية المنتج حتى تخرج جميع المستهلكين. سيمنع هذا
+الوضع الذي تقوم فيه عملية المنتج بتحرير الذاكرة التي لا تزال قيد الاستخدام
+بواسطة المستهلك.
 
 ::
 
-    ## producer
-    # send tensors, do something
+    ## المنتج
+    # إرسال الناقلات، قم بشيء ما
     event.wait()
 
 
 ::
 
-    ## consumer
-    # receive tensors and use them
+    ## المستهلك
+    # استقبال الناقلات واستخدامها
     event.set()
 
-3. Don't pass received tensors.
+3. لا تمرر الناقلات المستلمة.
 
 ::
 
-    # not going to work
+    # لن ينجح
     x = queue.get()
     queue_2.put(x)
 
 
 ::
 
-    # you need to create a process-local copy
+    # تحتاج إلى إنشاء نسخة محلية من العملية
     x = queue.get()
     x_clone = x.clone()
     queue_2.put(x_clone)
@@ -94,85 +93,69 @@ by the consumer.
 
 ::
 
-    # putting and getting from the same queue in the same process will likely end up with segfault
+    # من المحتمل أن يؤدي وضع الناقلة والحصول عليها من نفس الطابور في نفس العملية إلى تعطل
     queue.put(tensor)
     x = queue.get()
 
 
-Sharing strategies
+استراتيجيات المشاركة
 ------------------
 
-This section provides a brief overview into how different sharing strategies
-work. Note that it applies only to CPU tensor - CUDA tensors will always use
-the CUDA API, as that's the only way they can be shared.
+يقدم هذا القسم نظرة عامة موجزة حول كيفية عمل استراتيجيات المشاركة المختلفة. لاحظ أن هذا ينطبق فقط على ناقلات وحدة المعالجة المركزية (CPU) - ستستخدم ناقلات CUDA دائمًا
+واجهة برمجة التطبيقات CUDA، حيث أنها الطريقة الوحيدة التي يمكن بها مشاركتها.
 
-File descriptor - ``file_descriptor``
+وصف الملف - ``file_descriptor``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. note::
 
-    This is the default strategy (except for macOS and OS X where it's not
-    supported).
+    هذه هي الاستراتيجية الافتراضية (باستثناء macOS وOS X حيث لا يتم
+    دعمها).
 
-This strategy will use file descriptors as shared memory handles. Whenever a
-storage is moved to shared memory, a file descriptor obtained from ``shm_open``
-is cached with the object, and when it's going to be sent to other processes,
-the file descriptor will be transferred (e.g. via UNIX sockets) to it. The
-receiver will also cache the file descriptor and ``mmap`` it, to obtain a shared
-view onto the storage data.
+ستستخدم هذه الاستراتيجية مؤشرات الملفات كمقابض للذاكرة المشتركة. كلما تم نقل
+التخزين إلى الذاكرة المشتركة، يتم تخزين مؤشر الملف الذي تم الحصول عليه من ``shm_open``
+مع الكائن، وعندما يتم إرساله إلى عمليات أخرى،
+سيتم نقل مؤشر الملف (على سبيل المثال، عبر مقابس UNIX) إليه. سيقوم المستقبل أيضًا بتخزين مؤشر الملف في ذاكرة التخزين المؤقتة وسيقوم بـ ``mmap``، للحصول على عرض مشترك لبيانات التخزين.
 
-Note that if there will be a lot of tensors shared, this strategy will keep a
-large number of file descriptors open most of the time. If your system has low
-limits for the number of open file descriptors, and you can't raise them, you
-should use the ``file_system`` strategy.
+لاحظ أنه إذا كان هناك الكثير من الناقلات المشتركة، فستحتفظ هذه الاستراتيجية
+بعدد كبير من مؤشرات الملفات المفتوحة معظم الوقت. إذا كان نظامك يحتوي على حدود منخفضة
+لعدد مؤشرات الملفات المفتوحة، ولا يمكنك رفعها، فيجب عليك استخدام استراتيجية "file_system".
 
-File system - ``file_system``
+نظام الملفات - ``file_system``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This strategy will use file names given to ``shm_open`` to identify the shared
-memory regions. This has a benefit of not requiring the implementation to cache
-the file descriptors obtained from it, but at the same time is prone to shared
-memory leaks. The file can't be deleted right after its creation, because other
-processes need to access it to open their views. If the processes fatally
-crash, or are killed, and don't call the storage destructors, the files will
-remain in the system. This is very serious, because they keep using up the
-memory until the system is restarted, or they're freed manually.
+ستستخدم هذه الاستراتيجية أسماء الملفات المقدمة إلى ``shm_open`` لتحديد مناطق الذاكرة المشتركة. تتمثل ميزة ذلك في عدم الحاجة إلى تنفيذ ذاكرة التخزين المؤقت لمؤشرات الملفات التي تم الحصول عليها منها، ولكنه في نفس الوقت عرضة لتسرب الذاكرة المشتركة. لا يمكن حذف الملف فور إنشائه، لأن العمليات الأخرى تحتاج إلى الوصول إليه لفتح طرق العرض الخاصة بها. إذا تعطلت العمليات أو قُتلت بشكل مفاجئ، ولم تستدعي دالات التدمير للتخزين، فستظل الملفات موجودة في النظام. هذا أمر خطير للغاية، لأنها تستمر في استخدام الذاكرة حتى يتم إعادة تشغيل النظام، أو تحريرها يدويًا.
 
-To counter the problem of shared memory file leaks, :mod:`torch.multiprocessing`
-will spawn a daemon named ``torch_shm_manager`` that will isolate itself from
-the current process group, and will keep track of all shared memory allocations.
-Once all processes connected to it exit, it will wait a moment to ensure there
-will be no new connections, and will iterate over all shared memory files
-allocated by the group. If it finds that any of them still exist, they will be
-deallocated. We've tested this method and it proved to be robust to various
-failures. Still, if your system has high enough limits, and ``file_descriptor``
-is a supported strategy, we do not recommend switching to this one.
+لمكافحة مشكلة تسرب ملف الذاكرة المشتركة، سينشئ :mod:`torch.multiprocessing`
+عملية شيطان تسمى ``torch_shm_manager`` التي ستنفصل عن
+مجموعة العمليات الحالية، وستقوم بتتبع جميع مخصصات الذاكرة المشتركة. بمجرد خروج جميع العمليات المتصلة بها، فستنتظر لحظة للتأكد من عدم وجود
+اتصالات جديدة، وستقوم بالتحقق من جميع ملفات الذاكرة المشتركة
+المخصصة بواسطة المجموعة. إذا وجد أن أي منها لا يزال موجودًا، فسيتم إلغاء تخصيصها. لقد اختبرنا هذه الطريقة وقد ثبت أنها قوية في مواجهة مختلف
+الأعطال. ومع ذلك، إذا كان لدى نظامك حدود عالية بما فيه الكفاية، و
+"file_descriptor" هي استراتيجية مدعومة، فنحن لا نوصي بالتبديل إلى هذا.
 
-Spawning subprocesses
+إنشاء العمليات الفرعية
 ---------------------
 
 .. note::
 
-   Available for Python >= 3.4.
+   متاح لـ Python >= 3.4.
 
-   This depends on the ``spawn`` start method in Python's
-   ``multiprocessing`` package.
+   يعتمد هذا على طريقة "spawn" للبدء في حزمة "multiprocessing" في Python.
 
-Spawning a number of subprocesses to perform some function can be done
-by creating ``Process`` instances and calling ``join`` to wait for
-their completion. This approach works fine when dealing with a single
-subprocess but presents potential issues when dealing with multiple
-processes.
+يمكن إنشاء عدد من العمليات الفرعية لأداء بعض الوظائف
+من خلال إنشاء مثيلات "Process" واستدعاء "join" للانتظار
+اكتمالها. يعمل هذا النهج بشكل جيد عند التعامل مع عملية فرعية واحدة ولكنه يمثل مشكلات محتملة عند التعامل مع عمليات متعددة.
 
-Namely, joining processes sequentially implies they will terminate
-sequentially. If they don't, and the first process does not terminate,
-the process termination will go unnoticed. Also, there are no native
-facilities for error propagation.
+بمعنى، فإن الانضمام إلى العمليات بشكل متسلسل يعني أنها ستنهي
+بالتسلسل. إذا لم يحدث ذلك، ولم تنته العملية الأولى،
+سيتم تجاهل إنهاء العملية. أيضًا، لا توجد مرافق أصلية
+لانتشار الأخطاء.
 
-The ``spawn`` function below addresses these concerns and takes care
-of error propagation, out of order termination, and will actively
-terminate processes upon detecting an error in one of them.
+تعالج دالة "spawn" أدناه هذه المخاوف وتعتني بنشر الأخطاء،
+إنهاء خارج الترتيب، وسوف ينهي العمليات بنشاط
+عند اكتشاف خطأ في أحدها.
 
 .. automodule:: torch.multiprocessing.spawn
 .. currentmodule:: torch.multiprocessing.spawn
@@ -184,13 +167,13 @@ terminate processes upon detecting an error in one of them.
 
 .. class:: SpawnContext
 
-   Returned by :func:`~spawn` when called with ``join=False``.
+   يتم إرجاعه بواسطة :func:`~spawn` عند استدعائه باستخدام ``join=False``.
 
    .. automethod:: join
 
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. إضافته هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.multiprocessing.pool
 .. py:module:: torch.multiprocessing.queue
 .. py:module:: torch.multiprocessing.reductions
