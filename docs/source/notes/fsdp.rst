@@ -1,148 +1,106 @@
 .. _fsdp_notes:
 
-FSDP Notes
+ملاحظات FSDP
 ==========
 
 .. _fsdp_prefetch:
 
-FSDP Prefetch Nuances
+التفاصيل الدقيقة لآلية استباق FSDP
 ---------------------
 
-For overlapping ``forward`` all-gathers with ``forward`` compute, there are two possible mechanisms:
+بالنسبة لعمليات "all-gather" المتداخلة ``forward`` مع الحساب ``forward``، هناك آليتان ممكنتان:
 
-1. Implicit forward prefetching (always enabled)
-2. Explicit forward prefetching (``forward_prefetch=True``)
+1. الاستباق الضمني للأمام (مفعل دائمًا)
+2. الاستباق الصريح للأمام (``forward_prefetch=True``)
 
-Implicit ``forward`` prefetching refers to relying on issuing the all-gathers from a separate CUDA
-stream to allow for overlapping an all-gather with ``forward`` compute issued before it (from the CPU
-perspective). For example, if we have layer 0 all-gather -> layer 0 ``forward`` compute -> layer 1
-all-gather -> …, then layer 1 all-gather can overlap with layer 0 ``forward`` compute even though the
-CPU thread issued it afterwards. (The 1st all-gather will not be able to overlap with anything.)
+يشير الاستباق الضمني "forward" إلى الاعتماد على إصدار عمليات "all-gather" من تيار CUDA منفصل للسماح بالتداخل بين عملية "all-gather" والحساب "forward" الصادر قبلها (من منظور وحدة المعالجة المركزية). على سبيل المثال، إذا كان لدينا طبقة 0 "all-gather" -> طبقة 0 حساب "forward" -> طبقة 1 "all-gather" -> ...، فيمكن لطبقة 1 "all-gather" أن تتداخل مع طبقة 0 حساب "forward" على الرغم من أن خيط وحدة المعالجة المركزية أصدره لاحقًا. (لن تتمكن أول عملية "all-gather" من التداخل مع أي شيء.)
 
-Explicit ``forward`` prefetching refers to changing the CPU thread’s issue order: e.g. layer 0
-all-gather -> layer 1 all-gather -> layer 0 ``forward`` compute -> …. In eager mode, there is no way to
-know in general which layer is the next layer (e.g. layer 1 in the example) when still executing on
-layer 0. Therefore, explicit ``forward`` prefetching should only be used for models whose execution
-order is fixed from iteration to iteration (which we sometimes call “static graph”). An example of a
-model that does not satisfy this constraint is `FLAVA
-<https://pytorch.org/blog/scaling-multimodal-foundation-models-in-torchmultimodal-with-pytorch-distributed/>`_).
+يشير الاستباق الصريح "forward" إلى تغيير ترتيب الإصدار لخيط وحدة المعالجة المركزية: على سبيل المثال، طبقة 0 "all-gather" -> طبقة 1 "all-gather" -> طبقة 0 حساب "forward" -> ... في الوضع الحريص، لا توجد طريقة لمعرفة أي طبقة هي الطبقة التالية (مثل الطبقة 1 في المثال) عند التنفيذ لا يزال على الطبقة 0. لذلك، يجب استخدام الاستباق الصريح للأمام فقط للنماذج التي يكون ترتيب التنفيذ الخاص بها ثابتًا من تكرار إلى آخر (والذي نسميه أحيانًا "الرسم البياني الثابت"). مثال على نموذج لا يفي بهذا القيد هو `FLAVA <https://pytorch.org/blog/scaling-multimodal-foundation-models-in-torchmultimodal-with-pytorch-distributed/>`_).
 
-Explicit ``forward`` prefetching only saves the time taken to issue a layer’s ``forward`` compute kernels at
-the cost that the next all-gather’s output tensor must be allocated while the current one is still
-in use. By issuing the next all- gather before the current ``forward`` compute kernels, the next
-all-gather can start sooner on GPU. For most LLM workloads, this is not the case, so there is no
-motivation for enabling ``forward_prefetch=True``.
+لا يوفر الاستباق الصريح "forward" سوى الوقت المستغرق في إصدار نوى الحساب "forward" لطبقة ما مقابل أن يجب تخصيص موتر الإخراج لعملية "all-gather" التالية أثناء استخدام الحالي. من خلال إصدار "all-gather" التالي قبل نوى الحساب "forward" الحالية، يمكن لـ "all-gather" التالي البدء في وقت سابق على GPU. بالنسبة لمعظم أعباء العمل LLM، هذه ليست الحالة، لذلك لا يوجد دافع لتمكين ``forward_prefetch=True``.
 
-In contrast, for ``backward``, we must use explicit ``backward`` prefetching or else there will be 0 overlap
-of communication and computation. The reason is because we use a single NCCL process group for both
-all-gather and reduce-scatter (partially because in earlier NCCL versions, it was not safe to use
-multiple concurrently on the same device over the same ranks). A single NCCL process group means a
-single internal NCCL stream on which reduce-scatters and all-gathers run serially. As such, unless
-we explicitly reorder the CPU issue order to be next all-gather -> current reduce-scatter, then the
-current reduce-scatter would block the next all-gather and hence the next ``backward`` computation,
-preventing the current reduce-scatter from overlapping.
+على النقيض من ذلك، بالنسبة لـ "backward"، يجب علينا استخدام الاستباق الصريح "backward" وإلا فلن يكون هناك أي تداخل للاتصال والحساب. والسبب هو أننا نستخدم مجموعة عمليات NCCL واحدة لكل من "all-gather" و"reduce-scatter" (جزئيًا لأن الإصدارات الأقدم من NCCL لم تكن آمنة للاستخدام المتزامن على نفس الجهاز عبر نفس الرتب). تعني مجموعة عمليات NCCL واحدة تيار NCCL داخلي واحد تعمل عليه عمليات "reduce-scatter" و"all-gather" بشكل متسلسل. وبالتالي، ما لم نعيد صراحة ترتيب الإصدار الخاص بوحدة المعالجة المركزية ليكون "all-gather" التالي -> "reduce-scatter" الحالي، فإن "reduce-scatter" الحالي سيحظر "all-gather" التالي وبالتالي الحساب "backward" التالي، مما يمنع "reduce-scatter" الحالي من التداخل.
 
 .. _fsdp_comms_payload_size:
 
-Communication payload size
---------------------------
+حجم حمولة الاتصال
+-------------
 
-In FSDP the communications are:
+في FSDP، تتم الاتصالات على النحو التالي:
 
-1. all-gather on parameters in ``forward``
-2. all-gather on parameters in ``backward``
-3. reduce-scatter on gradients in ``backward``
+1. "all-gather" على المعلمات في "forward"
+2. "all-gather" على المعلمات في "backward"
+3. "reduce-scatter" على التدرجات في "backward"
 
-If activation checkpointing (:func:`~torch.utils.checkpoint.checkpoint`) is used there is no
-additional communication since the parameters are prefetched anyway during ``backward``.
+إذا تم استخدام نقطة تفتيش التنشيط (:func:`~torch.utils.checkpoint.checkpoint`)، فلن يكون هناك اتصال إضافي نظرًا لأنه يتم استباق المعلمات على أي حال أثناء "backward".
 
-In the FSDP design, the communication payload per rank is determined as follows: Each call to
-:class:`FullyShardedDataParallel` creates one communication group consisting of the parameters in
-``module.parameters()`` except any already assigned to a nested :class:`FullyShardedDataParallel`
-instance. For example, for Llama, if you apply :class:`FullyShardedDataParallel` to every
-transformer block and also to the root module, then there is one communication group for each
-transformer block and finally one communication group with the initial embedding and final linear.
-Each communication group corresponds to a single all-gather call and single reduce-scatter call. In
-that way, how you apply :class:`FullyShardedDataParallel` determines the communication size. In
-general, applying FSDP to each transformer block is a good heuristic for LLMs, and it is hard to do
-better than that given the current design.
+في تصميم FSDP، يتم تحديد حجم الحمولة لكل رتبة على النحو التالي: يؤدي كل استدعاء إلى :class:`FullyShardedDataParallel` إلى إنشاء مجموعة اتصال واحدة تتكون من المعلمات في ``module.parameters()`` باستثناء أي منها تم تعيينه بالفعل لمثيل :class:`FullyShardedDataParallel` متداخل. على سبيل المثال، بالنسبة لـ Llama، إذا قمت بتطبيق :class:`FullyShardedDataParallel` على كل كتلة محول وحدات عصبية وكذلك على وحدة التحكم الجذرية، فستكون هناك مجموعة اتصال واحدة لكل كتلة محول وحدات عصبية وأخيرًا مجموعة اتصال واحدة مع تضمين التعليق والخطي النهائي. تتوافق كل مجموعة اتصال مع مكالمة "all-gather" واحدة ومكالمة "reduce-scatter" واحدة. بهذه الطريقة، فإن كيفية تطبيق :class:`FullyShardedDataParallel` تحدد حجم الاتصال. بشكل عام، يعد تطبيق FSDP على كل كتلة محول وحدات عصبية طريقة جيدة للنماذج اللغوية العصبية، ومن الصعب القيام بأفضل من ذلك بالنظر إلى التصميم الحالي.
 
-Let's consider an example where we have a Transformer-based model sharded over 8 GPUs, where the
-sharding happens at the transformer block-level only, and each transformer block contains 1.6B
-parameters and the parameters are in fp32 (4 bytes each). Which means that once sharded, each
-transformer block will contain 0.2B parameters on each rank.
+لنأخذ مثالاً حيث لدينا نموذج قائم على محول وحدات عصبية مجزأ عبر 8 وحدات معالجة رسومية، حيث يحدث التجزئة على مستوى كتلة المحول وحدات عصبية فقط، وتحتوي كل كتلة محول وحدات عصبية على 1.6 مليار معلمة والمعلمات في fp32 (4 بايت لكل منها). وهذا يعني أنه بمجرد تجزئة، ستتضمن كل كتلة محول وحدات عصبية 0.2 مليار معلمة على كل رتبة.
 
-* The ``forward`` pass will communicate in chunks of ``0.2*4 = 0.8GB`` in all-gather
-* The ``backward`` pass will communicate 2 times ``0.8GB`` each (1x all-gather and 1x reduce-scatter)
+* سيتم التواصل في تمرير "forward" بقطع من ``0.2*4 = 0.8GB`` في "all-gather"
+* سيتم التواصل في تمرير "backward" مرتين ``0.8GB`` لكل منهما (1x "all-gather" و 1x "reduce-scatter")
 
-In other words there will be 3 communications with a payload of ``0.8GB`` each. If the model was
-comprised of 10 transformer blocks there would be a total of 30 communications for a total of
-``30*0.8=24GB``.
+بعبارة أخرى، ستكون هناك 3 اتصالات بحمولة ``0.8GB`` لكل منها. إذا كان النموذج يتكون من 10 كتل محول وحدات عصبية، فستكون هناك 30 عملية اتصال بإجمالي ``30*0.8=24GB``.
 
-To formalize the payload size per communication per rank is
-``total_transformer_block_params_in_B*dtype_bytes/num_gpus`` (GBs).
+لتحديد حجم الحمولة لكل اتصال لكل رتبة، يكون ``total_transformer_block_params_in_B*dtype_bytes/num_gpus`` (جيجابايت).
 
-Please note that in this example we didn't include the additional communications required for the
-embedding, which should be accounted for as well. And the math would depend on whether the input and
-output embeddings are tied or not. If they aren't tied there will be 2x more communications.
+يرجى ملاحظة أننا في هذا المثال لم ندرج الاتصالات الإضافية المطلوبة للتضمين، والتي يجب حسابها أيضًا. وستعتمد الرياضيات على ما إذا كانت التعليقات الواردة والصادرة مرتبطة بالوزن أم لا. إذا لم تكن مرتبطة بالوزن، فستكون هناك 2x اتصالات أكثر.
 
 .. _fsdp_buffers_sizes:
 
-FSDP buffers sizes
+أحجام المخازن المؤقتة FSDP
 ------------------
 
-First, let's cover the buffers allocated for communications:
+أولاً، دعنا نغطي المخازن المؤقتة المخصصة للاتصالات:
 
-``forward`` currently requires 2x all-gather buffer size. Here is why:
+يتطلب "forward" حاليًا حجم مخزن مؤقت "all-gather" 2x. إليك السبب:
 
-As explained in :ref:`fsdp_prefetch` in the case of explicit ``forward`` prefetching
-(``forward_prefetch=True`) case of layer 0 all-gather -> layer 0 forward compute -> layer 1
-all-gather there is a need for 2 all-gather-sized buffers, because one buffer is used in the current ``forward`` while the other is used to do the prefetching.
+كما هو موضح في :ref:`fsdp_prefetch` في حالة الاستباق الصريح "forward" (``forward_prefetch=True``) حالة طبقة 0 "all-gather" -> طبقة 0 حساب "forward" -> طبقة 1 "all-gather" هناك حاجة إلى مخزن مؤقت بحجم "all-gather" 2، لأن أحد المخازن المؤقتة يستخدم في "forward" الحالي بينما يستخدم الآخر للاستباق.
 
-While the implicit ``forward`` prefetching (``forward_prefetch=False``, default) case of the same sequence in theory should need only 1 buffer, in reality it's still 2x all-gather-sized buffers. The reason is that in the flat-parameter FSDP design, we do not copy-out of the all-gather buffer. The parameters used for compute are directly viewed into the all-gather buffer (in fact, the main benefit of the "flat parameter" is exactly this reason). In that case, while 'layer 1 all-gather' is overlapping with 'layer 0 forward compute', the 'layer 0 forward compute' is using the parameters viewed into the 'layer 0 all-gather' buffer.
+في حين أن حالة الاستباق الضمني "forward" (``forward_prefetch=False``، الافتراضي) لنفس التسلسل من الناحية النظرية يجب أن تحتاج فقط إلى مخزن مؤقت واحد، في الواقع لا يزال الأمر يتعلق بحجم مخزن مؤقت "all-gather" 2x. والسبب هو أنه في تصميم FSDP المسطح، لا نقوم بنسخ من مخزن مؤقت "all-gather". يتم عرض المعلمات المستخدمة للحساب مباشرة في مخزن مؤقت "all-gather" (في الواقع، الفائدة الرئيسية من "المعلمة المسطحة" هي بالضبط هذا السبب). في هذه الحالة، في حين أن 'طبقة 1 all-gather' تتداخل مع 'طبقة 0 حساب forward'، فإن 'طبقة 0 حساب forward' تستخدم المعلمات التي يتم عرضها في 'طبقة 0 all-gather' المخزن المؤقت.
 
-A natural question then is, when would you want ``forward_prefetch=False``? For static-graph models (like most LLMs), there is a major technical reason. It is more that, practically, we added this option quickly for some CPU-bound internal models and have not tested every code path with it in unit testing, so we are less confident in it. ``forward_prefetching=False`` can be slightly easier to reason about since we do not have to check the recorded forward order as a possible 'failure mode'; a module's all-gather can always be found under its own ``record_function`` label in its profiler trace.
+ثم يطرح سؤال طبيعي وهو، متى تريد ``forward_prefetch=False``؟ بالنسبة لنماذج الرسم البياني الثابت (مثل معظم LLMs)، هناك سبب تقني رئيسي. إنه أكثر من ذلك، من الناحية العملية، أضفنا هذا الخيار بسرعة لبعض النماذج الداخلية المحدودة بوحدة المعالجة المركزية ولم نقم باختبار كل مسار التعليمات البرمجية معها في اختبار الوحدة، لذلك نحن أقل ثقة فيه. يمكن أن يكون ``forward_prefetching=False`` أسهل في الاستدلال لأنه لا يتعين علينا التحقق من ترتيب forward المسجل كـ "وضع فشل محتمل"؛ يمكن دائمًا العثور على "all-gather" للوحدة النمطية تحت تسمية "record_function" الخاصة بها في تتبع الملف الشخصي لها.
 
-``backward`` currently requires at least 2x all-gather buffer size and potentially a bit more. Here is why:
+يتطلب "backward" حاليًا حجم مخزن مؤقت "all-gather" 2x على الأقل وقد يكون أكثر قليلاً. إليك السبب:
 
-The current FSDP design uses ``recordStream`` to manage allocations produced in one stream consumed in another, which can lead to more memory usage than expected. How much more can be "non-deterministic" in that it depends on GPU kernel timing relative to the CPU. The ``limit_all_gathers=True`` argument is a mitigation to that - for more details refer to this discussion is `FSDP & CUDACachingAllocator <https://dev-discuss.pytorch.org/t/fsdp-cudacachingallocator-an-outsider-newb-perspective/1486/1>`_.
+يستخدم التصميم الحالي لـ FSDP ``recordStream`` لإدارة المخصصات التي يتم إنتاجها في تيار واحد والتي يتم استهلاكها في تيار آخر، والتي يمكن أن تؤدي إلى زيادة استخدام الذاكرة أكثر مما هو متوقع. يعتمد مقدار الزيادة على توقيت نواة GPU بالنسبة إلى وحدة المعالجة المركزية. حجة ``limit_all_gathers=True`` هي تخفيف لذلك - لمزيد من التفاصيل، راجع هذه المناقشة هي `FSDP & CUDACachingAllocator <https://dev-discuss.pytorch.org/t/fsdp-cudacachingallocator-an-outsider-newb-perspective/1486/1>`_.
 
-The way existing FSDP works with autograd:
+هذه هي طريقة عمل FSDP الحالي مع autograd:
 
-* Existing FSDP all-gathers the ``flat_param``, which is the autograd leaf.
-* It calls ``torch.split`` to get 1D views into the ``flat_param`` corresponding to its constituent original parameters.
-* It calls ``torch.view`` on each 1D split to view back to ND.
-* This means that in ``backward``, we end up with ``ViewBackward`` (ND -> 1D) and ``SplitWithSizesBackward`` (which is a concat). In particular, each individual gradient is computed as a separate allocation, and an explicit concat happens to construct the reduce-scatter input buffer. This implies actually a 2x buffer size for reduce-scatter at that peak memory point.
+* تقوم FSDP الحالية بـ "all-gather" لـ ``flat_param``، والتي تعد ورقة autograd.
+* يستدعي ``torch.split`` للحصول على طرق عرض 1D في ``flat_param`` المقابلة لمعلماتها الأصلية.
+* يستدعي ``torch.view`` على كل تقسيم 1D لعرضه مرة أخرى إلى ND.
+* هذا يعني أنه في "backward"، ينتهي بنا الأمر بـ ``ViewBackward`` (ND -> 1D) و ``SplitWithSizesBackward`` (والذي عبارة عن عملية دمج). على وجه الخصوص، يتم حساب كل تدرج فردي كمخصص منفصل، ويحدث دمج صريح لبناء مخزن مؤقت لإدخال "reduce-scatter". هذا يعني في الواقع حجم مخزن مؤقت 2x لـ "reduce-scatter" في تلك الذروة نقطة الذاكرة.
 
-In summary, for ``backward``, it is about 2x buffer size for reduce-scatter plus any ``recordStream`` effects.
+خلاصة القول، بالنسبة لـ "backward"، هناك حوالي 2x حجم المخزن المؤقت لـ "reduce-scatter" بالإضافة إلى أي آثار "recordStream".
 
-Second, let's discuss the additional buffers:
+ثانيًا، دعنا نناقش المخازن المؤقتة الإضافية:
 
-Once the sharded parameters are gathered from all ranks, they require an additional buffer of `total_transformer_block_params_in_B*dtype_bytes` for the full parameters - so continuing the example from earlier if each transformer block is 1.6B parameters and the parameters are in fp32, then it'd be `1.6*4=6.4GB` buffer.
+بمجرد تجميع المعلمات المجزأة من جميع الرتب، فإنها تتطلب مخزنًا مؤقتًا إضافيًا لـ `total_transformer_block_params_in_B*dtype_bytes` للمعلمات الكاملة - لذا فإن الاستمرار في المثال السابق، إذا كانت كل كتلة محول وحدات عصبية تحتوي على 1.6 مليار معلمة والمعلمات في fp32، فسيكون `1.6*4=6.4GB` المخزن المؤقت.
 
-And there is a need for 2 of those buffers, since there is one currently being used and another being prefetched.
+وهناك حاجة إلى مخزن مؤقت 2 من هذه المخازن المؤقتة، حيث يتم استخدام أحدها حاليًا والآخر يتم استباقه.
 
-To summarize, we have:
+لتلخيص، لدينا:
 
-1. 2 times communication buffers of ``total_transformer_block_params_in_B*dtype_bytes/num_gpus``
-2. 2 times unsharded transformer block parameters buffer ````total_transformer_block_params_in_B*dtype_bytes``
+1. 2 مرات مخازن مؤقتة للاتصال بحجم ``total_transformer_block_params_in_B*dtype_bytes/num_gpus``
+2. 2 مرات مخازن مؤقتة للمعلمات غير المجزأة بحجم الكتلة المحولة ````total_transformer_block_params_in_B*dtype_bytes``
 
-or if you have been following the example:
+أو إذا كنت تتبع المثال:
 
 1. ``2*1.6*4/8=1.6GB``
 2. ``2**1.6*4=12.8GB``
 
-and the total of ``14.4GB``.
+والمجموع هو ``14.4GB``.
 
-Now let's briefly discuss what happens to the embeddings as we have left those out from the calculations:
+والآن دعنا نناقش باختصار ما يحدث للتعليقات حيث تركناها خارج الحسابات:
 
-Given the rule we discussed that you included in the note starting with "the communication buffer
-size is determined as follows", we can analyze as follows:
+بالنظر إلى القاعدة التي ناقشناها والتي أدرجتها في الملاحظة التي تبدأ بـ "يتم تحديد حجم مخزن مؤقت الاتصال على النحو التالي"، يمكننا التحليل على النحو التالي:
 
-* Suppose we apply FSDP to the root module (e.g. the ``Transformer`` class). Suppose we further apply FSDP to each transformer block (e.g. the ``TransformerBlock`` class).
-* Most commonly, the embedding and final linear projection are direct children of the root ``Transformer`` class.
-* Following our rule, that means that the embedding and final linear projection are assigned to the root ``Transformer``'s flat parameter.
-* We have _another_ special rule, which is that the root does not free its parameters after forward because they will be anyways immediately all-gathered in backward.
-* Putting this together, this means that the root's flat parameter including the embedding and final projection are all-gathered to begin forward and kept in GPU memory until the end of backward.
-* If the embedding and final linear are not weight-tied, then we _could_ further apply FSDP to the embedding and to the final linear. For weight-tied parameters, we require them to be part of the same flat parameter (or else it would get double-counted). That would allow the embedding to be freed after its usage in forward and only all-gathered toward the end of backward.
-* Hopefully, this gives a better sense -- each FSDP module gets assigned parameters in its ``module.parameters`` except those already assigned to another nested FSDP module, and the FSDP module's ``forward`` defines the 'live' interval for its parameters. Hence, the nested ``nn.Module`` structure can affect the all-gather/free schedule and hence the memory/throughput performance.
+* افترض أننا نطبق FSDP على وحدة التحكم الجذرية (على سبيل المثال، فئة "محول وحدات عصبية"). افترض أننا نطبق FSDP أيضًا على كل كتلة محول وحدات عصبية (على سبيل المثال، فئة "كتلة محول وحدات عصبية").
+* الأكثر شيوعًا، التعليق والتعليق النهائي عبارة عن أطفال مباشرين لوحدة التحكم الجذرية "محول وحدات عصبية".
+* وفقًا لقاعدتنا، فإن هذا يعني أن التعليق والتعليق النهائي يتم تعيينهما إلى "المعلمة المسطحة" لوحدة التحكم الجذرية "محول وحدات عصبية".
+* لدينا _قاعدة خاصة أخرى_، وهي أن الجذر لا يقوم بتحرير معلماته بعد "forward" لأنه سيتم على أي حال "all-gather" في "backward".
+* وضع هذا معًا، يعني هذا أن "المعلمة المسطحة" لوحدة التحكم الجذرية بما في ذلك التعليق والتعليق النهائي يتم "all-gather" لبدء "forward" والاحتفاظ بها في ذاكرة GPU حتى نهاية "backward".
+* إذا لم تكن التعليقات الواردة والصادرة مرتبطة بالوزن، فيمكننا _إضافة_ تطبيق FSDP على التعليق وعلى التعليق النهائي. بالنسبة للمعلمات المرتبطة بالوزن، نطلب منهم أن يكونوا جزءًا من نفس "المعلمة المسطحة" (وإلا فسيتم حسابها مرتين). من شأن ذلك أن يسمح بإلغاء تنشيط التعليق بعد استخدامه في "forward" وعدم "all-gather" إلا نحو نهاية "backward".
+* نأمل أن يعطي هذا إحساسًا أفضل - يتم تعيين كل وحدة نمطية FSDP المعلمات في ``module.parameters`` باستثناء تلك المعينة بالفعل لمثيل FSDP متداخل آخر، ويحدد "forward" للوحدة النمطية "فترة الحياة" لمعلماتها. وبالتالي، يمكن لهيكل "nn.Module" المتداخل أن يؤثر على جدول "all-gather"/free وبالتالي أداء الذاكرة/السرعة.
