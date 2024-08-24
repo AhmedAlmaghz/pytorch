@@ -1,377 +1,210 @@
 .. note::
 
-   This page has been deprecated. Please refer to the `Contribution Guide <https://github.com/pytorch/pytorch/wiki/The-Ultimate-Guide-to-PyTorch-Contributions>`_ on the PyTorch Wiki.
+   تم إيقاف العمل بهذه الصفحة. يرجى الرجوع إلى `دليل المساهمة <https://github.com/pytorch/pytorch/wiki/The-Ultimate-Guide-to-PyTorch-Contributions>`_ على ويكي PyTorch.
 
-PyTorch Contribution Guide
+دليل المساهمة في PyTorch
 ==========================
+PyTorch هو حزمة حسابات تنسور Python معجلة بواسطة GPU لبناء شبكات عصبية عميقة باستخدام أنظمة autograd المستندة إلى الشريط.
 
-PyTorch is a GPU-accelerated Python tensor computation package for
-building deep neural networks using a tape-based autograd systems.
+عملية المساهمة
+----------
+تدار منظمة PyTorch بواسطة :doc:`حوكمة PyTorch <governance>` ويمكن العثور على الدليل الفني للمساهمة في `CONTRIBUTING.md <https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md>`_.
 
+تتضمن عملية تطوير PyTorch قدرًا صحيًا من المناقشات المفتوحة بين فريق التطوير الأساسي والمجتمع.
 
+تعمل PyTorch بشكل مشابه لمعظم مشاريع المصادر المفتوحة على GitHub. ومع ذلك، إذا لم تساهم من قبل في مشروع مفتوح المصدر، فهذه هي العملية الأساسية.
 
+-  **حدد ما الذي ستعمل عليه.** تأتي غالبية المساهمات مفتوحة المصدر من الأشخاص الذين يحكون حكتهم. ومع ذلك، إذا لم تكن تعرف ما الذي تريد العمل عليه، أو إذا كنت ترغب فقط في التعرف أكثر على المشروع، فهناك بعض النصائح للعثور على المهام المناسبة:
 
-Contribution Process
---------------------
+   -  تصفح `قائمة المشكلات <https://github.com/pytorch/pytorch/issues/>`__ وشاهد ما إذا كانت هناك أي مشكلات تعرف كيفية إصلاحها. تميل المشكلات التي تم تأكيدها من قبل المساهمين الآخرين إلى أن تكون أفضل للتحقيق. كما أننا نحتفظ ببعض العلامات للمشكلات التي من المحتمل أن تكون جيدة للأشخاص الجدد، على سبيل المثال، **bootcamp** و **1hr**، على الرغم من أن هذه العلامات أقل جودة.
+   -  انضم إلينا على `dev discuss <https://dev-discuss.pytorch.org/>`_ وأخبرنا أنك مهتم بمعرفة المزيد عن PyTorch. نحن سعداء جدًا بمساعدة الباحثين والشركاء على التعرف على قاعدة التعليمات البرمجية.
 
-The PyTorch organization is governed by :doc:`PyTorch
-Governance <governance>` and the technical guide to contributing
-can be found in `CONTRIBUTING.md <https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md>`_.
+-  **حدد نطاق تغييرك واطلب التعليقات على التصميم في مشكلة GitHub إذا كان كبيرًا.** غالبية طلبات السحب صغيرة؛ في هذه الحالة، لا داعي لإخبارنا بما تريد القيام به، فقط قم بذلك. ولكن إذا كان التغيير سيكون كبيرًا، فمن الجيد عادةً الحصول على بعض تعليقات التصميم حوله أولاً عن طريق `تقديم RFC <https://github.com/pytorch/rfcs/blob/master/README.md>`__.
 
-The PyTorch development process involves a healthy amount of open
-discussions between the core development team and the community.
-
-PyTorch operates similarly to most open source projects on GitHub.
-However, if you've never contributed to an open source project before,
-here is the basic process.
-
--  **Figure out what you're going to work on.** The majority of open
-   source contributions come from people scratching their own itches.
-   However, if you don't know what you want to work on, or are just
-   looking to get more acquainted with the project, here are some tips
-   for how to find appropriate tasks:
-
-   -  Look through the `issue
-      tracker <https://github.com/pytorch/pytorch/issues/>`__ and see if
-      there are any issues you know how to fix. Issues that are
-      confirmed by other contributors tend to be better to investigate.
-      We also maintain some labels for issues that are likely to be
-      good for new people, e.g., **bootcamp** and **1hr**, although
-      these labels are less well maintained.
-   -  Join us on `dev discuss <https://dev-discuss.pytorch.org/>`_
-      and let us know you're interested in getting to
-      know PyTorch. We're very happy to help out researchers and
-      partners get up to speed with the codebase.
-
--  **Figure out the scope of your change and reach out for design
-   comments on a GitHub issue if it's large.** The majority of pull
-   requests are small; in that case, no need to let us know about what
-   you want to do, just get cracking. But if the change is going to be
-   large, it's usually a good idea to get some design comments about it
-   first by `submitting an RFC <https://github.com/pytorch/rfcs/blob/master/README.md>`__.
-
-   -  If you don't know how big a change is going to be, we can help you
-      figure it out! Just post about it on
-      `issues <https://github.com/pytorch/pytorch/issues/>`_ or
+   -  إذا لم تكن تعرف حجم التغيير، فيمكننا مساعدتك في معرفته! ما عليك سوى نشره حوله في
+      `المشكلات <https://github.com/pytorch/pytorch/issues/>`_ أو
       `dev discuss <https://dev-discuss.pytorch.org/>`_.
-   -  Some feature additions are very standardized; for example, lots of
-      people add new operators or optimizers to PyTorch. Design
-      discussion in these cases boils down mostly to, “Do we want this
-      operator/optimizer?” Giving evidence for its utility, e.g., usage
-      in peer reviewed papers, or existence in other frameworks, helps a
-      bit when making this case.
+   -  بعض الإضافات المميزة موحدة للغاية؛ على سبيل المثال، يضيف الكثير من الأشخاص مشغلين أو محسنات جديدة إلى PyTorch. تنحصر مناقشة التصميم في هذه الحالات إلى حد كبير في "هل نريد هذا المشغل/المحسن؟" إن تقديم الأدلة على فائدته، مثل الاستخدام في الأوراق البحثية التي راجعها النظراء، أو وجودها في أطر عمل أخرى، يساعد قليلاً عند تقديم هذه الحالة.
 
-      - **Adding operators / algorithms from recently-released research**
-        is generally not accepted unless there is overwhelming evidence that
-        this newly published work has ground-breaking results and will eventually
-        become a standard in the field. If you are not sure where your method falls,
-        open an issue first before implementing a PR.
+      - **إضافة مشغلين / خوارزميات من الأبحاث التي تم إصدارها مؤخرًا**
+        لا يتم قبولها بشكل عام ما لم تكن هناك أدلة ساحقة على أن هذا العمل المنشور حديثًا يحقق نتائج رائدة وسوف يصبح معيارًا في هذا المجال. إذا لم تكن متأكدًا من مكان وجود طريقتك، فقم بفتح مشكلة أولاً قبل تنفيذ طلب سحب.
 
-   -  Core changes and refactors can be quite difficult to coordinate
-      since the pace of development on the PyTorch main branch is quite fast.
-      Definitely reach out about fundamental or cross-cutting changes;
-      we can often give guidance about how to stage such changes into
-      more easily reviewable pieces.
+   -  يمكن أن تكون التغييرات وإعادة التنظيم الأساسية صعبة التنسيق لأن وتيرة التطوير في الفرع الرئيسي لـ PyTorch سريعة للغاية. تواصل بالتأكيد حول التغييرات الأساسية أو الشاملة؛
+     يمكننا غالبًا تقديم التوجيه حول كيفية تنظيم هذه التغييرات إلى أجزاء يمكن مراجعتها بسهولة أكبر.
 
--  **Code it out!**
+-  **قم بترميزها!**
 
-   -  See the `CONTRIBUTING.md <https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md>`_ file for advice for working with PyTorch in a
-      technical form.
+   -  راجع ملف `CONTRIBUTING.md <https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md>`_ للحصول على المشورة للعمل مع PyTorch في شكل تقني.
 
--  **Open a pull request.**
+-  **افتح طلب سحب.**
 
-   -  If you are not ready for the pull request to be reviewed, create a draft
-      pull request first - you can later convert it to a full PR by pressing
-      "Ready for review" button. You can also prepend the title of the PR with
-      "[WIP]" ("work in progress") while it's still in draft. We will ignore
-      draft PRs when doing review passes. If you are working on a complex change,
-      it's good to start things off as a draft, because you will need to spend
-      time looking at CI results to see if things worked out or not.
-   -  Find an appropriate reviewer for your change. We have some folks
-      who regularly go through the PR queue and try to review
-      everything, but if you happen to know who the maintainer for a
-      given subsystem affected by your patch is, feel free to include
-      them directly on the pull request. You can learn more about
-      `Persons of Interest <https://pytorch.org/docs/main/community/persons_of_interest.html>`_
-      that could review your code.
+   -  إذا لم تكن مستعدًا لمراجعة طلب السحب، فأنشئ طلب سحب مسودة أولاً - يمكنك لاحقًا تحويله إلى طلب سحب كامل عن طريق النقر فوق الزر "جاهز للمراجعة". يمكنك أيضًا إضافة "[WIP]" ("العمل قيد التقدم") إلى عنوان PR أثناء وجوده في المسودة. سنتجاهل طلبات السحب المسودة عند إجراء عمليات المراجعة. إذا كنت تعمل على تغيير معقد،
+     من الجيد البدء بالأشياء كمسودة، لأنك ستحتاج إلى قضاء بعض الوقت في النظر في نتائج CI لمعرفة ما إذا كانت الأمور قد نجحت أم لا.
+   -  ابحث عن مراجع مناسب لتغييرك. لدينا بعض الأشخاص
+     الذين يمرون بانتظام عبر قائمة انتظار طلبات السحب ويحاولون مراجعة
+     كل شيء، ولكن إذا كنت تعرف من هو المسؤول عن نظام فرعي معين يتأثر رقعة الخاص بك، لا تتردد في إضافته مباشرة إلى طلب السحب. يمكنك معرفة المزيد حول
+     `أشخاص مهمون <https://pytorch.org/docs/main/community/persons_of_interest.html>`_
+     الذين يمكنهم مراجعة التعليمات البرمجية الخاصة بك.
 
--  **Iterate on the pull request until it's accepted!**
+-  **قم بتكرار طلب السحب حتى يتم قبوله!**
 
-   -  We'll try our best to minimize the number of review round trips and
-      block PRs only when there are major issues. For the most common
-      issues in pull requests, take a look at `Common Mistakes <#common-mistakes-to-avoid>`__.
-   -  Once a pull request is accepted and CI is passing, there is
-      nothing else you need to do; we will merge the PR for you.
+   -  سنبذل قصارى جهدنا لتقليل عدد جولات المراجعة وحظر طلبات السحب فقط عندما تكون هناك مشكلات رئيسية. بالنسبة للمشكلات الأكثر شيوعًا في طلبات السحب، راجع `الأخطاء الشائعة <#common-mistakes-to-avoid>`__.
+   -  بمجرد قبول طلب سحب واجتياز CI، لا يلزم القيام بأي شيء آخر؛ سنقوم بدمج PR نيابة عنك.
 
-Getting Started
+البدء
 ---------------
-
-Proposing New Features
+اقتراح ميزات جديدة
 ~~~~~~~~~~~~~~~~~~~~~~
+من الأفضل مناقشة أفكار الميزات الجديدة في مشكلة محددة. يرجى تضمين أكبر قدر ممكن من المعلومات والبيانات المصاحبة، وحلك المقترح. يقوم فريق PyTorch والمجتمع بانتظام بمراجعة المشكلات والتعليقات الجديدة حيث يعتقدون أنهم يمكن أن يساعدوا. إذا كنت تشعر بالثقة في حل، فانتقل إلى التنفيذ.
 
-New feature ideas are best discussed on a specific issue. Please include
-as much information as you can, any accompanying data, and your proposed
-solution. The PyTorch team and community frequently review new issues
-and comments where they think they can help. If you feel confident in
-your solution, go ahead and implement it.
-
-Reporting Issues
+الإبلاغ عن المشكلات
 ~~~~~~~~~~~~~~~~
+إذا حددت مشكلة، فابحث أولاً في `قائمة <https://github.com/pytorch/pytorch/issues>`__ بالمشكلات الموجودة على المستودع. إذا لم تتمكن من العثور على مشكلة مماثلة، فأنشئ واحدة جديدة. قم بتزويد أكبر قدر ممكن من المعلومات لإعادة إنتاج السلوك المشكل. أيضًا، قم بتضمين أي رؤى إضافية مثل السلوك الذي تتوقعه.
 
-If you've identified an issue, first search through the `list of
-existing issues <https://github.com/pytorch/pytorch/issues>`__ on the
-repo. If you are unable to find a similar issue, then create a new one.
-Supply as much information you can to reproduce the problematic
-behavior. Also, include any additional insights like the behavior you
-expect.
-
-Implementing Features or Fixing Bugs
+تنفيذ الميزات أو إصلاح الأخطاء
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+إذا كنت تريد إصلاح مشكلة محددة، فمن الأفضل التعليق على المشكلة الفردية بنيتك. ومع ذلك، فإننا لا نقوم بقفل أو تعيين المشكلات إلا في الحالات التي عملنا فيها مع المطور من قبل. من الأفضل بدء محادثة حول المشكلة ومناقشة الحل المقترح. يمكن لفريق PyTorch تقديم التوجيه الذي يوفر وقتك.
 
-If you want to fix a specific issue, it's best to comment on the
-individual issue with your intent. However, we do not lock or assign
-issues except in cases where we have worked with the developer before.
-It's best to strike up a conversation on the issue and discuss your
-proposed solution. The PyTorch team can provide guidance that saves you
-time.
+توفر المشكلات التي تحمل علامة first-new-issue أو low أو medium priority أفضل نقاط الدخول وهي أماكن رائعة للبدء.
 
-Issues that are labeled first-new-issue, low, or medium priority provide
-the best entrance points and are great places to start.
-
-Adding Tutorials
+إضافة البرامج التعليمية
 ~~~~~~~~~~~~~~~~
-
-A great deal of the tutorials on `pytorch.org <https://pytorch.org/>`__
-come from the community itself and we welcome additional contributions.
-To learn more about how to contribute a new tutorial you can learn more
-here: `PyTorch.org Tutorial Contribution Guide on
+يأتي عدد كبير من البرامج التعليمية على `pytorch.org <https://pytorch.org/>`__
+من المجتمع نفسه ونحن نرحب بالمساهمات الإضافية. لمعرفة المزيد حول كيفية المساهمة ببرنامج تعليمي جديد، يمكنك معرفة المزيد هنا: `دليل مساهمة البرنامج التعليمي PyTorch.org على
 GitHub <https://github.com/pytorch/tutorials/#contributing>`__
 
-Improving Documentation & Tutorials
+تحسين الوثائق والبرامج التعليمية
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+نحن نهدف إلى إنتاج وثائق وبرامج تعليمية عالية الجودة. في حالات نادرة، قد يتضمن المحتوى أخطاء إملائية أو أخطاء. إذا وجدت شيئًا يمكنك إصلاحه، فأرسل إلينا طلب سحب للنظر فيه.
 
-We aim to produce high quality documentation and tutorials. On rare
-occasions that content includes typos or bugs. If you find something you
-can fix, send us a pull request for consideration.
+القسم `الوثائق <#on-documentation>`__ لمعرفة كيفية عمل نظامنا.
 
-Take a look at the `Documentation <#on-documentation>`__ section to learn how our system
-works.
-
-Participating in Online Discussions
+المشاركة في المناقشات عبر الإنترنت
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+يمكنك العثور على مناقشات نشطة تحدث على `منتديات مناقشة PyTorch <https://discuss.pytorch.org/>`__  للمستخدمين وكذلك
+`منتديات مناقشة PyTorch Dev <https://dev-discuss.pytorch.org/>`__
+للمطورين والمسؤولين عن الصيانة.
 
-You can find active discussions happening on the `PyTorch Discussion
-Forums <https://discuss.pytorch.org/>`__  for users as well as the
-`PyTorch Dev Discussion Forums <https://dev-discuss.pytorch.org/>`__
-for developers and maintainers.
-
-Submitting Pull Requests to Fix Open Issues
+تقديم طلبات السحب لإصلاح المشكلات المفتوحة
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+يمكنك عرض قائمة بجميع المشكلات المفتوحة
+`هنا <https://github.com/pytorch/pytorch/issues>`__. التعليق على مشكلة هي طريقة رائعة لجذب انتباه الفريق. من هنا يمكنك مشاركة أفكارك وكيف تخطط لحل المشكلة.
 
-You can view a list of all open issues
-`here <https://github.com/pytorch/pytorch/issues>`__. Commenting on an
-issue is a great way to get the attention of the team. From here you can
-share your ideas and how you plan to resolve the issue.
+بالنسبة للمشكلات الأكثر صعوبة، سيقدم الفريق التعليقات والتوجيهات حول كيفية حل المشكلة على أفضل وجه.
 
-For more challenging issues, the team will provide feedback and
-direction for how to best solve the issue.
+إذا لم تتمكن من إصلاح المشكلة بنفسك، فإن التعليق ومشاركة ما إذا كنت تستطيع إعادة إنتاج المشكلة يمكن أن يساعد الفريق
+تحديد مناطق المشكلات.
 
-If you're not able to fix the issue yourself, commenting and sharing
-whether you can reproduce the issue can help the team
-identify problem areas.
-
-Reviewing Open Pull Requests
+مراجعة طلبات السحب المفتوحة
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+نحن نقدر مساعدتك في مراجعة طلبات السحب والتعليق عليها. يسعى فريقنا جاهدين للحفاظ على عدد طلبات السحب المفتوحة بحجم يمكن إدارته، ونرد بسرعة للحصول على مزيد من المعلومات إذا كنا بحاجة إليها، ونقوم بدمج طلبات السحب التي نعتقد أنها مفيدة. ومع ذلك، نظرًا لارتفاع مستوى الاهتمام، فإن وجود عيون إضافية على طلبات السحب موضع تقدير دائمًا.
 
-We appreciate your help reviewing and commenting on pull requests. Our
-team strives to keep the number of open pull requests at a manageable
-size, we respond quickly for more information if we need it, and we
-merge PRs that we think are useful. However, due to the high level of
-interest, additional eyes on the pull requests are always appreciated.
-
-Improving Code Readability
+تحسين قابلية القراءة للكود
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+يساعد تحسين قابلية قراءة الكود الجميع. من الأفضل في كثير من الأحيان تقديم عدد صغير من طلبات السحب التي تعمل على عدد قليل من الملفات مقابل طلب سحب كبير يعمل على العديد من الملفات. بدء مناقشة في منتدى PyTorch
+`هنا <https://discuss.pytorch.org/>`__ أو على مشكلة تتعلق بتحسينك هي أفضل طريقة للبدء.
 
-Improving code readability helps everyone. It is often better to submit a
-small number of pull requests that touch a few files versus a large pull
-request that touches many files. Starting a discussion in the PyTorch
-forum `here <https://discuss.pytorch.org/>`__ or on an issue related to
-your improvement is the best way to get started.
-
-Adding Test Cases to Make the Codebase More Robust
+إضافة حالات الاختبار لجعل قاعدة الكود أكثر متانة
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+تُقدر تغطية الاختبار الإضافية.
 
-Additional test coverage is appreciated.
-
-Promoting PyTorch
+الترويج لـ PyTorch
 ~~~~~~~~~~~~~~~~~
-
-Your use of PyTorch in your projects, research papers, write ups, blogs,
-or general discussions around the internet helps to raise awareness for
-PyTorch and our growing community. Please reach out to
+إن استخدامك لـ PyTorch في مشاريعك وأوراقك البحثية وكتاباتك ومقالاتك ومناقشاتك العامة حول الإنترنت يساعد في زيادة الوعي بـ PyTorch ومجتمعنا المتنامي. يرجى التواصل مع
 `marketing@pytorch.org <mailto:marketing@pytorch.org>`__
-for marketing support.
+لدعم التسويق.
 
-Triaging Issues
+الفرز حسب القضايا
 ~~~~~~~~~~~~~~~
+إذا شعرت أن إحدى القضايا يمكن أن تستفيد من علامة أو مستوى معين من التعقيد، فعلق على المشكلة وشارك رأيك. إذا
+تشعر أن إحدى المشكلات غير مصنفة بشكل صحيح، فعلق وأخبر الفريق.
 
-If you feel that an issue could benefit from a particular tag or level
-of complexity, comment on the issue and share your opinion. If you
-feel an issue isn't categorized properly, comment and let the team know.
-
-About Open Source Development
+حول تطوير المصادر المفتوحة
 -----------------------------
+إذا كانت هذه هي المرة الأولى التي تساهم فيها في مشروع مفتوح المصدر، فقد تبدو بعض جوانب عملية التطوير غير عادية بالنسبة لك.
 
-If this is your first time contributing to an open source project, some
-aspects of the development process may seem unusual to you.
+-  **لا توجد طريقة "للمطالبة" بالمشكلات.** غالبًا ما يريد الأشخاص "المطالبة" بمشكلة عندما يقررون العمل عليها، للتأكد من عدم وجود عمل ضائع عندما ينتهي بهم الأمر بالعمل عليها. هذا لا يعمل بشكل جيد حقًا في المصادر المفتوحة، حيث قد يقرر شخص ما العمل على شيء ما، وفي النهاية لا يجد الوقت للقيام بذلك. لا تتردد في تقديم المعلومات بطريقة استشارية، ولكن في نهاية اليوم، سنأخذ الكود قيد التشغيل والتوافق العام للمضي قدمًا بسرعة.
+-  **هناك معيار عالٍ للوظائف الجديدة.** على عكس
+   في بيئة الشركات، حيث يمتلك الشخص الذي كتب الكود بشكل ضمني "ملكيته" ويمكن توقع أن يعتني به طوال عمر الكود، بمجرد دمج طلب سحب في مشروع مفتوح المصدر، فإنه يصبح على الفور مسؤولية جماعية لجميع المسؤولين عن الصيانة في المشروع. عندما نقوم بدمج الكود، فإننا نقول إننا، المسؤولون عن الصيانة، يمكننا مراجعة التغييرات اللاحقة وإجراء تصحيح الأخطاء في الكود. وهذا يؤدي بشكل طبيعي إلى معيار أعلى للمساهمة.
 
--  **There is no way to “claim” issues.** People often want to “claim”
-   an issue when they decide to work on it, to ensure that there isn't
-   wasted work when someone else ends up working on it. This doesn't
-   really work too well in open source, since someone may decide to work
-   on something, and end up not having time to do it. Feel free to give
-   information in an advisory fashion, but at the end of the day, we
-   will take running code and rough consensus to move forward quickly.
--  **There is a high bar for new functionality.** Unlike
-   in a corporate environment, where the person who wrote code
-   implicitly “owns” it and can be expected to take care of it for the
-   code's lifetime, once a pull request is merged into an open
-   source project, it immediately becomes the collective responsibility
-   of all maintainers on the project. When we merge code, we are saying
-   that we, the maintainers, can review subsequent changes and
-   make a bugfix to the code. This naturally leads to a higher standard
-   of contribution.
+الأخطاء الشائعة التي يجب تجنبها
+بالتأكيد! فيما يلي الترجمة العربية للنص الذي قدمته بتنسيق ReStructuredText:
 
-Common Mistakes To Avoid
 ------------------------
 
--  **Did you add tests?** (Or if the change is hard to test, did you
-   describe how you tested your change?)
+-  **هل أضفت اختبارات؟** (أو إذا كان التغيير صعب الاختبار، فهل قمت بوصف كيفية اختبار تغييرك؟)
 
-   -  We have a few motivations for why we ask for tests:
+   -  لدينا بضعة دوافع لسبب طلبنا للاختبارات:
 
-      1. to help us tell if we break it later
-      2. to help us tell if the patch is correct in the first place
-         (yes, we did review it, but as Knuth says, “beware of the
-         following code, for I have not run it, merely proven it
-         correct”)
+      1. لمساعدتنا على معرفة ما إذا كنا سنكسرها لاحقًا
+      2. لمساعدتنا على معرفة ما إذا كان التصحيح صحيحًا في المقام الأول
+         (نعم، لقد راجعناه، ولكن كما يقول كنوت، "احذر من الكود التالي، لأنني لم أقم بتشغيله، بل أثبت صحته فقط")
 
-   -  When is it OK not to add a test? Sometimes a change can't be
-      conveniently tested, or the change is so obviously correct (and
-      unlikely to be broken) that it's OK not to test it. On the
-      contrary, if a change seems likely (or is known to be likely)
-      to be accidentally broken, it's important to put in the time to
-      work out a testing strategy.
+   -  متى يكون من المقبول عدم إضافة اختبار؟ في بعض الأحيان، لا يمكن اختبار تغيير ما بشكل مريح، أو أن التغيير صحيح بشكل واضح (ومن غير المرجح أن ينكسر) لدرجة أنه من المقبول عدم اختباره. وعلى النقيض، إذا كان من المحتمل أن يتغير شيء ما (أو من المعروف أنه من المحتمل أن يتغير) عن طريق الخطأ، فمن المهم تخصيص الوقت للتوصل إلى استراتيجية اختبار.
 
--  **Is your PR too long?**
+-  **هل طلب السحب (PR) الخاص بك طويل جدًا؟**
 
-   -  It's easier for us to review and merge small PRs. The difficulty of
-      reviewing a PR scales nonlinearly with its size.
-   -  When is it OK to submit a large PR? It helps a lot if there was a
-      corresponding design discussion in an issue, with sign off from
-      the people who are going to review your diff. We can also help
-      give advice about how to split up a large change into individually
-      shippable parts. Similarly, it helps if there is a complete
-      description of the contents of the PR: it's easier to review code
-      if we know what's inside!
+   -  من الأسهل لنا مراجعة ودمج طلبات السحب الصغيرة. تزداد صعوبة مراجعة طلب السحب بشكل غير خطي مع حجمه.
+   -  متى يكون من المقبول تقديم طلب سحب كبير؟ سيكون من المفيد إذا كانت هناك مناقشة تصميم مناظرة في مشكلة، مع موافقة الأشخاص الذين سيراجعون فرقك. يمكننا أيضًا تقديم المشورة بشأن كيفية تقسيم التغيير الكبير إلى أجزاء يمكن شحنها بشكل فردي. وبالمثل، يكون من المفيد إذا كان هناك وصف كامل لمحتويات طلب السحب: فمن الأسهل مراجعة الكود إذا كنا نعرف ما بداخله!
 
--  **Comments for subtle things?** In cases where the behavior of your code
-   is nuanced, please include extra comments and documentation to allow
-   us to better understand the intention of your code.
--  **Did you add a hack?** Sometimes, the right answer is a hack. But
-   usually, we will have to discuss it.
--  **Do you want to touch a very core component?** To prevent
-   major regressions, pull requests that touch core components receive
-   extra scrutiny. Make sure you've discussed your changes with the team
-   before undertaking major changes.
--  **Want to add a new feature?** If you want to add new features,
-   comment your intention on the related issue. Our team tries to
-   comment on and provide feedback to the community. It's better to have
-   an open discussion with the team and the rest of the community before
-   building new features. This helps us stay aware of what you're
-   working on and increases the chance that it'll be merged.
--  **Did you touch code unrelated to the PR?** To aid in code review,
-   please only include files in your pull request that are directly
-   related to your changes.
+-  **تعليقات على الأشياء الدقيقة؟** في الحالات التي يكون فيها سلوك كودك دقيقًا، يرجى تضمين تعليقات ووثائق إضافية للسماح لنا بفهم نوايا كودك بشكل أفضل.
+-  **هل أضفت حلًا مؤقتًا؟** في بعض الأحيان، يكون الحل الصحيح هو حل مؤقت. ولكن عادة ما يتعين علينا مناقشته.
+-  **هل تريد لمس مكون أساسي جدًا؟** لمنع حدوث تراجعات رئيسية، تخضع طلبات السحب التي تمس المكونات الأساسية لفحص إضافي. تأكد من مناقشة تغييراتك مع الفريق قبل إجراء تغييرات رئيسية.
+-  **هل تريد إضافة ميزة جديدة؟** إذا كنت تريد إضافة ميزات جديدة، فقم بالتعليق على نيتك في القضية ذات الصلة. يحاول فريقنا التعليق على المجتمع وتزويده بالملاحظات. من الأفضل إجراء مناقشة مفتوحة مع الفريق وبقية المجتمع قبل بناء ميزات جديدة. يساعدنا هذا على البقاء على اطلاع بما تعمل عليه ويزيد من احتمال دمجها.
+-  **هل قمت بتعديل كود غير ذي صلة بطلب السحب (PR)؟** للمساعدة في مراجعة الكود، يرجى تضمين الملفات في طلب السحب الخاص بك والتي تتعلق مباشرة بتغييراتك.
 
-Frequently Asked Questions
+الأسئلة الشائعة
 --------------------------
 
--  **How can I contribute as a reviewer?** There is lots of value if
-   community developers reproduce issues, try out new functionality, or
-   otherwise help us identify or troubleshoot issues. Commenting on
-   tasks or pull requests with your environment details is helpful and
-   appreciated.
--  **CI tests failed, what does it mean?** Maybe your PR is based
-   off a broken main branch? You can try to rebase your change on top
-   of the latest main branch. You can also see the current status of
-   main branch's CI at https://hud.pytorch.org/.
--  **What are the most high risk changes?** Anything that touches build
-   configuration is a risky area. Please avoid changing these unless
-   you've had a discussion with the team beforehand.
--  **Hey, a commit showed up on my branch, what's up with that?**
-   Sometimes another community member will provide a patch or fix to
-   your pull request or branch. This is often needed for getting CI tests
-   to pass.
+-  **كيف يمكنني المساهمة كمراجع؟** هناك الكثير من القيمة إذا قام مطورو المجتمع بإعادة إنتاج المشكلات، أو تجربة الوظائف الجديدة، أو المساعدة بطرق أخرى في تحديد المشكلات أو استكشاف أخطائها وإصلاحها. التعليق على المهام أو طلبات السحب بتفاصيل بيئتك أمر مفيد ومقدر.
+-  **فشلت اختبارات CI، ماذا يعني ذلك؟** ربما يكون طلب السحب الخاص بك يعتمد على فرع رئيسي معطل؟ يمكنك محاولة إعادة أساس تغييرك على أحدث فرع رئيسي. يمكنك أيضًا الاطلاع على الحالة الحالية لاختبارات CI للفرع الرئيسي في https://hud.pytorch.org/.
+-  **ما هي أكثر التغييرات خطورة؟** أي شيء يمس تكوين البناء هو منطقة محفوفة بالمخاطر. يرجى تجنب تغيير هذه الأشياء ما لم تكن قد أجريت مناقشة مع الفريق مسبقًا.
+-  **مرحبًا، ظهر التزام على فرعي، ما الأمر؟** في بعض الأحيان، سيقوم عضو آخر في المجتمع بتوفير تصحيح أو إصلاح لطلب السحب أو فرعك. غالبًا ما تكون هناك حاجة إلى ذلك لاجتياز اختبارات CI.
 
-On Documentation
+حول الوثائق
 ----------------
 
-Python Docs
+وثائق بايثون
 ~~~~~~~~~~~
 
-PyTorch documentation is generated from python source using
-`Sphinx <https://www.sphinx-doc.org/en/master/>`__. Generated HTML is
-copied to the docs folder in the main branch of
-`pytorch.github.io <https://github.com/pytorch/pytorch.github.io/tree/master/docs>`__,
-and is served via GitHub pages.
+تتم توليد وثائق PyTorch من مصدر بايثون باستخدام
+`سفينكس <https://www.sphinx-doc.org/en/master/>`__. يتم نسخ HTML المولد إلى مجلد الوثائق في الفرع الرئيسي
+`pytorch.github.io <https://github.com/pytorch/pytorch.github.io/tree/master/docs>`__،
+ويتم تقديمه عبر GitHub pages.
 
--  Site: https://pytorch.org/docs
+-  الموقع: https://pytorch.org/docs
 -  GitHub: https://github.com/pytorch/pytorch/tree/main/docs
--  Served from:
+-  يتم تقديمه من:
    `https://github.com/pytorch/pytorch.github.io/tree/master/docs <https://github.com/pytorch/pytorch.github.io/tree/master/docs>`__
 
-C++ Docs
+وثائق C++
 ~~~~~~~~
 
-For C++ code we use Doxygen to generate the content files. The C++ docs
-are built on a special server and the resulting files are copied to the
-https://github.com/pytorch/cppdocs repo, and are served from GitHub
-pages.
+بالنسبة لكود C++، نستخدم دوكسن لتوليد ملفات المحتوى. يتم بناء وثائق C++ على خادم خاص ويتم نسخ الملفات الناتجة إلى مستودع
+https://github.com/pytorch/cppdocs، ويتم تقديمها من GitHub pages.
 
--  Site: https://pytorch.org/cppdocs
+-  الموقع: https://pytorch.org/cppdocs
 -  GitHub: https://github.com/pytorch/pytorch/tree/main/docs/cpp
--  Served from: https://github.com/pytorch/cppdocs
+-  يتم تقديمه من: https://github.com/pytorch/cppdocs
 
-Tutorials
+الدروس التعليمية
 ---------
 
-PyTorch tutorials are documents used to help understand using PyTorch to
-accomplish specific tasks or to understand more holistic concepts.
-Tutorials are built using
-`Sphinx-Gallery <https://sphinx-gallery.readthedocs.io/en/latest/index.html>`__
-from executable python source files, or from restructured-text (rst)
-files.
+الدروس التعليمية في PyTorch هي وثائق تستخدم للمساعدة في فهم كيفية استخدام PyTorch لإنجاز مهام محددة أو لفهم مفاهيم أكثر شمولاً. يتم بناء الدروس التعليمية باستخدام
+`معرض سفينكس <https://sphinx-gallery.readthedocs.io/en/latest/index.html>`__
+من ملفات مصدر بايثون القابلة للتنفيذ، أو من ملفات النص الفائق (rst).
 
--  Site: https://pytorch.org/tutorials
+-  الموقع: https://pytorch.org/tutorials
 -  GitHub: https://github.com/pytorch/tutorials
 
-Tutorials Build Overview
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For tutorials, `pull
-requests <https://github.com/pytorch/tutorials/pulls>`__ trigger a
-rebuild of the entire site using CircleCI to test the effects of the
-change. This build is sharded into 9 worker builds and takes around 40
-minutes total. At the same time, we do a Netlify build using *make
-html-noplot*, which builds the site without rendering the notebook
-output into pages for quick review.
-
-After a PR is accepted, the site is rebuilt and deployed using GitHub
-Actions.
-
-Contributing a New Tutorial
+نظرة عامة على بناء الدروس التعليمية
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See `PyTorch.org Tutorial Contribution
-Guide <https://github.com/pytorch/tutorials/#contributing>`__.
+بالنسبة للدروس التعليمية، تؤدي `طلبات السحب <https://github.com/pytorch/tutorials/pulls>`__ إلى إعادة بناء الموقع بالكامل باستخدام CircleCI لاختبار آثار التغيير. يتم تقسيم هذه البنية إلى 9 بنيات عامل وتستغرق حوالي 40 دقيقة في المجموع. في الوقت نفسه، نقوم ببناء Netlify باستخدام *make html-noplot*، والذي يقوم ببناء الموقع دون تقديم إخراج الدفتر كصفحات للمراجعة السريعة.
+
+بعد قبول طلب السحب، يتم إعادة بناء الموقع ونشره باستخدام GitHub Actions.
+
+المساهمة في درس تعليمي جديد
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+راجع `دليل المساهمة في الدروس التعليمية لـ PyTorch.org <https://github.com/pytorch/tutorials/#contributing>`__.
