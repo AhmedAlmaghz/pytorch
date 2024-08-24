@@ -4,20 +4,20 @@ Elastic Agent
 .. automodule:: torch.distributed.elastic.agent
 .. currentmodule:: torch.distributed.elastic.agent
 
-Server
---------
+الخادم
+------
 
 .. automodule:: torch.distributed.elastic.agent.server
 
-Below is a diagram of an agent that manages a local group of workers.
+فيما يلي رسم تخطيطي لعامل يقوم بإدارة مجموعة محلية من العمال.
 
 .. image:: agent_diagram.jpg
 
-Concepts
---------
+المفاهيم
+-----
 
-This section describes the high-level classes and concepts that
-are relevant to understanding the role of the ``agent`` in torchelastic.
+يصف هذا القسم الفئات والمفاهيم عالية المستوى
+ذات الصلة بفهم دور "العامل" في torchelastic.
 
 .. currentmodule:: torch.distributed.elastic.agent.server
 
@@ -36,22 +36,21 @@ are relevant to understanding the role of the ``agent`` in torchelastic.
 .. autoclass:: WorkerGroup
    :members:
 
-Implementations
--------------------
+التطبيقات
+--------
 
-Below are the agent implementations provided by torchelastic.
+فيما يلي تطبيقات العامل التي يوفرها torchelastic.
 
 .. currentmodule:: torch.distributed.elastic.agent.server.local_elastic_agent
 .. autoclass:: LocalElasticAgent
 
+توسيع العامل
+----------
 
-Extending the Agent
----------------------
-
-To extend the agent you can implement ```ElasticAgent`` directly, however
-we recommend you extend ``SimpleElasticAgent`` instead, which provides
-most of the scaffolding and leaves you with a few specific abstract methods
-to implement.
+لتوسيع العامل، يمكنك تنفيذ "ElasticAgent" مباشرة، ولكن
+نوصي بتوسيع "SimpleElasticAgent" بدلاً من ذلك، والذي يوفر
+معظم الهيكل ويترك لك بعض الأساليب المجردة المحددة
+لتطبيقها.
 
 .. currentmodule:: torch.distributed.elastic.agent.server
 .. autoclass:: SimpleElasticAgent
@@ -60,31 +59,25 @@ to implement.
 
 .. autoclass:: torch.distributed.elastic.agent.server.api.RunResult
 
+المراقبة في العامل
+--------------
 
-Watchdog in the Agent
----------------------
+يمكن تمكين مراقبة المسماة على أساس الأنبوب في "LocalElasticAgent" إذا تم
+تحديد متغير بيئة "TORCHELASTIC_ENABLE_FILE_TIMER" بقيمة 1 في عملية "LocalElasticAgent".
+اختياريًا، يمكن تعيين متغير بيئة آخر "TORCHELASTIC_TIMER_FILE"
+باسم ملف فريد لأنبوب المسمى. إذا لم يتم تعيين متغير البيئة "TORCHELASTIC_TIMER_FILE"،
+فسيقوم "LocalElasticAgent" بإنشاء اسم ملف فريد داخليًا وتعيينه إلى متغير البيئة
+"TORCHELASTIC_TIMER_FILE"، وسيتم نشر متغير البيئة هذا إلى عمليات العامل للسماح لهم
+بالاتصال بنفس أنبوب المسمى الذي يستخدمه "LocalElasticAgent".
 
-A named pipe based watchdog can be enabled in ```LocalElasticAgent``` if an
-environment variable ``TORCHELASTIC_ENABLE_FILE_TIMER`` with value 1 has
-been defined in the ```LocalElasticAgent``` process.
-Optionally, another environment variable ```TORCHELASTIC_TIMER_FILE```
-can be set with a unique file name for the named pipe. If the environment
-variable ```TORCHELASTIC_TIMER_FILE``` is not set, ```LocalElasticAgent```
-will internally create a unique file name and set it to the environment
-variable ```TORCHELASTIC_TIMER_FILE```, and this environment variable will
-be propagated to the worker processes to allow them to connect to the same
-named pipe that ```LocalElasticAgent``` uses.
+خادم الفحص الصحي
+---------------
 
-
-Health Check Server
--------------------
-
-A health check monitoring server can be enabled in ```LocalElasticAgent```
-if an environment variable ``TORCHELASTIC_HEALTH_CHECK_PORT`` has been defined
-in the ```LocalElasticAgent``` process.
-Adding interface for health check server which can be extended by starting tcp/http
-server on the specified port number.
-Additionally, health check server will have callback to check watchdog is alive.
+يمكن تمكين خادم مراقبة الفحص الصحي في "LocalElasticAgent"
+إذا تم تحديد متغير بيئة "TORCHELASTIC_HEALTH_CHECK_PORT" في عملية "LocalElasticAgent".
+إضافة واجهة لخادم الفحص الصحي الذي يمكن توسيعه عن طريق بدء خادم tcp/http
+على رقم المنفذ المحدد.
+بالإضافة إلى ذلك، سيكون لدى خادم الفحص الصحي استدعاء رد اتصال للتحقق مما إذا كان المراقب على قيد الحياة.
 
 .. automodule:: torch.distributed.elastic.agent.server.health_check_server
 
