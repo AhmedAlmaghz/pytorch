@@ -4,13 +4,13 @@
 torch.special
 =============
 
-The torch.special module, modeled after SciPy's `special <https://docs.scipy.org/doc/scipy/reference/special.html>`_ module.
+تم تصميم وحدة torch.special على غرار وحدة `special <https://docs.scipy.org/doc/scipy/reference/special.html>`_ في مكتبة SciPy.
 
 .. automodule:: torch.special
 .. currentmodule:: torch.special
 
-Functions
------------------------
+الدوال
+------
 
 .. autofunction:: airy_ai
 .. autofunction:: bessel_j0
