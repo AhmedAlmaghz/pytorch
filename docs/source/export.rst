@@ -1,21 +1,13 @@
 .. _torch.export:
 
 torch.export
-=====================
-
 .. warning::
-    This feature is a prototype under active development and there WILL BE
-    BREAKING CHANGES in the future.
+    هذه الميزة هي نموذج أولي قيد التطوير النشط وحدوث تغييرات جذرية في المستقبل.
 
-
-Overview
+نظرة عامة
 --------
 
-:func:`torch.export.export` takes an arbitrary Python callable (a
-:class:`torch.nn.Module`, a function or a method) and produces a traced graph
-representing only the Tensor computation of the function in an Ahead-of-Time
-(AOT) fashion, which can subsequently be executed with different outputs or
-serialized.
+:func:`torch.export.export` يأخذ دالة Python قابلة للاستدعاء بشكل تعسفي ( :class:`torch.nn.Module` ، أو دالة، أو طريقة) وينتج مخططًا مُتتبعًا يمثل حساب Tensor فقط للدالة بطريقة مسبقة التجهيز (Ahead-of-Time)، والتي يمكن تنفيذها بعد ذلك باستخدام مخرجات مختلفة أو تسلسلها.
 
 ::
 
@@ -63,100 +55,55 @@ serialized.
         )
         Range constraints: {}
 
-``torch.export`` produces a clean intermediate representation (IR) with the
-following invariants. More specifications about the IR can be found
-:ref:`here <export.ir_spec>`.
+تنتج ``torch.export`` تمثيلًا وسيطًا (IR) نظيفًا مع الدعائم التالية. يمكن العثور على المزيد من المواصفات حول IR :ref:`هنا <export.ir_spec>`.
 
-* **Soundness**: It is guaranteed to be a sound representation of the original
-  program, and maintains the same calling conventions of the original program.
+* **الصحة**: من المضمون أن يكون تمثيلًا صحيحًا للبرنامج الأصلي، ويحافظ على نفس اتفاقيات الاستدعاء للبرنامج الأصلي.
 
-* **Normalized**: There are no Python semantics within the graph. Submodules
-  from the original programs are inlined to form one fully flattened
-  computational graph.
+* **مُوحّد**: لا توجد دلالية Python داخل المخطط. يتم دمج الوحدات الفرعية من البرامج الأصلية لتشكيل مخطط حسابي مُسطّح بالكامل.
 
-* **Graph properties**: The graph is purely functional, meaning it does not
-  contain operations with side effects such as mutations or aliasing. It does
-  not mutate any intermediate values, parameters, or buffers.
+* **خصائص المخطط**: المخطط وظيفي بحت، مما يعني أنه لا يحتوي على عمليات ذات تأثيرات جانبية مثل الطفرات أو الإشارات المرجعية. ولا يغير أي قيم وسيطة أو معلمات أو مخازن مؤقتة.
 
-* **Metadata**: The graph contains metadata captured during tracing, such as a
-  stacktrace from user's code.
+* **البيانات الوصفية**: يحتوي المخطط على بيانات وصفية تم التقاطها أثناء التتبع، مثل تتبع المكدس من رمز المستخدم.
 
-Under the hood, ``torch.export`` leverages the following latest technologies:
+تحت الغطاء، تستخدم ``torch.export`` أحدث التقنيات التالية:
 
-* **TorchDynamo (torch._dynamo)** is an internal API that uses a CPython feature
-  called the Frame Evaluation API to safely trace PyTorch graphs. This
-  provides a massively improved graph capturing experience, with much fewer
-  rewrites needed in order to fully trace the PyTorch code.
+* **TorchDynamo (torch._dynamo)** هو واجهة برمجة تطبيقات (API) داخلية تستخدم ميزة CPython تسمى Frame Evaluation API لتتبع مخططات PyTorch بأمان. يوفر هذا تحسينًا هائلاً في تجربة التقاط المخطط، مع عدد أقل بكثير من عمليات إعادة الكتابة اللازمة لتتبع رمز PyTorch بالكامل.
 
-* **AOT Autograd** provides a functionalized PyTorch graph and ensures the graph
-  is decomposed/lowered to the ATen operator set.
+* **التفاضل التلقائي AOT**: يوفر مخطط PyTorch الوظيفي ويضمن أن يتم تفكيك المخطط/تخفيضه إلى مجموعة مشغلي ATen.
 
-* **Torch FX (torch.fx)** is the underlying representation of the graph,
-  allowing flexible Python-based transformations.
+* **Torch FX (torch.fx)**: هو التمثيل الأساسي للمخطط، مما يسمح بإجراء تحويلات مرنة تعتمد على Python.
 
 
-Existing frameworks
+أطر العمل الحالية
 ^^^^^^^^^^^^^^^^^^^
 
-:func:`torch.compile` also utilizes the same PT2 stack as ``torch.export``, but
-is slightly different:
+:func:`torch.compile` يستخدم أيضًا نفس المكدس PT2 مثل ``torch.export``، ولكنه يختلف قليلاً:
 
-* **JIT vs. AOT**: :func:`torch.compile` is a JIT compiler whereas
-  which is not intended to be used to produce compiled artifacts outside of
-  deployment.
+* **JIT مقابل AOT**: :func:`torch.compile` عبارة عن مترجم JIT في حين أن ``torch.export`` ليس المقصود منه إنتاج برامج مجمعة خارج النشر.
 
-* **Partial vs. Full Graph Capture**: When :func:`torch.compile` runs into an
-  untraceable part of a model, it will "graph break" and fall back to running
-  the program in the eager Python runtime. In comparison, ``torch.export`` aims
-  to get a full graph representation of a PyTorch model, so it will error out
-  when something untraceable is reached. Since ``torch.export`` produces a full
-  graph disjoint from any Python features or runtime, this graph can then be
-  saved, loaded, and run in different environments and languages.
+* **التقاط المخطط الجزئي مقابل الكامل**: عندما يواجه :func:`torch.compile` جزءًا غير قابل للتتبع من النموذج، فإنه "يكسر المخطط" ويعود إلى تشغيل البرنامج في وقت تشغيل Python المتلهف. في المقابل، تهدف ``torch.export`` إلى الحصول على تمثيل مخطط كامل لنموذج PyTorch، لذا فسوف يتعطل عند الوصول إلى شيء غير قابل للتتبع. نظرًا لأن ``torch.export`` ينتج مخططًا كاملًا منفصلاً عن أي ميزات أو وقت تشغيل Python، يمكن بعد ذلك حفظ هذا المخطط وتحميله وتشغيله في بيئات ولغات مختلفة.
 
-* **Usability tradeoff**: Since :func:`torch.compile` is able to fallback to the
-  Python runtime whenever it reaches something untraceable, it is a lot more
-  flexible. ``torch.export`` will instead require users to provide more
-  information or rewrite their code to make it traceable.
+* **مفاضلة قابلية الاستخدام**: نظرًا لأن :func:`torch.compile` قادر على العودة إلى وقت تشغيل Python عند الوصول إلى شيء غير قابل للتتبع، فهو أكثر مرونة. سيتطلب ``torch.export`` من المستخدمين توفير مزيد من المعلومات أو إعادة كتابة رمزهم لجعله قابلًا للتتبع.
 
-Compared to :func:`torch.fx.symbolic_trace`, ``torch.export`` traces using
-TorchDynamo which operates at the Python bytecode level, giving it the ability
-to trace arbitrary Python constructs not limited by what Python operator
-overloading supports. Additionally, ``torch.export`` keeps fine-grained track of
-tensor metadata, so that conditionals on things like tensor shapes do not
-fail tracing. In general, ``torch.export`` is expected to work on more user
-programs, and produce lower-level graphs (at the ``torch.ops.aten`` operator
-level). Note that users can still use :func:`torch.fx.symbolic_trace` as a
-preprocessing step before ``torch.export``.
+بالمقارنة مع :func:`torch.fx.symbolic_trace`، فإن ``torch.export`` يتتبع باستخدام TorchDynamo الذي يعمل على مستوى بايتكود Python، مما يمنحه القدرة على تتبع البنيات Python التعسفية غير المحدودة بما يدعمه التحميل الزائد لمشغل Python. بالإضافة إلى ذلك، يحتفظ ``torch.export`` بتتبع دقيق لبيانات تعريف Tensor، بحيث لا تفشل التتبعيات الشرطية للأشياء مثل أشكال Tensor. بشكل عام، من المتوقع أن يعمل ``torch.export`` على المزيد من برامج المستخدم، وينتج مخططات منخفضة المستوى (على مستوى ``torch.ops.aten``). لاحظ أنه لا يزال بإمكان المستخدمين استخدام :func:`torch.fx.symbolic_trace` كخطوة ما قبل المعالجة قبل ``torch.export``.
 
-Compared to :func:`torch.jit.script`, ``torch.export`` does not capture Python
-control flow or data structures, but it supports more Python language features
-than TorchScript (as it is easier to have comprehensive coverage over Python
-bytecodes). The resulting graphs are simpler and only have straight line control
-flow (except for explicit control flow operators).
+بالمقارنة مع :func:`torch.jit.script`، فإن ``torch.export`` لا يلتقط تدفق التحكم في Python أو البنى البيانات، ولكنه يدعم المزيد من ميزات لغة Python أكثر من TorchScript (حيث من الأسهل الحصول على تغطية شاملة لبايتكودات Python). المخططات الناتجة أبسط ولها تدفق تحكم خطي مستقيم (باستثناء مشغلي تدفق التحكم الصريح).
 
-Compared to :func:`torch.jit.trace`, ``torch.export`` is sound: it is able to
-trace code that performs integer computation on sizes and records all of the
-side-conditions necessary to show that a particular trace is valid for other
-inputs.
+بالمقارنة مع :func:`torch.jit.trace`، فإن ``torch.export`` سليم: فهو قادر على تتبع الرمز الذي يؤدي حسابات صحيحة على الأحجام ويسجل جميع الشروط الجانبية اللازمة لإثبات أن تتبعًا معينًا صالحًا لمدخلات أخرى.
 
 
-Exporting a PyTorch Model
--------------------------
-
-An Example
+تصدير نموذج PyTorch
+مثال
 ^^^^^^^^^^
 
-The main entrypoint is through :func:`torch.export.export`, which takes a
-callable (:class:`torch.nn.Module`, function, or method) and sample inputs, and
-captures the computation graph into an :class:`torch.export.ExportedProgram`. An
-example:
+نقطة الدخول الرئيسية هي من خلال :func:`torch.export.export`، والتي تأخذ دالة قابلة للاستدعاء (:class:`torch.nn.Module`، أو دالة، أو طريقة) ومدخلات نموذجية، وتلتقط مخطط الحساب في :class:`torch.export.ExportedProgram`. مثال:
 
 ::
 
     import torch
     from torch.export import export
 
-    # Simple module for demonstration
+    # وحدة نمطية بسيطة للتوضيح
     class M(torch.nn.Module):
         def __init__(self) -> None:
             super().__init__()
@@ -217,50 +164,39 @@ example:
         )
         Range constraints: {}
 
-Inspecting the ``ExportedProgram``, we can note the following:
+بعد فحص ``ExportedProgram``، يمكننا ملاحظة ما يلي:
 
-* The :class:`torch.fx.Graph` contains the computation graph of the original
-  program, along with records of the original code for easy debugging.
+* يحتوي :class:`torch.fx.Graph` على مخطط الحساب للبرنامج الأصلي، إلى جانب سجلات الكود الأصلي للتصحيح السهل.
 
-* The graph contains only ``torch.ops.aten`` operators found `here <https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/native_functions.yaml>`__
-  and custom operators, and is fully functional, without any inplace operators
-  such as ``torch.add_``.
+* يحتوي المخطط على مشغلات ``torch.ops.aten`` فقط الموجودة `هنا <https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/native_functions.yaml>`__
+  والمشغلات المخصصة، وهو يعمل بالكامل، بدون أي مشغلات ذات مواضع محددة
+  مثل ``torch.add_``.
 
-* The parameters (weight and bias to conv) are lifted as inputs to the graph,
-  resulting in no ``get_attr`` nodes in the graph, which previously existed in
-  the result of :func:`torch.fx.symbolic_trace`.
+* يتم رفع المعلمات (الوزن والانحياز إلى الدالة) كمدخلات للمخطط، مما يؤدي إلى عدم وجود عقد ``get_attr`` في المخطط، والتي كانت موجودة سابقًا
+  في نتيجة :func:`torch.fx.symbolic_trace`.
 
-* The :class:`torch.export.ExportGraphSignature` models the input and output
-  signature, along with specifying which inputs are parameters.
+* يقوم :class:`torch.export.ExportGraphSignature` بتصميم توقيع الدخل والخرج، إلى جانب تحديد أي المدخلات هي معلمات.
 
-* The resulting shape and dtype of tensors produced by each node in the graph is
-  noted. For example, the ``convolution`` node will result in a tensor of dtype
-  ``torch.float32`` and shape (1, 16, 256, 256).
+* يتم ملاحظة الشكل الناتج ونوع البيانات الناتج عن كل عقدة في المخطط. على سبيل المثال، ستنتج عقدة ``convolution`` نوع بيانات
+  ``torch.float32`` وشكل (1، 16، 256، 256).
 
 
 .. _Non-Strict Export:
 
-Non-Strict Export
-^^^^^^^^^^^^^^^^^
+تصدير غير صارم
+^^^^^^^^^^^^^^
 
-In PyTorch 2.3, we introduced a new mode of tracing called **non-strict mode**.
-It's still going through hardening, so if you run into any issues, please file
-them to Github with the "oncall: export" tag.
+في PyTorch 2.3، قمنا بتقديم وضع جديد للتعقب يسمى **الوضع غير الصارم**.
+لا يزال يمر بمرحلة التصلب، لذا إذا واجهتك أي مشكلات، يرجى إرسالها إلى Github مع علامة "oncall: export".
 
-In *non-strict mode*, we trace through the program using the Python interpreter.
-Your code will execute exactly as it would in eager mode; the only difference is
-that all Tensor objects will be replaced by ProxyTensors, which will record all
-their operations into a graph.
+في *الوضع غير الصارم*، نقوم بتعقب البرنامج باستخدام مفسر Python.
+سينفذ كودك بالضبط كما هو في الوضع الحريص؛ والفرق الوحيد هو
+أن جميع كائنات Tensor سيتم استبدالها بواسطة ProxyTensors، والتي ستسجل جميع
+عملياتها في مخطط.
 
-In *strict* mode, which is currently the default, we first trace through the
-program using TorchDynamo, a bytecode analysis engine. TorchDynamo does not
-actually execute your Python code. Instead, it symbolically analyzes it and
-builds a graph based on the results. This analysis allows torch.export to
-provide stronger guarantees about safety, but not all Python code is supported.
+في *الوضع الصارم*، وهو الوضع الافتراضي حاليًا، نقوم أولاً بتعقب البرنامج باستخدام TorchDynamo، وهو محرك تحليل بايتكود. لا يقوم TorchDynamo بتنفيذ كود Python الخاص بك بالفعل. بدلاً من ذلك، فإنه يحللها رمزيًا ويبني مخططًا بناءً على النتائج. يسمح هذا التحليل لـ torch.export بتقديم ضمانات أقوى بشأن السلامة، ولكن ليس كل كود Python مدعوم.
 
-An example of a case where one might want to use non-strict mode is if you run
-into a unsupported TorchDynamo feature that might not be easily solved, and you
-know the python code is not exactly needed for computation. For example:
+مثال على حالة قد يرغب فيها المرء في استخدام الوضع غير الصارم هو إذا واجهت ميزة غير مدعومة من TorchDynamo قد لا يتم حلها بسهولة، وتعرف أن كود Python غير مطلوب بالضبط للحساب. على سبيل المثال:
 
 ::
 
@@ -280,26 +216,22 @@ know the python code is not exactly needed for computation. For example:
             with ContextManager():
                 return x.sin() + x.cos()
 
-    export(M(), (torch.ones(3, 3),), strict=False)  # Non-strict traces successfully
-    export(M(), (torch.ones(3, 3),))  # Strict mode fails with torch._dynamo.exc.Unsupported: ContextManager
+    export(M(), (torch.ones(3, 3),), strict=False)  # تتبع غير صارم ناجح
+    export(M(), (torch.ones(3, 3),))  # يفشل الوضع الصارم مع torch._dynamo.exc.Unsupported: ContextManager
 
-In this example, the first call using non-strict mode (through the
-``strict=False`` flag) traces successfully whereas the second call using strict
-mode (default) results with a failure, where TorchDynamo is unable to support
-context managers. One option is to rewrite the code (see :ref:`Limitations of torch.export <Limitations of
-torch.export>`), but seeing as the context manager does not affect the tensor
-computations in the model, we can go with the non-strict mode's result.
+في هذا المثال، ينجح أول استدعاء باستخدام الوضع غير الصارم (من خلال
+علامة ``strict=False``) في حين أن الاستدعاء الثاني باستخدام الوضع الصارم (الافتراضي) ينتج عنه فشل، حيث لا يمكن لـ TorchDynamo دعم
+مديري السياق. أحد الخيارات هو إعادة كتابة الكود (راجع :ref:`Limitations of torch.export <Limitations of
+torch.export>`)، ولكن بالنظر إلى أن مدير السياق لا يؤثر على حسابات tensor في النموذج، يمكننا استخدام نتيجة الوضع غير الصارم.
 
 
-Expressing Dynamism
-^^^^^^^^^^^^^^^^^^^
+التعبير عن الديناميكية
+^^^^^^^^^^^^^^
 
-By default ``torch.export`` will trace the program assuming all input shapes are
-**static**, and specializing the exported program to those dimensions. However,
-some dimensions, such as a batch dimension, can be dynamic and vary from run to
-run. Such dimensions must be specified by using the
-:func:`torch.export.Dim` API to create them and by passing them into
-:func:`torch.export.export` through the ``dynamic_shapes`` argument. An example:
+بشكل افتراضي، يفترض ``torch.export`` أن جميع الأشكال المدخلة **ثابتة**، ويخصص البرنامج المصدر لتلك الأبعاد. ومع ذلك،
+يمكن أن تكون بعض الأبعاد، مثل حجم الدفعة، ديناميكية وتختلف من تشغيل إلى آخر. يجب تحديد هذه الأبعاد باستخدام
+:func:`torch.export.Dim` API لإنشائها ومن خلال تمريرها إلى
+:func:`torch.export.export` من خلال حجة ``dynamic_shapes``. مثال:
 
 ::
 
@@ -325,9 +257,9 @@ run. Such dimensions must be specified by using the
 
     example_args = (torch.randn(32, 64), torch.randn(32, 128))
 
-    # Create a dynamic batch size
+    # إنشاء حجم دفعة ديناميكي
     batch = Dim("batch")
-    # Specify that the first dimension of each input is that batch size
+    # تحديد أن البعد الأول لكل إدخال هو حجم الدفعة هذا
     dynamic_shapes = {"x1": {0: batch}, "x2": {0: batch}}
 
     exported_program: torch.export.ExportedProgram = export(
@@ -378,27 +310,25 @@ run. Such dimensions must be specified by using the
         )
         Range constraints: {s0: RangeConstraint(min_val=2, max_val=9223372036854775806)}
 
-Some additional things to note:
+بعض الأشياء الإضافية التي يجب ملاحظتها:
 
-* Through the :func:`torch.export.Dim` API and the ``dynamic_shapes`` argument, we specified the first
-  dimension of each input to be dynamic. Looking at the inputs ``arg5_1`` and
-  ``arg6_1``, they have a symbolic shape of (s0, 64) and (s0, 128), instead of
-  the (32, 64) and (32, 128) shaped tensors that we passed in as example inputs.
-  ``s0`` is a symbol representing that this dimension can be a range
-  of values.
+* من خلال :func:`torch.export.Dim` API وحجة ``dynamic_shapes``، حددنا البعد الأول لكل إدخال ليكون ديناميكيًا. بالنظر إلى المدخلات ``arg5_1`` و
+  ``arg6_1``، لديهما شكل رمزي من (s0، 64) و (s0، 128)، بدلاً من
+  أشكال tensor (32، 64) و (32، 128) التي مررناها كمدخلات نموذجية.
+  ``s0`` هو رمز يمثل أن هذا البعد يمكن أن يكون
+  نطاق من القيم.
 
-* ``exported_program.range_constraints`` describes the ranges of each symbol
-  appearing in the graph. In this case, we see that ``s0`` has the range
-  [2, inf]. For technical reasons that are difficult to explain here, they are
-  assumed to be not 0 or 1. This is not a bug, and does not necessarily mean
-  that the exported program will not work for dimensions 0 or 1. See
+* ``exported_program.range_constraints`` يصف نطاقات كل رمز
+  يظهر في المخطط. في هذه الحالة، نرى أن ``s0`` له النطاق
+  [2، inf]. لأسباب فنية يصعب شرحها هنا، يفترض أنها ليست 0 أو 1. هذا ليس خطأ، ولا يعني بالضرورة
+  أن البرنامج المصدر لن يعمل للأبعاد 0 أو 1. راجع
   `The 0/1 Specialization Problem <https://docs.google.com/document/d/16VPOa3d-Liikf48teAOmxLc92rgvJdfosIy-yoT38Io/edit?fbclid=IwAR3HNwmmexcitV0pbZm_x1a4ykdXZ9th_eJWK-3hBtVgKnrkmemz6Pm5jRQ#heading=h.ez923tomjvyk>`_
-  for an in-depth discussion of this topic.
+  لمناقشة متعمقة حول هذا الموضوع.
 
 
-We can also specify more expressive relationships between input shapes, such as
-where a pair of shapes might differ by one, a shape might be double of
-another, or a shape is even. An example:
+يمكننا أيضًا تحديد علاقات أكثر تعبيرًا بين أشكال الإدخال، مثل
+حيث قد يختلف زوج من الأشكال بواحد، أو قد يكون شكل ضعف
+آخر، أو شكل زوجي. مثال:
 
 ::
 
@@ -411,7 +341,7 @@ another, or a shape is even. An example:
     dimy = dimx + 1
 
     exported_program = torch.export.export(
-        M(), (x, y), dynamic_shapes=({0: dimx}, {0: dimy}),
+        M(), (x, y), dynamic_shapes={0: dimx, 1: dimy},
     )
     print(exported_program)
 
@@ -419,7 +349,7 @@ another, or a shape is even. An example:
 
     ExportedProgram:
     class GraphModule(torch.nn.Module):
-        def forward(self, arg0_1: "f32[s0]", arg1_1: "f32[s0 + 1]"):
+        def forward(self, arg0_1: "f32[s0]", arg1_1: "f32[s1]"):
             # code: return x + y[1:]
             slice_1: "f32[s0]" = torch.ops.aten.slice.Tensor(arg1_1, 0, 1, 9223372036854775807);  arg1_1 = None
             add: "f32[s0]" = torch.ops.aten.add.Tensor(arg0_1, slice_1);  arg0_1 = slice_1 = None
@@ -433,31 +363,22 @@ another, or a shape is even. An example:
         output_specs=[
             OutputSpec(kind=<OutputKind.USER_OUTPUT: 1>, arg=TensorArgument(name='add'), target=None)]
     )
-    Range constraints: {s0: ValueRanges(lower=3, upper=6, is_bool=False), s0 + 1: ValueRanges(lower=4, upper=7, is_bool=False)}
+    Range constraints: {s0: ValueRanges(lower=3, upper=6, is_bool=False), s1: ValueRanges(lower=4, upper=7, is_bool=False)}
 
-Some things to note:
+بعض الأمور التي يجب ملاحظتها:
 
-* By specifying ``{0: dimx}`` for the first input, we see that the resulting
-  shape of the first input is now dynamic, being ``[s0]``. And now by specifying
-  ``{0: dimy}`` for the second input, we see that the resulting shape of the
-  second input is also dynamic. However, because we expressed ``dimy = dimx + 1``,
-  instead of ``arg1_1``'s shape containing a new symbol, we see that it is
-  now being represented with the same symbol used in ``arg0_1``, ``s0``. We can
-  see that relationship of ``dimy = dimx + 1`` is being shown through ``s0 + 1``.
+* من خلال تحديد ``{0: dimx}`` للإدخال الأول، نرى أن الشكل الناتج للإدخال الأول أصبح الآن ديناميكيًا، وهو ``[s0]``. والآن، من خلال تحديد ``{1: dimy}`` للإدخال الثاني، نرى أن الشكل الناتج للإدخال الثاني ديناميكي أيضًا. ومع ذلك، لأننا عبرنا عن ``dimy = dimx + 1``، بدلاً من احتواء شكل ``arg1_1`` على رمز جديد، نرى أنه يتم تمثيله الآن باستخدام نفس الرمز المستخدم في ``arg0_1``، وهو ``s0``. يمكننا أن نرى أن العلاقة بين ``dimy = dimx + 1`` يتم عرضها من خلال ``s0 + 1``.
 
-* Looking at the range constraints, we see that ``s0`` has the range [3, 6],
-  which is specified initially, and we can see that ``s0 + 1`` has the solved
-  range of [4, 7].
+* عند النظر في قيود النطاق، نرى أن "s0" له النطاق [3، 6]، والذي تم تحديده مبدئيًا، ويمكننا أن نرى أن "s0 + 1" له النطاق المحسوب [4، 7].
 
+.. _Serialization:
 
-Serialization
-^^^^^^^^^^^^^
+التخزين التسلسلي
+^^^^^^^^^^^^
 
-To save the ``ExportedProgram``, users can use the :func:`torch.export.save` and
-:func:`torch.export.load` APIs. A convention is to save the ``ExportedProgram``
-using a ``.pt2`` file extension.
+لحفظ ``ExportedProgram``، يمكن للمستخدمين استخدام واجهات برمجة التطبيقات :func:`torch.export.save` و :func:`torch.export.load`. ويتمثل التقليد في حفظ ``ExportedProgram`` باستخدام ملحق ملف ``.pt2``.
 
-An example:
+مثال:
 
 ::
 
@@ -473,41 +394,27 @@ An example:
     torch.export.save(exported_program, 'exported_program.pt2')
     saved_exported_program = torch.export.load('exported_program.pt2')
 
+.. _Specializations:
 
-Specializations
-^^^^^^^^^^^^^^^
+التخصصات
+^^^^^^^^^
 
-A key concept in understanding the behavior of ``torch.export`` is the
-difference between *static* and *dynamic* values.
+مفهوم أساسي في فهم سلوك ``torch.export`` هو الفرق بين القيم *الثابتة* و*المتغيرة*.
 
-A *dynamic* value is one that can change from run to run. These behave like
-normal arguments to a Python function—you can pass different values for an
-argument and expect your function to do the right thing. Tensor *data* is
-treated as dynamic.
+القيمة *المتغيرة* هي قيمة يمكن أن تتغير من تشغيل إلى آخر. وتتصرف هذه القيم مثل الحجج العادية لدالة Python - يمكنك تمرير قيم مختلفة لحجة وتتوقع من دالتك أن تفعل الشيء الصحيح. وتعتبر بيانات *المصفوفة* قيمة متغيرة.
 
+القيمة *الثابتة* هي قيمة ثابتة في وقت التصدير ولا يمكن أن تتغير بين عمليات تنفيذ البرنامج المصدر. عندما تتم مواجهة القيمة أثناء التعقب، سيعاملها المصدر على أنها ثابتة ويتم ترميزها في الرسم البياني.
 
-A *static* value is a value that is fixed at export time and cannot change
-between executions of the exported program. When the value is encountered during
-tracing, the exporter will treat it as a constant and hard-code it into the
-graph.
+عندما يتم تنفيذ عملية (على سبيل المثال، ``x + y``) وجميع المدخلات ثابتة، فستتم ترميز نتيجة العملية مباشرة في الرسم البياني، ولن تظهر العملية (أي سيتم طيها ثابتًا).
 
-When an operation is performed (e.g. ``x + y``) and all inputs are static, then
-the output of the operation will be directly hard-coded into the graph, and the
-operation won’t show up (i.e. it will get constant-folded).
+عندما يتم ترميز قيمة في الرسم البياني، نقول إن الرسم البياني تم *تخصصه* لتلك القيمة.
 
-When a value has been hard-coded into the graph, we say that the graph has been
-*specialized* to that value.
+القيم التالية ثابتة:
 
-The following values are static:
+أشكال المصفوفة المدخلة
+~~~~~~~~~~~~~~~~~~~~~~
 
-Input Tensor Shapes
-~~~~~~~~~~~~~~~~~~~
-
-By default, ``torch.export`` will trace the program specializing on the input
-tensors' shapes, unless a dimension is specified as dynamic via the
-``dynamic_shapes`` argument to ``torch.export``. This means that if there exists
-shape-dependent control flow, ``torch.export`` will specialize on the branch
-that is being taken with the given sample inputs. For example:
+بشكل افتراضي، سيقوم ``torch.export`` بتعقب البرنامج المتخصص في أشكال المصفوفات المدخلة، ما لم يتم تحديد البعد على أنه ديناميكي عبر وسيط ``dynamic_shapes`` إلى ``torch.export``. وهذا يعني أنه إذا كان هناك تحكم في التدفق المعتمد على الشكل، فسوف يتخصص ``torch.export`` في الفرع الذي يتم اتخاذه مع إدخالات العينة المقدمة. على سبيل المثال:
 
 ::
 
@@ -533,26 +440,16 @@ that is being taken with the given sample inputs. For example:
                 add: f32[10, 2] = torch.ops.aten.add.Tensor(arg0_1, 1);
                 return (add,)
 
-The conditional of (``x.shape[0] > 5``) does not appear in the
-``ExportedProgram`` because the example inputs have the static
-shape of (10, 2). Since ``torch.export`` specializes on the inputs' static
-shapes, the else branch (``x - 1``) will never be reached. To preserve the dynamic
-branching behavior based on the shape of a tensor in the traced graph,
-:func:`torch.export.Dim` will need to be used to specify the dimension
-of the input tensor (``x.shape[0]``) to be dynamic, and the source code will
-need to be :ref:`rewritten <Data/Shape-Dependent Control Flow>`.
+لا يظهر الشرط (``x.shape[0] > 5``) في ``ExportedProgram`` لأن إدخالات المثال لها الشكل الثابت (10، 2). نظرًا لأن ``torch.export`` يتخصص في الأشكال الثابتة للإدخالات، فلن يتم الوصول إلى فرع "else" (``x - 1``) مطلقًا. للحفاظ على سلوك التفرع الديناميكي المعتمد على شكل مصفوفة في الرسم البياني الذي يتم تعقبه، يجب استخدام :func:`torch.export.Dim` لتحديد بُعد مصفوفة الإدخال (``x.shape[0]``) على أنه ديناميكي، وسيتعين إعادة كتابة التعليمات البرمجية المصدر: ref: `<Data / Shape-Dependent Control Flow>`.
 
-Note that tensors that are part of the module state (e.g. parameters and
-buffers) always have static shapes.
+لاحظ أن المصفوفات التي تعد جزءًا من حالة الوحدة (مثل المعلمات والمخازن المؤقتة) لها دائمًا أشكال ثابتة.
 
-Python Primitives
-~~~~~~~~~~~~~~~~~
+البدائيات بايثون
+~~~~~~~~~~~~
 
-``torch.export`` also specializes on Python primtivies,
-such as ``int``, ``float``, ``bool``, and ``str``. However they do have dynamic
-variants such as ``SymInt``, ``SymFloat``, and ``SymBool``.
+يتخصص ``torch.export`` أيضًا في بدائيات بايثون، مثل ``int`` و ``float`` و ``bool`` و ``str``. ومع ذلك، فإن لها متغيرات ديناميكية مثل ``SymInt`` و ``SymFloat`` و ``SymBool``.
 
-For example:
+على سبيل المثال:
 
 ::
 
@@ -579,77 +476,47 @@ For example:
                 add_2: f32[2, 2] = torch.ops.aten.add.Tensor(add_1, 1);
                 return (add_2,)
 
-Because integers are specialized, the ``torch.ops.aten.add.Tensor`` operations
-are all computed with the hard-coded constant ``1``, rather than ``arg1_1``. If
-a user passes a different value for ``arg1_1`` at runtime, like 2, than the one used
-during export time, 1, this will result in an error.
-Additionally, the ``times`` iterator used in the ``for`` loop is also "inlined"
-in the graph through the 3 repeated ``torch.ops.aten.add.Tensor`` calls, and the
-input ``arg2_1`` is never used.
+نظرًا لأن الأعداد الصحيحة متخصصة، يتم حساب عمليات ``torch.ops.aten.add.Tensor`` جميعها باستخدام الثابت 1، بدلاً من ``arg1_1``. إذا مرر المستخدم قيمة مختلفة لـ ``arg1_1`` في وقت التشغيل، مثل 2، بدلاً من 1 المستخدمة في وقت التصدير، فسيؤدي ذلك إلى حدوث خطأ. بالإضافة إلى ذلك، يتم "إدراج" متكرر "times" المستخدم في حلقة "for" في الرسم البياني من خلال 3 مكالمات متكررة لـ ``torch.ops.aten.add.Tensor``، ولا يتم أبدًا استخدام الإدخال "arg2_1".
 
-Python Containers
-~~~~~~~~~~~~~~~~~
+الحاويات بايثون
+~~~~~~~~~~~
 
-Python containers (``List``, ``Dict``, ``NamedTuple``, etc.) are considered to
-have static structure.
-
+تعتبر حاويات بايثون (``List`` و ``Dict`` و ``NamedTuple``، إلخ) ذات بنية ثابتة.
 
 .. _Limitations of torch.export:
 
-Limitations of torch.export
----------------------------
+قيود التصدير الشعلة
 
-Graph Breaks
-^^^^^^^^^^^^
+انقطاعات الرسم البياني
+^^^^^^^^^^^^^^^^^^
 
-As ``torch.export`` is a one-shot process for capturing a computation graph from
-a PyTorch program, it might ultimately run into untraceable parts of programs as
-it is nearly impossible to support tracing all PyTorch and Python features. In
-the case of ``torch.compile``, an unsupported operation will cause a "graph
-break" and the unsupported operation will be run with default Python evaluation.
-In contrast, ``torch.export`` will require users to provide additional
-information or rewrite parts of their code to make it traceable. As the
-tracing is based on TorchDynamo, which evaluates at the Python
-bytecode level, there will be significantly fewer rewrites required compared to
-previous tracing frameworks.
+نظرًا لأن ``torch.export`` هي عملية لمرة واحدة لالتقاط رسم بياني للحساب من برنامج PyTorch، فقد ينتهي بها الأمر في النهاية إلى أجزاء من البرامج التي يتعذر تتبعها، حيث أنه من المستحيل تقريبًا دعم تتبع جميع ميزات PyTorch وPython. في حالة ``torch.compile``، ستتسبب العملية غير المدعومة في "انقطاع الرسم البياني" وسيتم تشغيل العملية غير المدعومة باستخدام التقييم الافتراضي لـ Python. على النقيض من ذلك، سيتطلب ``torch.export`` من المستخدمين توفير معلومات إضافية أو إعادة كتابة أجزاء من شفرتهم لجعلها قابلة للتتبع. نظرًا لأن التتبع يعتمد على TorchDynamo، والذي يقوم بالتقييم على مستوى بايت كود Python، ستكون هناك عمليات إعادة كتابة أقل بكثير مقارنة بأطر التتبع السابقة.
 
-When a graph break is encountered, :ref:`ExportDB <torch.export_db>` is a great
-resource for learning about the kinds of programs that are supported and
-unsupported, along with ways to rewrite programs to make them traceable.
+عند مواجهة انقطاع في الرسم البياني، يعد :ref:``<torch.export_db>`` ExportDB موردًا رائعًا لمعرفة أنواع البرامج المدعومة وغير المدعومة، إلى جانب طرق إعادة كتابة البرامج لجعلها قابلة للتتبع.
 
-An option to get past dealing with this graph breaks is by using
-:ref:`non-strict export <Non-Strict Export>`
+يتمثل أحد الخيارات للتعامل مع هذه الانقطاعات في الرسم البياني باستخدام :ref:``<Non-Strict Export>`` التصدير غير الصارم.
 
 .. _Data/Shape-Dependent Control Flow:
 
-Data/Shape-Dependent Control Flow
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تدفق التحكم المعتمد على البيانات/الشكل
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Graph breaks can also be encountered on data-dependent control flow (``if
-x.shape[0] > 2``) when shapes are not being specialized, as a tracing compiler cannot
-possibly deal with without generating code for a combinatorially exploding
-number of paths. In such cases, users will need to rewrite their code using
-special control flow operators. Currently, we support :ref:`torch.cond <cond>`
-to express if-else like control flow (more coming soon!).
+يمكن أيضًا مواجهة انقطاعات الرسم البياني في تدفق التحكم المعتمد على البيانات (``if x.shape[0] > 2``) عندما لا يتم تخصص الأشكال، حيث لا يمكن لمترجم التتبع التعامل معها دون توليد رمز لعدد متفجر من المسارات. في مثل هذه الحالات، سيتعين على المستخدمين إعادة كتابة شفرتهم باستخدام مشغلي تدفق التحكم الخاصين. حاليًا، ندعم :ref:``<cond>`` torch.cond للتعبير عن تدفق التحكم الشبيه بـ if-else (قادم قريبًا!).
 
-Missing Fake/Meta/Abstract Kernels for Operators
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+النوى الوهمية/الافتراضية/المجردة المفقودة للمشغلين
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When tracing, a FakeTensor kernel (aka meta kernel, abstract impl) is
-required for all operators. This is used to reason about the input/output shapes
-for this operator.
+عند التتبع، تكون نواة FakeTensor (المعروفة أيضًا باسم النواة المجردة، أو التنفيذ المجرد) مطلوبة لجميع المشغلين. ويستخدم هذا للتفكير في أشكال الإدخال/الإخراج لهذا المشغل.
 
-Please see :func:`torch.library.register_fake` for more details.
+يرجى الاطلاع على :func:``torch.library.register_fake`` لمزيد من التفاصيل.
 
-In the unfortunate case where your model uses an ATen operator that is does not
-have a FakeTensor kernel implementation yet, please file an issue.
+في الحالة المؤسفة التي يستخدم فيها نموذجك مشغل ATen الذي لا يحتوي على تنفيذ نواة FakeTensor بعد، يرجى تقديم مشكلة.
 
-
-Read More
+اقرأ المزيد
 ---------
 
 .. toctree::
-   :caption: Additional Links for Export Users
+   :caption: روابط إضافية لمستخدمي التصدير
    :maxdepth: 1
 
    export.ir_spec
@@ -659,7 +526,7 @@ Read More
    cond
 
 .. toctree::
-   :caption: Deep Dive for PyTorch Developers
+   :caption: الغوص العميق لمطوري PyTorch
    :maxdepth: 1
 
    torch.compiler_dynamo_overview
@@ -667,8 +534,7 @@ Read More
    torch.compiler_dynamic_shapes
    torch.compiler_fake_tensor
 
-
-API Reference
+مرجع API
 -------------
 
 .. automodule:: torch.export
