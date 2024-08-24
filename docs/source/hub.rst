@@ -1,85 +1,86 @@
 torch.hub
-===================================
-Pytorch Hub is a pre-trained model repository designed to facilitate research reproducibility.
+==========
 
-Publishing models
------------------
+Pytorch Hub هو مستودع نماذج مُدربة مسبقًا مصمم لتسهيل إمكانية إعادة إنتاج الأبحاث.
 
-Pytorch Hub supports publishing pre-trained models(model definitions and pre-trained weights)
-to a GitHub repository by adding a simple ``hubconf.py`` file;
+نشر النماذج
+-------
 
-``hubconf.py`` can have multiple entrypoints. Each entrypoint is defined as a python function
-(example: a pre-trained model you want to publish).
+يدعم Pytorch Hub نشر النماذج المُدربة مسبقًا (تعريفات النماذج والأوزان المُدربة مسبقًا)
+في مستودع GitHub عن طريق إضافة ملف ``hubconf.py`` بسيط؛
+
+يمكن أن يحتوي ملف ``hubconf.py`` على عدة نقاط دخول. تُعرف كل نقطة دخول على أنها دالة Python
+(على سبيل المثال: نموذج مُدرب مسبقًا تريد نشره).
 
 ::
 
     def entrypoint_name(*args, **kwargs):
-        # args & kwargs are optional, for models which take positional/keyword arguments.
+        # args & kwargs اختيارية، للنماذج التي تأخذ وسائط/حجج الكلمات الأساسية الموضعية.
         ...
 
-How to implement an entrypoint?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here is a code snippet specifies an entrypoint for ``resnet18`` model if we expand
-the implementation in ``pytorch/vision/hubconf.py``.
-In most case importing the right function in ``hubconf.py`` is sufficient. Here we
-just want to use the expanded version as an example to show how it works.
-You can see the full script in
-`pytorch/vision repo <https://github.com/pytorch/vision/blob/master/hubconf.py>`_
+كيف يمكن تنفيذ نقطة الدخول؟
+^^^^^^^^^^^^^^^^^^^^^
+فيما يلي مقتطف من التعليمات البرمجية يحدد نقطة دخول لنموذج "resnet18" إذا قمنا بتوسيع
+التنفيذ في "pytorch/vision/hubconf.py".
+في معظم الحالات، يكفي استيراد الدالة الصحيحة في ملف ``hubconf.py``. هنا
+نحن نريد فقط استخدام الإصدار الموسع كمثال لتوضيح كيفية عمله.
+يمكنك الاطلاع على النص البرمجي الكامل في
+`مستودع pytorch/vision <https://github.com/pytorch/vision/blob/master/hubconf.py>`_
 
 ::
 
     dependencies = ['torch']
     from torchvision.models.resnet import resnet18 as _resnet18
 
-    # resnet18 is the name of entrypoint
+    # resnet18 هو اسم نقطة الدخول
     def resnet18(pretrained=False, **kwargs):
-        """ # This docstring shows up in hub.help()
-        Resnet18 model
-        pretrained (bool): kwargs, load pretrained weights into the model
+        """ # تظهر هذه السلسلة التوثيقية في hub.help()
+        نموذج Resnet18
+        pretrained (bool): وسائط الكلمات الأساسية، تحميل الأوزان المُدربة مسبقًا في النموذج
         """
-        # Call the model, load pretrained weights
+        # استدعاء النموذج، وتحميل الأوزان المُدربة مسبقًا
         model = _resnet18(pretrained=pretrained, **kwargs)
         return model
 
 
-- ``dependencies`` variable is a **list** of package names required to **load** the model. Note this might
-  be slightly different from dependencies required for training a model.
-- ``args`` and ``kwargs`` are passed along to the real callable function.
-- Docstring of the function works as a help message. It explains what does the model do and what
-  are the allowed positional/keyword arguments. It's highly recommended to add a few examples here.
-- Entrypoint function can either return a model(nn.module), or auxiliary tools to make the user workflow smoother, e.g. tokenizers.
-- Callables prefixed with underscore are considered as helper functions which won't show up in :func:`torch.hub.list()`.
-- Pretrained weights can either be stored locally in the GitHub repo, or loadable by
-  :func:`torch.hub.load_state_dict_from_url()`. If less than 2GB, it's recommended to attach it to a `project release <https://help.github.com/en/articles/distributing-large-binaries>`_
-  and use the url from the release.
-  In the example above ``torchvision.models.resnet.resnet18`` handles ``pretrained``, alternatively you can put the following logic in the entrypoint definition.
+- متغير ``dependencies`` هو **قائمة** بأسماء الحزم المطلوبة لتحميل النموذج. لاحظ أن هذا قد
+  يختلف قليلاً عن التبعيات المطلوبة لتدريب النموذج.
+- يتم تمرير وسائط ``args`` و ``kwargs`` إلى الدالة القابلة للاستدعاء الفعلية.
+- تعمل السلسلة التوثيقية للدالة كرسالة مساعدة. يوضح ما يفعله النموذج وما هي
+وسائط/حجج المواضع والكلمات الأساسية المسموح بها. من المستحسن بشدة إضافة بعض الأمثلة هنا.
+- يمكن لدالة نقطة الدخول إما أن تعيد نموذجًا (nn.module)، أو أدوات مساعدة لجعل سير عمل المستخدم أكثر سلاسة، على سبيل المثال، برامج التعرف على الكيانات المسماة.
+- تعتبر الدالات القابلة للاستدعاء التي تحمل بادئة شرطة سفلية دالات مساعدة لن تظهر في :func:`torch.hub.list()`.
+- يمكن تخزين الأوزان المُدربة مسبقًا إما محليًا في مستودع GitHub، أو تحميلها عن طريق
+:func:`torch.hub.load_state_dict_from_url()`. إذا كان الحجم أقل من 2 جيجابايت، فيُنصح بإرفاقه بـ `إصدار المشروع <https://help.github.com/en/articles/distributing-large-binaries>`_
+واستخدام عنوان URL من الإصدار.
+في المثال أعلاه، فإن ``torchvision.models.resnet.resnet18`` يتعامل مع وسيط ``pretrained``، أو يمكنك وضع المنطق التالي في تعريف نقطة الدخول.
 
 ::
 
     if pretrained:
-        # For checkpoint saved in local GitHub repo, e.g. <RELATIVE_PATH_TO_CHECKPOINT>=weights/save.pth
+        # بالنسبة لنقطة التفتيش المحفوظة في مستودع GitHub المحلي، على سبيل المثال، <RELATIVE_PATH_TO_CHECKPOINT>=weights/save.pth
         dirname = os.path.dirname(__file__)
         checkpoint = os.path.join(dirname, <RELATIVE_PATH_TO_CHECKPOINT>)
         state_dict = torch.load(checkpoint)
         model.load_state_dict(state_dict)
 
-        # For checkpoint saved elsewhere
+        # بالنسبة لنقطة التفتيش المحفوظة في مكان آخر
         checkpoint = 'https://download.pytorch.org/models/resnet18-5c106cde.pth'
         model.load_state_dict(torch.hub.load_state_dict_from_url(checkpoint, progress=False))
 
 
-Important Notice
-^^^^^^^^^^^^^^^^
+ملاحظة مهمة
+^^^^^^^^^^
 
-- The published models should be at least in a branch/tag. It can't be a random commit.
+- يجب أن تكون النماذج المنشورة على الأقل في فرع/وسم. لا يمكن أن يكون هذا الالتزام عشوائيًا.
 
 
-Loading models from Hub
------------------------
+تحميل النماذج من Hub
+-----------------
 
-Pytorch Hub provides convenient APIs to explore all available models in hub
-through :func:`torch.hub.list()`, show docstring and examples through
-:func:`torch.hub.help()` and load the pre-trained models using
+يوفر Pytorch Hub واجهات برمجة تطبيقات (APIs) ملائمة لاستكشاف جميع النماذج المتاحة في Hub
+من خلال :func:`torch.hub.list()`، وعرض السلاسل التوثيقية والأمثلة من خلال
+:func:`torch.hub.help()`، وتحميل النماذج المُدربة مسبقًا باستخدام
 :func:`torch.hub.load()`.
 
 
@@ -95,59 +96,55 @@ through :func:`torch.hub.list()`, show docstring and examples through
 
 .. autofunction:: load_state_dict_from_url
 
-Running a loaded model:
-^^^^^^^^^^^^^^^^^^^^^^^
+تشغيل نموذج محمل:
+^^^^^^^^^^^^^^
 
-Note that ``*args`` and ``**kwargs`` in :func:`torch.hub.load()` are used to
-**instantiate** a model. After you have loaded a model, how can you find out
-what you can do with the model?
-A suggested workflow is
+لاحظ أن ``*args`` و ``**kwargs`` في :func:`torch.hub.load()` تُستخدم لتحميل
+نموذج. بعد تحميل نموذج، كيف يمكنك معرفة ما يمكنك فعله بالنموذج؟
+سير عمل مقترح هو
 
-- ``dir(model)`` to see all available methods of the model.
-- ``help(model.foo)`` to check what arguments ``model.foo`` takes to run
+- ``dir(model)`` لمعرفة جميع الطرق المتاحة للنموذج.
+- ``help(model.foo)`` للتحقق من الوسائط التي تأخذها طريقة ``model.foo`` لتشغيلها
 
-To help users explore without referring to documentation back and forth, we strongly
-recommend repo owners make function help messages clear and succinct. It's also helpful
-to include a minimal working example.
+لمساعدة المستخدمين على الاستكشاف دون الرجوع إلى الوثائق ذهابًا وإيابًا، نوصي بشدة بأن يجعل مالكو المستودعات رسائل مساعدة الدالة واضحة وموجزة. من المفيد أيضًا تضمين مثال عملي بسيط.
 
-Where are my downloaded models saved?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+أين يتم حفظ النماذج التي تم تنزيلها؟
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The locations are used in the order of
+يتم استخدام المواقع بالترتيب التالي:
 
-- Calling ``hub.set_dir(<PATH_TO_HUB_DIR>)``
-- ``$TORCH_HOME/hub``, if environment variable ``TORCH_HOME`` is set.
-- ``$XDG_CACHE_HOME/torch/hub``, if environment variable ``XDG_CACHE_HOME`` is set.
+- استدعاء ``hub.set_dir(<PATH_TO_HUB_DIR>)``
+- ``$TORCH_HOME/hub``، إذا تم تعيين متغير البيئة ``TORCH_HOME``.
+- ``$XDG_CACHE_HOME/torch/hub``، إذا تم تعيين متغير البيئة ``XDG_CACHE_HOME``.
 - ``~/.cache/torch/hub``
 
 .. autofunction:: get_dir
 
 .. autofunction:: set_dir
 
-Caching logic
+منطق التخزين المؤقت
 ^^^^^^^^^^^^^
 
-By default, we don't clean up files after loading it. Hub uses the cache by default if it already exists in the
-directory returned by :func:`~torch.hub.get_dir()`.
+بشكل افتراضي، لا نقوم بتنظيف الملفات بعد تحميلها. يستخدم Hub ذاكرة التخزين المؤقت بشكل افتراضي إذا كان موجودًا بالفعل في
+الدليل الذي تم إرجاعه بواسطة :func:`~torch.hub.get_dir()`.
 
-Users can force a reload by calling ``hub.load(..., force_reload=True)``. This will delete
-the existing GitHub folder and downloaded weights, reinitialize a fresh download. This is useful
-when updates are published to the same branch, users can keep up with the latest release.
+يمكن للمستخدمين فرض إعادة التحميل عن طريق استدعاء ``hub.load(..., force_reload=True)``. سيؤدي هذا إلى حذف
+مجلد GitHub الموجود والأوزان المحملة، وإعادة التنزيل من البداية. هذا مفيد
+عندما يتم نشر التحديثات إلى نفس الفرع، ويمكن للمستخدمين مواكبة أحدث إصدار.
 
 
-Known limitations:
-^^^^^^^^^^^^^^^^^^
-Torch hub works by importing the package as if it was installed. There are some side effects
-introduced by importing in Python. For example, you can see new items in Python caches
-``sys.modules`` and ``sys.path_importer_cache`` which is normal Python behavior.
-This also means that you may have import errors when importing different models
-from different repos, if the repos have the same sub-package names (typically, a
-``model`` subpackage). A workaround for these kinds of import errors is to
-remove the offending sub-package from the ``sys.modules`` dict; more details can
-be found in `this GitHub issue
+القيود المعروفة:
+^^^^^^^^^^^
+يعمل Torch hub عن طريق استيراد الحزمة كما لو تم تثبيتها. هناك بعض التأثيرات الجانبية
+التي تم تقديمها عن طريق الاستيراد في Python. على سبيل المثال، يمكنك رؤية عناصر جديدة في ذاكرة التخزين المؤقت لـ Python
+``sys.modules`` و ``sys.path_importer_cache`` وهو سلوك Python عادي.
+هذا يعني أيضًا أنه قد تواجهك أخطاء استيراد عند استيراد نماذج مختلفة
+من مستودعات مختلفة، إذا كان لدى المستودعات نفس أسماء الحزم الفرعية (عادةً، حزمة
+"model" فرعية). حل بديل لأخطاء الاستيراد هذه هو
+إزالة الحزمة الفرعية المخالفة من قاموس ``sys.modules``؛ يمكن العثور على مزيد من التفاصيل في
+`قضية GitHub هذه
 <https://github.com/pytorch/hub/issues/243#issuecomment-942403391>`_.
 
-A known limitation that is worth mentioning here: users **CANNOT** load two different branches of
-the same repo in the **same python process**. It's just like installing two packages with the
-same name in Python, which is not good. Cache might join the party and give you surprises if you
-actually try that. Of course it's totally fine to load them in separate processes.
+هناك حد معروف يستحق الذكر هنا: لا **يمكن** للمستخدمين تحميل فرعين مختلفين
+من نفس المستودع في **نفس عملية Python**. هذا يشبه تثبيت حزمتين بنفس الاسم في Python، وهو أمر غير جيد. قد تنضم ذاكرة التخزين المؤقت إلى الحفل وتفاجئك إذا
+كنت تحاول ذلك بالفعل. بالطبع من الجيد تحميلها في عمليات منفصلة.
