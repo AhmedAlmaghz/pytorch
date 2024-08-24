@@ -1,33 +1,20 @@
-Migrating from functorch to torch.func
-======================================
+# الانتقال من functorch إلى torch.func
 
-torch.func, previously known as "functorch", is
-`JAX-like <https://github.com/google/jax>`_ composable function transforms for PyTorch.
+torch.func، الذي كان يُعرف سابقًا باسم "functorch"، هو تحويلات وظائف قابلة للتكوين على غرار `JAX <https://github.com/google/jax>`_ لـ PyTorch.
 
-functorch started as an out-of-tree library over at
-the `pytorch/functorch <https://github.com/pytorch/functorch>`_ repository.
-Our goal has always been to upstream functorch directly into PyTorch and provide
-it as a core PyTorch library.
+بدأ functorch كمكتبة خارجية في مستودع `pytorch/functorch <https://github.com/pytorch/functorch>`_. كان هدفنا دائمًا هو دمج functorch مباشرة في PyTorch وتوفيره كمكتبة أساسية لـ PyTorch.
 
-As the final step of the upstream, we've decided to migrate from being a top level package
-(``functorch``) to being a part of PyTorch to reflect how the function transforms are
-integrated directly into PyTorch core. As of PyTorch 2.0, we are deprecating
-``import functorch`` and ask that users migrate to the newest APIs, which we
-will maintain going forward. ``import functorch`` will be kept around to maintain
-backwards compatibility for a couple of releases.
+وكخطوة أخيرة في عملية الدمج، قررنا الانتقال من كونه حزمة من المستوى الأعلى ("functorch") إلى كونه جزءًا من PyTorch ليعكس كيف يتم دمج تحويلات الوظائف مباشرة في جوهر PyTorch. بدءًا من PyTorch 2.0، سنوقف استخدام "import functorch" ونطلب من المستخدمين الانتقال إلى واجهات برمجة التطبيقات (APIs) الأحدث، والتي سنحافظ عليها في المستقبل. سيتم الاحتفاظ بـ "import functorch" للحفاظ على التوافق مع الإصدارات السابقة لبضع إصدارات.
 
-function transforms
--------------------
+تحويلات الوظيفة
+--------------
 
-The following APIs are a drop-in replacement for the following
-`functorch APIs <https://pytorch.org/functorch/1.13/functorch.html>`_.
-They are fully backwards compatible.
+واجهات برمجة التطبيقات التالية هي بديل مباشر لواجهات برمجة تطبيقات functorch التالية. وهي متوافقة تمامًا مع الإصدارات السابقة.
 
-
-==============================  =======================================
-functorch API                    PyTorch API (as of PyTorch 2.0)
-==============================  =======================================
-functorch.vmap                  :func:`torch.vmap` or :func:`torch.func.vmap`
+============================== =======================================
+واجهة برمجة تطبيقات functorch         واجهة برمجة تطبيقات PyTorch (اعتبارًا من PyTorch 2.0)
+============================== =======================================
+functorch.vmap                  :func:`torch.vmap` أو :func:`torch.func.vmap`
 functorch.grad                  :func:`torch.func.grad`
 functorch.vjp                   :func:`torch.func.vjp`
 functorch.jvp                   :func:`torch.func.jvp`
@@ -35,173 +22,143 @@ functorch.jacrev                :func:`torch.func.jacrev`
 functorch.jacfwd                :func:`torch.func.jacfwd`
 functorch.hessian               :func:`torch.func.hessian`
 functorch.functionalize         :func:`torch.func.functionalize`
-==============================  =======================================
+============================== =======================================
 
-Furthermore, if you are using torch.autograd.functional APIs, please try out
-the :mod:`torch.func` equivalents instead. :mod:`torch.func` function
-transforms are more composable and more performant in many cases.
+علاوة على ذلك، إذا كنت تستخدم واجهات برمجة تطبيقات torch.autograd.functional، فيرجى تجربة ما يعادلها في :mod:`torch.func` بدلاً من ذلك. تعد تحويلات الوظائف في :mod:`torch.func` أكثر قابلية للتكوين وأكثر كفاءة في الأداء في العديد من الحالات.
 
 =========================================== =======================================
-torch.autograd.functional API               torch.func API (as of PyTorch 2.0)
+واجهة برمجة تطبيقات torch.autograd.functional               واجهة برمجة تطبيقات torch.func (اعتبارًا من PyTorch 2.0)
 =========================================== =======================================
-:func:`torch.autograd.functional.vjp`       :func:`torch.func.grad` or :func:`torch.func.vjp`
+:func:`torch.autograd.functional.vjp`       :func:`torch.func.grad` أو :func:`torch.func.vjp`
 :func:`torch.autograd.functional.jvp`       :func:`torch.func.jvp`
-:func:`torch.autograd.functional.jacobian`  :func:`torch.func.jacrev` or :func:`torch.func.jacfwd`
+:func:`torch.autograd.functional.jacobian`  :func:`torch.func.jacrev` أو :func:`torch.func.jacfwd`
 :func:`torch.autograd.functional.hessian`   :func:`torch.func.hessian`
 =========================================== =======================================
 
-NN module utilities
--------------------
+مرافق وحدات NN
+----------------
 
-We've changed the APIs to apply function transforms over NN modules to make them
-fit better into the PyTorch design philosophy. The new API is different, so
-please read this section carefully.
+لقد قمنا بتغيير واجهات برمجة التطبيقات لتطبيق تحويلات الوظائف على وحدات NN لجعلها تتوافق بشكل أفضل مع فلسفة تصميم PyTorch. تختلف واجهة برمجة التطبيقات الجديدة، لذا يرجى قراءة هذا القسم بعناية.
 
 functorch.make_functional
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:func:`torch.func.functional_call` is the replacement for
-`functorch.make_functional <https://pytorch.org/functorch/1.13/generated/functorch.make_functional.html#functorch.make_functional>`_
-and
-`functorch.make_functional_with_buffers <https://pytorch.org/functorch/1.13/generated/functorch.make_functional_with_buffers.html#functorch.make_functional_with_buffers>`_.
-However, it is not a drop-in replacement.
+:func:`torch.func.functional_call` هو البديل لـ `functorch.make_functional <https://pytorch.org/functorch/1.13/generated/functorch.make_functional.html#functorch.make_functional>`_ و `functorch.make_functional_with_buffers <https://pytorch.org/functorch/1.13/generated/functorch.make_functional_with_buffers.html#functorch.make_functional_with_buffers>`_. ومع ذلك، فهو ليس بديلاً مباشرًا.
 
-If you're in a hurry, you can use
-`helper functions in this gist <https://gist.github.com/zou3519/7769506acc899d83ef1464e28f22e6cf>`_
-that emulate the behavior of functorch.make_functional and functorch.make_functional_with_buffers.
-We recommend using :func:`torch.func.functional_call` directly because it is a more explicit
-and flexible API.
+إذا كنت في عجلة من أمرك، فيمكنك استخدام `وظائف المساعدة في هذا المقتطف <https://gist.github.com/zou3519/7769506acc899d83ef1464e28f22e6cf>`_ التي تحاكي سلوك functorch.make_functional و functorch.make_functional_with_buffers. نوصي باستخدام :func:`torch.func.functional_call` مباشرة لأنه واجهة برمجة تطبيقات أكثر صراحة ومرونة.
 
-Concretely, functorch.make_functional returns a functional module and parameters.
-The functional module accepts parameters and inputs to the model as arguments.
-:func:`torch.func.functional_call` allows one to call the forward pass of an existing
-module using new parameters and buffers and inputs.
+بشكل ملموس، يعيد functorch.make_functional وحدة وظيفية ومعلمات. تقبل الوحدة الوظيفية المعلمات والمدخلات إلى النموذج كحجج. يسمح :func:`torch.func.functional_call` بالاستدعاء إلى الأمام للوحدة النمطية الموجودة باستخدام المعلمات والذاكرات والمدخلات الجديدة.
 
-Here's an example of how to compute gradients of parameters of a model using functorch
-vs :mod:`torch.func`::
+فيما يلي مثال على كيفية حساب تدرجات معلمات نموذج باستخدام functorch مقابل :mod:`torch.func`::
 
     # ---------------
-    # using functorch
+    # باستخدام functorch
     # ---------------
-    import torch
-    import functorch
-    inputs = torch.randn(64, 3)
-    targets = torch.randn(64, 3)
-    model = torch.nn.Linear(3, 3)
+    استيراد الشعلة
+    استيراد functorch
+    المدخلات = الشعلة.randn(64، 3)
+    الأهداف = الشعلة.randn(64، 3)
+    النموذج = الشعلة.nn.Linear (3، 3)
 
-    fmodel, params = functorch.make_functional(model)
+    fmodel، params = functorch.make_functional (النموذج)
 
-    def compute_loss(params, inputs, targets):
-        prediction = fmodel(params, inputs)
-        return torch.nn.functional.mse_loss(prediction, targets)
+    def compute_loss (params، inputs، targets):
+        التنبؤ = fmodel (params، inputs)
+        return torch.nn.functional.mse_loss (التنبؤ، الأهداف)
 
-    grads = functorch.grad(compute_loss)(params, inputs, targets)
+    grads = functorch.grad (compute_loss) (params، inputs، الأهداف)
 
     # ------------------------------------
-    # using torch.func (as of PyTorch 2.0)
+    # باستخدام torch.func (اعتبارًا من PyTorch 2.0)
     # ------------------------------------
-    import torch
-    inputs = torch.randn(64, 3)
-    targets = torch.randn(64, 3)
-    model = torch.nn.Linear(3, 3)
+    استيراد الشعلة
+    المدخلات = الشعلة.randn(64، 3)
+    الأهداف = الشعلة.randn(64، 3)
+    النموذج = الشعلة.nn.Linear (3، 3)
 
-    params = dict(model.named_parameters())
+    المعلمات = ديكت (النموذج.named_parameters ())
 
-    def compute_loss(params, inputs, targets):
-        prediction = torch.func.functional_call(model, params, (inputs,))
-        return torch.nn.functional.mse_loss(prediction, targets)
+    def compute_loss (params، inputs، targets):
+        التنبؤ = torch.func.functional_call (النموذج، params، (inputs،))
+        return torch.nn.functional.mse_loss (التنبؤ، الأهداف)
 
-    grads = torch.func.grad(compute_loss)(params, inputs, targets)
+    grads = torch.func.grad (compute_loss) (params، inputs، الأهداف)
 
-And here's an example of how to compute jacobians of model parameters::
+وهنا مثال على كيفية حساب المشتقات الجزئية لمعلمات النموذج::
 
     # ---------------
-    # using functorch
+    # باستخدام functorch
     # ---------------
-    import torch
-    import functorch
-    inputs = torch.randn(64, 3)
-    model = torch.nn.Linear(3, 3)
+    استيراد الشعلة
+    استيراد functorch
+    المدخلات = الشعلة.randn(64، 3)
+    النموذج = الشعلة.nn.Linear (3، 3)
 
-    fmodel, params = functorch.make_functional(model)
-    jacobians = functorch.jacrev(fmodel)(params, inputs)
+    fmodel، params = functorch.make_functional (النموذج)
+    المشتقات الجزئية = functorch.jacrev (fmodel) (params، inputs)
 
     # ------------------------------------
-    # using torch.func (as of PyTorch 2.0)
+    # باستخدام torch.func (اعتبارًا من PyTorch 2.0)
     # ------------------------------------
-    import torch
-    from torch.func import jacrev, functional_call
-    inputs = torch.randn(64, 3)
-    model = torch.nn.Linear(3, 3)
+    استيراد الشعلة
+    من الشعلة. استيراد func jacrev، functional_call
 
-    params = dict(model.named_parameters())
-    # jacrev computes jacobians of argnums=0 by default.
-    # We set it to 1 to compute jacobians of params
-    jacobians = jacrev(functional_call, argnums=1)(model, params, (inputs,))
+    المدخلات = الشعلة.randn(64، 3)
+    النموذج = الشعلة.nn.Linear (3، 3)
 
-Note that it is important for memory consumption that you should only carry
-around a single copy of your parameters. ``model.named_parameters()`` does not copy
-the parameters. If in your model training you update the parameters of the model
-in-place, then the ``nn.Module`` that is your model has the single copy of the
-parameters and everything is OK.
+    المعلمات = ديكت (النموذج.named_parameters ())
+    # تحسب jacrev المشتقات الجزئية للargnums=0 بشكل افتراضي.
+    # نحدده على 1 لحساب المشتقات الجزئية للمعلمات
+    المشتقات الجزئية = jacrev (functional_call، argnums=1) (النموذج، المعلمات، (المدخلات،))
 
-However, if you want to carry your parameters around in a dictionary and update
-them out-of-place, then there are two copies of parameters: the one in the
-dictionary and the one in the ``model``. In this case, you should change
-``model`` to not hold memory by converting it to the meta device via
-``model.to('meta')``.
+لاحظ أنه من المهم لاستهلاك الذاكرة ألا تحمل سوى نسخة واحدة من معلماتك. لا يقوم "model.named_parameters()" بنسخ المعلمات. إذا قمت في تدريب النموذج الخاص بك بتحديث معلمات النموذج في المكان، فإن "nn.Module" الذي هو نموذجك يحتوي على نسخة واحدة من المعلمات وكل شيء على ما يرام.
+
+ومع ذلك، إذا كنت تريد حمل معلماتك في قاموس وتحديثها خارج المكان، فهناك نسختان من المعلمات: واحدة في القاموس وواحدة في "النموذج". في هذه الحالة، يجب عليك تغيير "النموذج" لعدم الاحتفاظ بالذاكرة عن طريق تحويله إلى الجهاز الميتا عبر "النموذج.to('meta')".
 
 functorch.combine_state_for_ensemble
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Please use :func:`torch.func.stack_module_state` instead of
-`functorch.combine_state_for_ensemble <https://pytorch.org/functorch/1.13/generated/functorch.combine_state_for_ensemble.html>`_
-:func:`torch.func.stack_module_state` returns two dictionaries, one of stacked parameters, and
-one of stacked buffers, that can then be used with :func:`torch.vmap` and :func:`torch.func.functional_call`
-for ensembling.
+يرجى استخدام :func:`torch.func.stack_module_state` بدلاً من `functorch.combine_state_for_ensemble <https://pytorch.org/functorch/1.13/generated/functorch.combine_state_for_ensemble.html>`_ :func:`torch.func.stack_module_state` يعيد قاموسين، أحدهما للمعلمات المكدسة، والآخر للذاكرات المكدسة، والتي يمكن استخدامها بعد ذلك مع :func:`torch.vmap` و :func:`torch.func.functional_call` للتصويت.
 
-For example, here is an example of how to ensemble over a very simple model::
+على سبيل المثال، فيما يلي مثال على كيفية التصويت على نموذج بسيط جدًا::
 
-    import torch
-    num_models = 5
-    batch_size = 64
-    in_features, out_features = 3, 3
-    models = [torch.nn.Linear(in_features, out_features) for i in range(num_models)]
-    data = torch.randn(batch_size, 3)
+    استيراد الشعلة
+    عدد النماذج = 5
+    حجم الدفعة = 64
+    في_الميزات، out_features = 3، 3
+    النماذج = [الشعلة.nn.Linear (في_الميزات، out_features) ل i في نطاق (عدد النماذج)]
+    البيانات = الشعلة.randn (حجم الدفعة، 3)
 
     # ---------------
-    # using functorch
+    # باستخدام functorch
     # ---------------
-    import functorch
-    fmodel, params, buffers = functorch.combine_state_for_ensemble(models)
-    output = functorch.vmap(fmodel, (0, 0, None))(params, buffers, data)
-    assert output.shape == (num_models, batch_size, out_features)
+    استيراد functorch
+    fmodel، params، buffers = functorch.combine_state_for_ensemble (النماذج)
+    الإخراج = functorch.vmap (fmodel، (0، 0، لا شيء)) (params، buffers، data)
+    التأكيد على أن الإخراج. الشكل == (عدد النماذج، حجم الدفعة، out_features)
 
     # ------------------------------------
-    # using torch.func (as of PyTorch 2.0)
+    # باستخدام torch.func (اعتبارًا من PyTorch 2.0)
     # ------------------------------------
-    import copy
+    استيراد النسخ
 
-    # Construct a version of the model with no memory by putting the Tensors on
-    # the meta device.
-    base_model = copy.deepcopy(models[0])
-    base_model.to('meta')
+    # قم ببناء إصدار من النموذج بدون ذاكرة عن طريق وضع Tensors على
+    # جهاز الميتا.
+    النموذج الأساسي = copy.deepcopy (النماذج [0])
+    النموذج الأساسي.to ('ميتا')
 
-    params, buffers = torch.func.stack_module_state(models)
+    المعلمات، الذاكرات = torch.func.stack_module_state (النماذج)
 
-    # It is possible to vmap directly over torch.func.functional_call,
-    # but wrapping it in a function makes it clearer what is going on.
-    def call_single_model(params, buffers, data):
-        return torch.func.functional_call(base_model, (params, buffers), (data,))
+    # من الممكن vmap مباشرة على torch.func.functional_call،
+    # لكن لفها في وظيفة يجعل من الواضح ما يحدث.
+    def call_single_model (params، buffers، data):
+        return torch.func.functional_call (النموذج الأساسي، (params، buffers)، (data،))
 
-    output = torch.vmap(call_single_model, (0, 0, None))(params, buffers, data)
-    assert output.shape == (num_models, batch_size, out_features)
+    الإخراج = الشعلة.vmap (call_single_model، (0، 0، لا شيء)) (params، buffers، data)
+    التأكيد على أن الإخراج. الشكل == (عدد النماذج، حجم الدفعة، out_features)
 
 
 functorch.compile
 -----------------
 
-We are no longer supporting functorch.compile (also known as AOTAutograd)
-as a frontend for compilation in PyTorch; we have integrated AOTAutograd
-into PyTorch's compilation story. If you are a user, please use
-:func:`torch.compile` instead.
+لم نعد ندعم functorch.compile (المعروف أيضًا باسم AOTAutograd) كواجهة أمامية للتجميع في PyTorch؛ لقد قمنا بتكامل AOTAutograd في قصة التجميع في PyTorch. إذا كنت مستخدمًا، فيرجى استخدام :func:`torch.compile` بدلاً من ذلك.
