@@ -1,44 +1,39 @@
 .. _MPS-Backend:
 
-MPS backend
-===========
+الخلفية الخلفية لـ MPS
+=====================
 
-:mod:`mps` device enables high-performance
-training on GPU for MacOS devices with Metal programming framework.  It
-introduces a new device to map Machine Learning computational graphs and
-primitives on highly efficient Metal Performance Shaders Graph framework and
-tuned kernels provided by Metal Performance Shaders framework respectively.
+تتيح وحدة :mod:`mps` التدريب عالي الأداء على وحدات معالجة الرسوميات (GPU) لأجهزة MacOS مع إطار عمل برمجة Metal. ويقدم وحدة جديدة لرسم خرائط الرسوم البيانية والبدائيات الحسابية للتعلم الآلي على إطار عمل Metal Performance Shaders Graph وإطارات عمل Metal Performance Shaders على التوالي.
 
-The new MPS backend extends the PyTorch ecosystem and provides existing scripts
-capabilities to setup and run operations on GPU.
+توسع خلفية MPS الجديدة نظام PyTorch البيئي وتوفر للمخطوطات الموجودة إمكانيات لإعداد وتشغيل العمليات على وحدة معالجة الرسومات.
 
-To get started, simply move your Tensor and Module to the ``mps`` device:
+لتبدأ، ما عليك سوى نقل Tensor و Module إلى جهاز "mps":
 
 .. code:: python
 
-    # Check that MPS is available
+    # تحقق من توفر MPS
     if not torch.backends.mps.is_available():
         if not torch.backends.mps.is_built():
-            print("MPS not available because the current PyTorch install was not "
-                  "built with MPS enabled.")
+            print("MPS غير متوفر لأن تثبيت PyTorch الحالي لم يتم بناؤه "
+                  "مع تمكين MPS.")
         else:
-            print("MPS not available because the current MacOS version is not 12.3+ "
-                  "and/or you do not have an MPS-enabled device on this machine.")
+            print("MPS غير متوفر لأن إصدار MacOS الحالي ليس 12.3+ "
+                  "و/أو لا يوجد لديك جهاز ممكّن لـ MPS على هذه الآلة.")
 
     else:
         mps_device = torch.device("mps")
 
-        # Create a Tensor directly on the mps device
+        # إنشاء Tensor مباشرة على جهاز mps
         x = torch.ones(5, device=mps_device)
-        # Or
+        # أو
         x = torch.ones(5, device="mps")
 
-        # Any operation happens on the GPU
+        # أي عملية تحدث على وحدة معالجة الرسوميات
         y = x * 2
 
-        # Move your model to mps just like any other device
+        # قم بنقل نموذجك إلى mps مثل أي جهاز آخر
         model = YourFavoriteNet()
         model.to(mps_device)
 
-        # Now every call runs on the GPU
+        # الآن يتم تشغيل كل مكالمة على وحدة معالجة الرسوميات
         pred = model(x)
