@@ -1,49 +1,33 @@
 .. _torchinductor-gpu-profiling:
 
-TorchInductor GPU Profiling
-===========================
+تحليل أداء وحدة معالجة الرسومات (GPU) في تورتش إندكتور
+===========================================
 
-This section lists useful commands and workflows that can help
-you dive into a model’s performance in TorchInductor. When a model is not
-running as fast as expected, you may want to check individual kernels of the
-model. Usually, those kernels taking the majority of the
-GPU time are the most interesting ones. After that, you
-may also want to run individual kernels directly and inspect its perf.
-PyTorch provides tools to cover everything mentioned above.
+يسرد هذا القسم الأوامر وتدفقات العمل المفيدة التي يمكن أن تساعدك في الغوص في أداء نموذج ما في تورتش إندكتور. عندما لا يعمل نموذج ما بالسرعة المتوقعة، فقد ترغب في التحقق من نوى فردية للنموذج. عادة ما تكون النوى التي تستغرق معظم وقت وحدة معالجة الرسومات هي الأكثر أهمية. بعد ذلك، قد ترغب أيضًا في تشغيل نوى فردية مباشرة وفحص أدائها. توفر باي تورتش أدوات لتغطية كل ما سبق ذكره.
 
-Relevant Environment Variables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+متغيرات البيئة ذات الصلة
+~~~~~~~~~~~~~~~~~~~
 
-You can use the following environment variables in your analysis:
+يمكنك استخدام متغيرات البيئة التالية في تحليلك:
 
 -  ``TORCHINDUCTOR_UNIQUE_KERNEL_NAMES``
 
-   -  By default, TorchInductor names a Triton kernel as ``‘triton\_’``. When
-      this environmental variable is enabled, inductor generates a more
-      meaningful kernel name in the trace, for example,
-      ``triton_poi_fused_cat_155`` which contains the kernel category
-      (``poi`` for pointwise) and original ATen
-      operator. This config is disabled by default to improve the chance of
-      compilation cache hit.
+   -  بشكل افتراضي، تقوم تورتش إندكتور بتسمية نواة ترايتون باسم ``'triton_'``. عندما يتم تمكين هذه المتغير البيئي، يقوم المحفز بتوليد اسم نواة أكثر دلالة في التعقب، على سبيل المثال، ``triton_poi_fused_cat_155`` والذي يحتوي على فئة النواة (``poi`` للعمليات النقطية) والمشغل الأصلي لـ إيتن. يتم تعطيل هذا الإعداد بشكل افتراضي لتحسين فرصة إصابة ذاكرة التخزين المؤقت للتجميع.
 
 -  ``TORCHINDUCTOR_BENCHMARK_KERNEL``
 
-   -  Enabling this will make inductor codegen harness to benchmark
-      individual triton kernels.
+   -  سيتسبب تمكين هذا الإعداد في قيام محفز كودجن بتقييم نوى ترايتون الفردية.
 
 -  ``TORCHINDUCTOR_MAX_AUTOTUNE``
 
-   -  Inductor autotuner will benchmark more ``triton.Configs`` and pick the
-      one with the best performance results. This will increase compilation
-      time with the hope to improve performance.
+   -  سيقوم محسن تورتش إندكتور بتقييم المزيد من تكوينات ترايتون واختيار التكوين الذي يحقق أفضل نتائج للأداء. سيؤدي هذا إلى زيادة وقت التجميع على أمل تحسين الأداء.
 
-Breakdown Model GPU Time
-~~~~~~~~~~~~~~~~~~~~~~~~
+تحليل وقت وحدة معالجة الرسومات للنموذج
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Below are the steps to breakdown execution time of a model into
-individual kernels. We take ``mixnet_l`` as an example.
+فيما يلي الخطوات لتحليل وقت التنفيذ لنموذج ما إلى نوى فردية. نأخذ ``mixnet_l`` كمثال.
 
-1. Run the benchmark script for the model:
+1. قم بتشغيل نص البرنامج النصي للمقارنة المرجعية للنموذج:
 
    .. code-block:: bash
 
@@ -51,127 +35,111 @@ individual kernels. We take ``mixnet_l`` as an example.
       python -u benchmarks/dynamo/timm_models.py –backend inductor –amp
       –performance –dashboard –only mixnet_l –disable-cudagraphs –training
 
-   .. note:: The tool relies on kernel name to decide its category. Enabling
-      ``TORCHINDUCTOR_UNIQUE_KERNEL_NAMES`` is crucial for that.
+   .. note:: تعتمد الأداة على اسم النواة لتحديد فئتها. تمكين ``TORCHINDUCTOR_UNIQUE_KERNEL_NAMES`` أمر بالغ الأهمية لذلك.
 
-2. In the output log, look for lines:
+2. في سجل الإخراج، ابحث عن الأسطر التالية:
 
    .. code-block:: bash
 
-      **Compiled module path:
+      **مسار الوحدة المجمعة:
       /tmp/torchinductor_shunting/qz/cqz7hvhood7y3psp7fy6msjxsxyli7qiwiybizdwtjw6ffyq5wwd.py**
 
-We have one line for each compiled module. If there are no extra graph
-breaks, we would see 2 such lines in the log, one for the forward graph
-and one for the backward graph.
+لدينا سطر واحد لكل وحدة مجمعة. إذا لم تكن هناك فواصل رسومية إضافية، فسنرى سطرين مثل هذا في السجل، أحدهما للرسم البياني للأمام والآخر للرسم البياني الخلفي.
 
-For our example command, we get the following compiled module for the
-forward and backward graphs respectively:
+بالنسبة لأمر المثال الخاص بنا، نحصل على الوحدة المجمعة التالية للرسم البياني للأمام والخلف على التوالي:
 
 -  https://gist.github.com/shunting314/c2a4d8a28b00fcb5586d0e9d9bf77f9f
 -  https://gist.github.com/shunting314/48efc83b12ec3ead950052e4a0220b10
 
-3. Now we can dive into the perf for each individual compiled module.
-   Let’s pick the one for the forward graph for illustration purposes.
-   I’ll name it ``fwd.py`` for convenience. Run it directly with the
-   ``-p`` argument:
+3. الآن يمكننا الغوص في الأداء لكل وحدة مجمعة فردية. دعنا نختار الوحدة المجمعة للرسم البياني للأمام لأغراض التوضيح. سأطلق عليه اسم ``fwd.py`` لسهولة الاستخدام. قم بتشغيله مباشرة باستخدام الحجة ``-p``:
 
    .. code-block:: bash
 
       **> python fwd.py -p**
 
-See the full output log in this
-`example gist <https://gist.github.com/shunting314/8243734a38b5733ea78479209c0ae893>`__.
+راجع سجل الإخراج الكامل في هذا
+`مثال جست <https://gist.github.com/shunting314/8243734a38b5733ea78479209c0ae893>`__.
 
-In the output, you can notice the following:
+في الإخراج، يمكنك ملاحظة ما يلي:
 
-* We write a chrome trace file for the profile so we can load the trace and interact with it. In the log, look for lines as follows to find the path of the trace file.
+* نكتب ملف تعقب كروم لملف التعريف حتى نتمكن من تحميل التعقب والتفاعل معه. في السجل، ابحث عن الأسطر التالية للعثور على مسار ملف التعقب:
 
- **Chrome trace for the profile is written to
+ **تم كتابة تعقب كروم للملف الشخصي إلى
  /tmp/compiled_module_profile.json**
 
- Loading the trace into Chrome (visit chrome://tracing in the chrome
- browser and load the file as the UI suggested) will show UI as follows:
+ سيؤدي تحميل التعقب في كروم (قم بزيارة chrome://tracing في متصفح كروم وتحميل الملف كما اقترح واجهة المستخدم) إلى عرض واجهة المستخدم على النحو التالي:
 
  .. image:: _static/img/inductor_profiling/trace.png
 
- You can zoom in and out to check the profile.
+ يمكنك التكبير والتصغير للتحقق من الملف الشخصي.
 
-* We report the percent of GPU time regarding to the wall time by log line like:
+* نقوم بالإبلاغ عن النسبة المئوية لوقت وحدة معالجة الرسومات فيما يتعلق بوقت الحائط عن طريق سطر سجل مثل:
 
-  **Percent of time when GPU is busy: 102.88%**
+  **النسبة المئوية للوقت عندما تكون وحدة معالجة الرسومات مشغولة: 102.88%**
 
-  Sometimes you may see a value larger than 100%. The reason is because PyTorch
-  uses the kernel execution time with profiling enabled while using wall time
-  with profiling disabled. Profiling may distort the kernel execution time a
-  bit. But overall it should not be a big deal.
+  في بعض الأحيان، قد ترى قيمة أكبر من 100%. والسبب هو أن باي تورتش يستخدم وقت تنفيذ النواة مع تمكين التعريف أثناء استخدام وقت الحائط مع إيقاف تشغيل التعريف. قد يشوه التعريف وقت تنفيذ النواة قليلاً. ولكن بشكل عام، لا ينبغي أن يكون الأمر مهمًا.
 
-  If we run the model like ``densenet121`` with a small batch size, we would see
-  low percent of time when GPU is busy:
+  إذا قمنا بتشغيل نموذج مثل ``densenet121`` بحجم دفعة صغير، فسنرى
+  نسبة مئوية منخفضة من الوقت عندما تكون وحدة معالجة الرسومات مشغولة:
 
   ::
 
-     (Forward graph) Percent of time when GPU is busy: 32.69%
+     (الرسم البياني للأمام) النسبة المئوية للوقت عندما تكون وحدة معالجة الرسومات مشغولة: 32.69%
 
-  This means the model has a lot of CPU overhead. This is consistent with
-  the fact that enabling cudagraphs improve densenet121’s perf a lot.
+  هذا يعني أن النموذج لديه الكثير من النفقات العامة للمعالج. هذا يتسق مع
+  حقيقة أن تمكين cudagraphs يحسن أداء densenet121 بشكل كبير.
 
-* We can break down the GPU time to different categories of kernels.
-  In the ``mixnet_l`` example, we see
+* يمكننا تحليل وقت وحدة معالجة الرسومات إلى فئات مختلفة من النواة.
+  في مثال ``mixnet_l``، نرى
 
-  -  pointwise kernel takes 28.58%
-  -  reduction kernel takes 13.85%
-  -  persistent reduction kernel takes 3.89%
-  -  the rest are cutlass/cudnn kernels for mm/conv which takes 56.57%
+  -  تأخذ النواة النقطية 28.58%
+  -  تأخذ نواة التخفيض 13.85%
+  -  تأخذ نواة التخفيض المستمر 3.89%
+  -  الباقي عبارة عن نوى كوداس/كودن لعمليات الضرب/التنفيذ التي تستغرق 56.57%
 
-  This information can be found in the summary line (last line)
-  of the report for each kernel category.
+  يمكن العثور على هذه المعلومات في سطر الملخص (السطر الأخير)
+  من التقرير لكل فئة نواة.
 
-* We also call zoom into a certain category of kernels. For example,
-  let’s check reduction kernels:
+* يمكننا أيضًا التكبير في فئة معينة من النواة. على سبيل المثال،
+  دعنا نتحقق من نوى التخفيض:
 
   .. image:: _static/img/inductor_profiling/kernel_breakdown.png
 
-  We can see an ordered table of execution time for each individual
-  reduction kernel. We also see how many times a kernel is executed. This
-  is helpful for a few reasons:
+  يمكننا أن نرى جدولًا مرتبًا لوقت التنفيذ لكل نواة تخفيض فردية. نرى أيضًا عدد المرات التي يتم فيها تنفيذ نواة ما. هذا
+  مفيد لعدة أسباب:
 
-  - If a kernel only takes a tiny amount of time, for example, 0.1%,
-    improving it will at most bring 0.1% overall gain. It is not
-    worth spending a lot of effort on it.
-  - Ff a kernel takes 2% of time, improving it by 2x will bring in 1%
-    overall gain which justifies the effort.
+  - إذا كانت النواة تستغرق قدرًا ضئيلًا من الوقت، على سبيل المثال، 0.1%،
+    فإن تحسينها سيؤدي إلى تحقيق مكاسب إجمالية قدرها 0.1% كحد أقصى. لا يستحق الأمر بذل الكثير من الجهد.
+  - إذا كانت النواة تستغرق 2% من الوقت، فإن تحسينها بمقدار الضعف سيؤدي إلى تحقيق مكاسب إجمالية قدرها 1%
+    مما يبرر الجهد المبذول.
 
-Benchmark Individual Triton Kernel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+تقييم نواة ترايتون الفردية
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let’s say we want to take a closer look at
-``triton_red_fused\__native_batch_norm_legit_functional_16`` which is the
-most expensive reduction kernel and takes 2.19% of overall wall time for
-the forward graph.
+لنفترض أننا نريد إلقاء نظرة فاحصة على
+``triton_red_fused\__native_batch_norm_legit_functional_16`` والتي تعد أغلى نواة تخفيض وتستغرق 2.19% من إجمالي وقت الحائط للرسم البياني للأمام.
 
-We can lookup the kernel name in the ``fwd.py``, and find comment like:
+يمكننا البحث عن اسم النواة في ``fwd.py``، والعثور على تعليق مثل:
 
-**# kernel path:
+**# مسار النواة:
 /tmp/torchinductor_shunting/jk/cjk2vm3446xrk7rth7hr6pun7xxo3dnzubwcn6ydrpifal4eykrz.py**
 
 .. image:: _static/img/inductor_profiling/inductor_code.png
 
-I’ll rename it k.py for convenience. Here is a paste for this
-`file <https://gist.github.com/shunting314/96a0afef9dce53d6357bf1633094f358>`__.
+سأعيد تسميته بـ k.py لسهولة الاستخدام. إليك رابط لهذا
+`الملف <https://gist.github.com/shunting314/96a0afef9dce53d6357bf1633094f358>`__.
 
-``k.py`` is a standalone Python module containing the kernel code and its
-benchmark.
+``k.py`` هي وحدة بايثون قائمة بذاتها تحتوي على رمز النواة وتقييمها.
 
-Run ``k.py`` directly will report its execution time and bandwidth:
+سيؤدي تشغيل ``k.py`` مباشرة إلى الإبلاغ عن وقت التنفيذ وعرض النطاق الترددي:
 
 .. image:: _static/img/inductor_profiling/terminal_printout.png
 
-We can check if max-autotune helps this kernel, by running:
+يمكننا التحقق مما إذا كان الحد الأقصى للضبط التلقائي يساعد هذه النواة، عن طريق تشغيل:
 
 .. code-block:: bash
 
    **TORCHINDUCTOR_MAX_AUTOTUNE=1 python /tmp/k.py**
 
-We may also temporarily add more reduction heuristics and run the script
-again to check how that helps with the kernel.
+قد نقوم أيضًا بإضافة المزيد من خوارزميات التخفيض مؤقتًا وتشغيل النص البرمجي
+مرة أخرى للتحقق من مدى فائدة ذلك في النواة.
