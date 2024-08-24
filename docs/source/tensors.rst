@@ -3,93 +3,88 @@
 .. _tensor-doc:
 
 torch.Tensor
-===================================
+====================
 
-A :class:`torch.Tensor` is a multi-dimensional matrix containing elements of
-a single data type.
+:class:`torch.Tensor` هو مصفوفة متعددة الأبعاد تحتوي على عناصر من نوع بيانات واحد.
 
-
-Data types
+أنواع البيانات
 ----------
 
-Torch defines tensor types with the following data types:
+يحدد تورتش أنواع التنسورات التالية مع أنواع البيانات التالية:
 
 ======================================= ===========================================
-Data type                               dtype
+نوع البيانات                               dtype
 ======================================= ===========================================
-32-bit floating point                   ``torch.float32`` or ``torch.float``
-64-bit floating point                   ``torch.float64`` or ``torch.double``
-16-bit floating point [1]_              ``torch.float16`` or ``torch.half``
-16-bit floating point [2]_              ``torch.bfloat16``
-32-bit complex                          ``torch.complex32`` or ``torch.chalf``
-64-bit complex                          ``torch.complex64`` or ``torch.cfloat``
-128-bit complex                         ``torch.complex128`` or ``torch.cdouble``
-8-bit integer (unsigned)                ``torch.uint8``
-16-bit integer (unsigned)               ``torch.uint16`` (limited support) [4]_
-32-bit integer (unsigned)               ``torch.uint32`` (limited support) [4]_
-64-bit integer (unsigned)               ``torch.uint64`` (limited support) [4]_
-8-bit integer (signed)                  ``torch.int8``
-16-bit integer (signed)                 ``torch.int16`` or ``torch.short``
-32-bit integer (signed)                 ``torch.int32`` or ``torch.int``
-64-bit integer (signed)                 ``torch.int64`` or ``torch.long``
-Boolean                                 ``torch.bool``
-quantized 8-bit integer (unsigned)      ``torch.quint8``
-quantized 8-bit integer (signed)        ``torch.qint8``
-quantized 32-bit integer (signed)       ``torch.qint32``
-quantized 4-bit integer (unsigned) [3]_ ``torch.quint4x2``
-8-bit floating point, e4m3 [5]_         ``torch.float8_e4m3fn`` (limited support)
-8-bit floating point, e5m2 [5]_         ``torch.float8_e5m2`` (limited support)
+نقطة عائمة 32 بت                   ``torch.float32`` أو ``torch.float``
+نقطة عائمة 64 بت                   ``torch.float64`` أو ``torch.double``
+نقطة عائمة 16 بت [1]_              ``torch.float16`` أو ``torch.half``
+نقطة عائمة 16 بت [2]_              ``torch.bfloat16``
+مركب 32 بت                          ``torch.complex32`` أو ``torch.chalf``
+مركب 64 بت                          ``torch.complex64`` أو ``torch.cfloat``
+مركب 128 بت                         ``torch.complex128`` أو ``torch.cdouble``
+عدد صحيح 8 بت (غير موقع)                ``torch.uint8``
+عدد صحيح 16 بت (غير موقع)               ``torch.uint16`` (دعم محدود) [4]_
+عدد صحيح 32 بت (غير موقع)               ``torch.uint32`` (دعم محدود) [4]_
+عدد صحيح 64 بت (غير موقع)               ``torch.uint64`` (دعم محدود) [4]_
+عدد صحيح 8 بت (موقّع)                  ``torch.int8``
+عدد صحيح 16 بت (موقّع)                 ``torch.int16`` أو ``torch.short``
+عدد صحيح 32 بت (موقّع)                 ``torchMultiplier.int32`` أو ``torch.int``
+عدد صحيح 64 بت (موقّع)                 ``torch.int64`` أو ``torch.long``
+منطقي                                 ``torch.bool``
+كمي 8 بت عدد صحيح (غير موقع)      ``torch.quint8``
+كمي 8 بت عدد صحيح (موقّع)        ``torch.qint8``
+كمي 32 بت عدد صحيح (موقّع)       ``torch.qint32``
+كمي 4 بت عدد صحيح (غير موقع) [3]_ ``torch.quint4x2``
+نقطة عائمة 8 بت، e4m3 [5]_         ``torch.float8_e4m3fn`` (دعم محدود)
+نقطة عائمة 8 بت، e5m2 [5]_         ``torch.float8_e5m2`` (دعم محدود)
 ======================================= ===========================================
 
 .. [1]
-  Sometimes referred to as binary16: uses 1 sign, 5 exponent, and 10
-  significand bits. Useful when precision is important at the expense of range.
+  يشار إليه أحيانًا باسم binary16: يستخدم 1 بت للإشارة، و5 للأس، و10
+  بت للدلالة. مفيد عندما تكون الدقة مهمة على حساب النطاق.
 .. [2]
-  Sometimes referred to as Brain Floating Point: uses 1 sign, 8 exponent, and 7
-  significand bits. Useful when range is important, since it has the same
-  number of exponent bits as ``float32``
+  يشار إليه أحيانًا باسم Brain Floating Point: يستخدم 1 بت للإشارة، و8 للأس، و7
+  بت للدلالة. مفيد عندما يكون النطاق مهمًا، حيث أن له نفس
+  عدد بتات الأس مثل ``float32``
 .. [3]
-  quantized 4-bit integer is stored as a 8-bit signed integer. Currently it's only supported in EmbeddingBag operator.
+  يتم تخزين العدد الصحيح الكمي 4 بت على أنه عدد صحيح موقّع 8 بت. حاليًا، فهو مدعوم فقط في مشغل EmbeddingBag.
 .. [4]
-  Unsigned types asides from ``uint8`` are currently planned to only have
-  limited support in eager mode (they primarily exist to assist usage with
-  torch.compile); if you need eager support and the extra range is not needed,
-  we recommend using their signed variants instead.  See
-  https://github.com/pytorch/pytorch/issues/58734 for more details.
+  من المخطط حاليًا أن يكون للأنواع غير الموقّعة بخلاف ``uint8`` دعم محدود فقط في الوضع المتلهف (فهي موجودة بشكل أساسي للمساعدة في الاستخدام مع
+  torch.compile)؛ إذا كنت بحاجة إلى دعم متلهف والنطاق الإضافي غير مطلوب،
+  نوصي باستخدام متغيراتها الموقّعة بدلاً من ذلك.  راجع
+  https://github.com/pytorch/pytorch/issues/58734 لمزيد من التفاصيل.
 .. [5]
-  ``torch.float8_e4m3fn`` and ``torch.float8_e5m2`` implement the spec for 8-bit
-  floating point types from https://arxiv.org/abs/2209.05433. The op support
-  is very limited.
+  ``torch.float8_e4m3fn`` و ``torch.float8_e5m2`` ينفذان مواصفات أنواع النقطة العائمة 8 بت من https://arxiv.org/abs/2209.05433. دعم
+  العملية محدود للغاية.
 
-
-For backwards compatibility, we support the following alternate class names
-for these data types:
+توافقًا مع الإصدارات السابقة، ندعم أسماء الفئات البديلة التالية
+لهذه أنواع البيانات:
 
 ======================================= ============================= ================================
-Data type                               CPU tensor                    GPU tensor
+نوع البيانات                               التنسور CPU                    التنسور GPU
 ======================================= ============================= ================================
-32-bit floating point                   :class:`torch.FloatTensor`    :class:`torch.cuda.FloatTensor`
-64-bit floating point                   :class:`torch.DoubleTensor`   :class:`torch.cuda.DoubleTensor`
-16-bit floating point                   :class:`torch.HalfTensor`     :class:`torch.cuda.HalfTensor`
-16-bit floating point                   :class:`torch.BFloat16Tensor` :class:`torch.cuda.BFloat16Tensor`
-8-bit integer (unsigned)                :class:`torch.ByteTensor`     :class:`torch.cuda.ByteTensor`
-8-bit integer (signed)                  :class:`torch.CharTensor`     :class:`torch.cuda.CharTensor`
-16-bit integer (signed)                 :class:`torch.ShortTensor`    :class:`torch.cuda.ShortTensor`
-32-bit integer (signed)                 :class:`torch.IntTensor`      :class:`torch.cuda.IntTensor`
-64-bit integer (signed)                 :class:`torch.LongTensor`     :class:`torch.cuda.LongTensor`
-Boolean                                 :class:`torch.BoolTensor`     :class:`torch.cuda.BoolTensor`
+نقطة عائمة 32 بت                   :class:`torch.FloatTensor`    :class:`torch.cuda.FloatTensor`
+نقطة عائمة 64 بت                   :class:`torch.DoubleTensor`   :class:`torch.cuda.DoubleTensor`
+نقطة عائمة 16 بت                   :class:`torch.HalfTensor`     :class:`torch.cuda.HalfTensor`
+نقطة عائمة 16 بت                   :class:`torch.BFloat16Tensor` :class:`torch.cuda.BFloat16Tensor`
+عدد صحيح 8 بت (غير موقع)                :class:`torch.ByteTensor`     :class:`torch.cuda.ByteTensor`
+عدد صحيح 8 بت (موقّع)                  :class:`torch.CharTensor`     :class:`torch.cuda.CharTensor`
+عدد صحيح 16 بت (موقّع)                 :class:`torch.ShortTensor`    :class:`torch.cuda.ShortTensor`
+عدد صحيح 32 بت (موقّع)                 :class:`torch.IntTensor`      :class:`torch.cuda.IntTensor`
+عدد صحيح 64 بت (موقّع)                 :class:`torch.LongTensor`     :class:`torch.cuda.LongTensor`
+منطقي                                 :class:`torch.BoolTensor`     :class:`torch.cuda.BoolTensor`
 ======================================= ============================= ================================
 
-However, to construct tensors, we recommend using factory functions such as
-:func:`torch.empty` with the ``dtype`` argument instead.  The
-:class:`torch.Tensor` constructor is an alias for the default tensor type
+ومع ذلك، لبناء التنسورات، نوصي باستخدام وظائف المصنع مثل
+:func:`torch.empty` مع وسيط ``dtype`` بدلاً من ذلك.  هو
+:class:`torch.Tensor` الباني هو مرادف لنوع التنسور الافتراضي
 (:class:`torch.FloatTensor`).
 
-Initializing and basic operations
----------------------------------
+التهيئة والعمليات الأساسية
+---------------------
 
-A tensor can be constructed from a Python :class:`list` or sequence using the
-:func:`torch.tensor` constructor:
+يمكن إنشاء تنسور من قائمة Python أو تسلسل باستخدام
+:func:`torch.tensor` الباني:
 
 ::
 
@@ -102,16 +97,16 @@ A tensor can be constructed from a Python :class:`list` or sequence using the
 
 .. warning::
 
-    :func:`torch.tensor` always copies :attr:`data`. If you have a Tensor
-    :attr:`data` and just want to change its ``requires_grad`` flag, use
-    :meth:`~torch.Tensor.requires_grad_` or
-    :meth:`~torch.Tensor.detach` to avoid a copy.
-    If you have a numpy array and want to avoid a copy, use
+    :func:`torch.tensor` ينسخ دائمًا :attr:`data`. إذا كان لديك Tensor
+    :attr:`data` وتريد فقط تغيير علم ``requires_grad`` الخاص به، استخدم
+    :meth:`~torch.Tensor.requires_grad_` أو
+    :meth:`~torch.Tensor.detach` لتجنب النسخ.
+    إذا كان لديك مصفوفة نومبي وتريد تجنب النسخ، استخدم
     :func:`torch.as_tensor`.
 
-A tensor of specific data type can be constructed by passing a
-:class:`torch.dtype` and/or a :class:`torch.device` to a
-constructor or tensor creation op:
+يمكن إنشاء تنسور من نوع بيانات محدد عن طريق تمرير
+:class:`torch.dtype` و/أو :class:`torch.device` إلى
+باني أو عملية إنشاء تنسور:
 
 ::
 
@@ -123,11 +118,11 @@ constructor or tensor creation op:
     tensor([[ 1.0000,  1.0000,  1.0000,  1.0000],
             [ 1.0000,  1.0000,  1.0000,  1.0000]], dtype=torch.float64, device='cuda:0')
 
-For more information about building Tensors, see :ref:`tensor-creation-ops`
+للحصول على مزيد من المعلومات حول بناء التنسورات، راجع :ref:`tensor-creation-ops`
 
 
-The contents of a tensor can be accessed and modified using Python's indexing
-and slicing notation:
+يمكن الوصول إلى محتويات التنسور وتعديلها باستخدام ترميز الفهرسة
+والشرائح في Python:
 
 ::
 
@@ -139,8 +134,7 @@ and slicing notation:
     tensor([[ 1,  8,  3],
             [ 4,  5,  6]])
 
-Use :meth:`torch.Tensor.item` to get a Python number from a tensor containing a
-single value:
+استخدم :meth:`torch.Tensor.item` للحصول على رقم Python من تنسور تحتوي على قيمة واحدة:
 
 ::
 
@@ -155,10 +149,10 @@ single value:
     >>> x.item()
     2.5
 
-For more information about indexing, see :ref:`indexing-slicing-joining`
+للحصول على مزيد من المعلومات حول الفهرسة، راجع :ref:`indexing-slicing-joining`
 
-A tensor can be created with :attr:`requires_grad=True` so that
-:mod:`torch.autograd` records operations on them for automatic differentiation.
+يمكن إنشاء تنسور مع :attr:`requires_grad=True` بحيث
+:mod:`torch.autograd` يسجل العمليات عليها للتفاضل التلقائي.
 
 ::
 
@@ -169,80 +163,78 @@ A tensor can be created with :attr:`requires_grad=True` so that
     tensor([[ 2.0000, -2.0000],
             [ 2.0000,  2.0000]])
 
-Each tensor has an associated :class:`torch.Storage`, which holds its data.
-The tensor class also provides multi-dimensional, `strided <https://en.wikipedia.org/wiki/Stride_of_an_array>`_
-view of a storage and defines numeric operations on it.
+يرتبط بكل تنسور :class:`torch.Storage`، والذي يحتفظ ببياناته.
+توفر فئة التنسور أيضًا طريقة عرض متعددة الأبعاد، `strided <https://en.wikipedia.org/wiki/Stride_of_an_array>`_
+عرض التخزين، ويحدد العمليات الرقمية عليه.
 
 .. note::
-   For more information on tensor views, see :ref:`tensor-view-doc`.
+   للحصول على مزيد من المعلومات حول طرق عرض التنسورات، راجع :ref:`tensor-view-doc`.
 
 .. note::
-   For more information on the :class:`torch.dtype`, :class:`torch.device`, and
-   :class:`torch.layout` attributes of a :class:`torch.Tensor`, see
+   للحصول على مزيد من المعلومات حول سمات :class:`torch.dtype`، و:class:`torch.device`، و
+   :class:`torch.layout` من :class:`torch.Tensor`، راجع
    :ref:`tensor-attributes-doc`.
 
 .. note::
-   Methods which mutate a tensor are marked with an underscore suffix.
-   For example, :func:`torch.FloatTensor.abs_` computes the absolute value
-   in-place and returns the modified tensor, while :func:`torch.FloatTensor.abs`
-   computes the result in a new tensor.
+   يتم تمييز الطرق التي تطفر تنسور بلاحقة شرطة سفلية.
+   على سبيل المثال، :func:`torch.FloatTensor.abs_` يحسب القيمة المطلقة
+   في المكان ويعيد التنسور المعدلة، في حين :func:`torch.FloatTensor.abs`
+   يحسب النتيجة في تنسور جديدة.
 
 .. note::
-    To change an existing tensor's :class:`torch.device` and/or :class:`torch.dtype`, consider using
-    :meth:`~torch.Tensor.to` method on the tensor.
+   لتغيير :class:`torch.device` و/أو :class:`torch.dtype` لتنسور موجودة، ضع في اعتبارك استخدام
+   :meth:`~torch.Tensor.to` طريقة على التنسور.
 
 .. warning::
-   Current implementation of :class:`torch.Tensor` introduces memory overhead,
-   thus it might lead to unexpectedly high memory usage in the applications with many tiny tensors.
-   If this is your case, consider using one large structure.
+   التنفيذ الحالي لـ :class:`torch.Tensor` يقدم ذاكرة إضافية،
+   وبالتالي قد يؤدي إلى استخدام ذاكرة مرتفع بشكل غير متوقع في التطبيقات التي تحتوي على العديد من التنسورات الصغيرة.
+   إذا كان هذا هو الحال لديك، فكر في استخدام بنية كبيرة واحدة.
 
 
-Tensor class reference
-----------------------
+مرجع فئة التنسور
+-------------
 
 .. class:: Tensor()
 
-   There are a few main ways to create a tensor, depending on your use case.
+   هناك بضع طرق رئيسية لإنشاء Tensor، وذلك يعتمد على استخدامك.
 
-   - To create a tensor with pre-existing data, use :func:`torch.tensor`.
-   - To create a tensor with specific size, use ``torch.*`` tensor creation
-     ops (see :ref:`tensor-creation-ops`).
-   - To create a tensor with the same size (and similar types) as another tensor,
-     use ``torch.*_like`` tensor creation ops
-     (see :ref:`tensor-creation-ops`).
-   - To create a tensor with similar type but different size as another tensor,
-     use ``tensor.new_*`` creation ops.
-   - There is a legacy constructor ``torch.Tensor`` whose use is discouraged.
-     Use :func:`torch.tensor` instead.
+   - لإنشاء Tensor ببيانات موجودة مسبقًا، استخدم :func:`torch.tensor`.
+   - لإنشاء Tensor بحجم محدد، استخدم ``torch.*`` عمليات إنشاء Tensor
+     (انظر :ref:`tensor-creation-ops`).
+   - لإنشاء Tensor بنفس حجم (وأنواع مماثلة) مثل Tensor أخرى،
+     استخدم ``torch.*_like`` عمليات إنشاء Tensor
+     (انظر :ref:`tensor-creation-ops`).
+   - لإنشاء Tensor بنوع مماثل ولكن بحجم مختلف عن Tensor أخرى،
+     استخدم عمليات الإنشاء ``tensor.new_*``.
+   - هناك بناء قديم ``torch.Tensor`` لا يُنصح باستخدامه.
+     استخدم :func:`torch.tensor` بدلاً من ذلك.
 
 .. method:: Tensor.__init__(self, data)
 
-   This constructor is deprecated, we recommend using :func:`torch.tensor` instead.
-   What this constructor does depends on the type of ``data``.
+   هذا الباني (البناء) قديم، نوصي باستخدام :func:`torch.tensor` بدلاً من ذلك.
+   يعتمد ما يفعله هذا الباني على نوع ``data``.
 
-   * If ``data`` is a Tensor, returns an alias to the original Tensor.  Unlike
-     :func:`torch.tensor`, this tracks autograd and will propagate gradients to
-     the original Tensor.  ``device`` kwarg is not supported for this ``data`` type.
+   * إذا كان ``data`` عبارة عن Tensor، فإنه يعيد مرجعًا إلى Tensor الأصلي. على عكس
+     :func:`torch.tensor`، فإن هذا يتتبع autograd وينشر التدرجات إلى
+     Tensor الأصلي. لا يتم دعم وسيط device لـ ``data`` هذا النوع.
 
-   * If ``data`` is a sequence or nested sequence, create a tensor of the default
-     dtype (typically ``torch.float32``) whose data is the values in the
-     sequences, performing coercions if necessary.  Notably, this differs from
-     :func:`torch.tensor` in that this constructor will always construct a float
-     tensor, even if the inputs are all integers.
+   * إذا كان ``data`` تسلسلاً أو تسلسلاً متداخلاً، قم بإنشاء Tensor من النوع الافتراضي
+     (عادة ``torch.float32``) تكون بياناته هي القيم الموجودة في التسلسلات،
+     وإجراء الإكراهات إذا لزم الأمر. تجدر الإشارة إلى أن هذا يختلف عن
+     :func:`torch.tensor` في أن هذا الباني سينشئ دائمًا Tensor ذات أعداد الفاصلة العائمة،
+     حتى إذا كانت جميع المدخلات أعدادًا صحيحة.
 
-   * If ``data`` is a :class:`torch.Size`, returns an empty tensor of that size.
+   * إذا كان ``data`` عبارة عن :class:`torch.Size`، فإنه يعيد Tensor فارغة بذلك الحجم.
 
-   This constructor does not support explicitly specifying ``dtype`` or ``device`` of
-   the returned tensor.  We recommend using :func:`torch.tensor` which provides this
-   functionality.
+   لا يدعم هذا الباني تحديد ``dtype`` أو ``device`` لـ Tensor المعادة. نوصي باستخدام
+     :func:`torch.tensor` الذي يوفر هذه الوظيفة.
 
    Args:
-       data (array_like): The tensor to construct from.
+       data (array_like): Tensor المراد إنشاؤها منه.
 
    Keyword args:
-       device (:class:`torch.device`, optional): the desired device of returned tensor.
-           Default: if None, same :class:`torch.device` as this tensor.
-
+       device (:class:`torch.device`, optional): الجهاز المطلوب لـ Tensor المعادة.
+           الافتراضي: إذا كان None، نفس :class:`torch.device` مثل هذه Tensor.
 
 .. autoattribute:: Tensor.T
 .. autoattribute:: Tensor.H
@@ -269,7 +261,7 @@ Tensor class reference
     Tensor.imag
     Tensor.nbytes
     Tensor.itemsize
-
+    
     Tensor.abs
     Tensor.abs_
     Tensor.absolute
