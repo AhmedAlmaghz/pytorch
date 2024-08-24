@@ -1,15 +1,15 @@
 .. _miscellaneous_environment_variables:
 
-Miscellaneous Environment Variables
-===================================
+متغيرات بيئية متنوعة
+=================
 .. list-table::
   :header-rows: 1
 
-  * - Variable
-    - Description
+  * - المتغير
+    - الوصف
   * - ``TORCH_FORCE_WEIGHTS_ONLY_LOAD``
-    - If set to [``1``, ``y``, ``yes``, ``true``], the torch.load will use ``weight_only=True``. For more documentation on this, see :func:`torch.load`.
+    - إذا تم تعيينه على [``1``، ``y``، ``yes``، ``true``]، فسيستخدم ``torch.load`` القيمة ``weight_only=True``. لمزيد من التوثيق حول هذا الموضوع، راجع :func:`torch.load`.
   * - ``TORCH_AUTOGRAD_SHUTDOWN_WAIT_LIMIT``
-    - Under some conditions, autograd threads can hang on shutdown, therefore we do not wait for them to shutdown indefinitely but rely on timeout that is default set to ``10`` seconds. This environment variable can be used to set the timeout in seconds.
+    - في بعض الحالات، يمكن أن تعلق خيوط autograd عند الإغلاق، لذلك لا ننتظر إغلاقها إلى أجل غير مسمى ولكن نعتمد على مهلة يتم تعيينها افتراضيًا إلى ``10`` ثواني. يمكن استخدام متغير البيئة هذا لتعيين المهلة بالثواني.
   * - ``TORCH_DEVICE_BACKEND_AUTOLOAD``
-    - If set to ``1``, out-of-tree backend extensions will be automatically imported when running ``import torch``.
+    - إذا تم تعيينه على ``1``، فسيتم استيراد ملحقات backend خارج الشجرة تلقائيًا عند تشغيل ``import torch``.
