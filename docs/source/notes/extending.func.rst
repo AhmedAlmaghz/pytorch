@@ -1,72 +1,69 @@
 .. _func-autograd-function:
 
-Extending torch.func with autograd.Function
+توسيع torch.func باستخدام autograd.Function
 ===========================================
 
 .. currentmodule:: torch.autograd
 
-So you'd like to use :class:`torch.autograd.Function` with the :mod:`torch.func`
-transforms like :func:`torch.vmap`, :func:`torch.func.grad`, etc.
+ربما ترغب في استخدام :class:`torch.autograd.Function` مع تحويلات :mod:`torch.func`
+مثل :func:`torch.vmap`، :func:`torch.func.grad`، وما إلى ذلك.
 
-There are two main use cases:
+هناك حالتان استخدام رئيسيتان:
 
-- you wish to call code that does not contain PyTorch operations and
-  have it work with function transforms. That is, the :class:`torch.autograd.Function`'s
-  forward/backward/etc calls into functions from other systems like C++, CUDA, numpy.
-- you wish to specify custom gradient rules, like
-  JAX's `custom_vjp/custom_jvp <https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html>`_
+- ترغب في استدعاء كود لا يحتوي على عمليات PyTorch وجعله يعمل مع تحويلات الدالة. أي أن :class:`torch.autograd.Function`'s
+  forward/backward/etc يستدعي وظائف من أنظمة أخرى مثل C++، CUDA، numpy.
+- ترغب في تحديد قواعد تدرج مخصصة، مثل
+  `custom_vjp/custom_jvp <https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html>`_ من JAX
 
-PyTorch combines both of these concepts into :class:`torch.autograd.Function`.
+يضم PyTorch كلا المفهومين في :class:`torch.autograd.Function`.
 
-Basic Usage
+الاستخدام الأساسي
 -----------
 
-This guide assumes you are familiar with :ref:`extending-autograd`,
-which explains how to use :class:`torch.autograd.Function`.
+يفترض هذا الدليل أنك على دراية بـ :ref:`extending-autograd`،
+الذي يشرح كيفية استخدام :class:`torch.autograd.Function`.
 
-:class:`torch.autograd.Function` can either have a :meth:`~Function.forward` that accepts a ctx object,
-or it can have separate :meth:`~Function.forward` (that does not accept ``ctx``) and a :meth:`~Function.setup_context`
-staticmethod that modifies the ``ctx`` object.
+يمكن أن يكون لـ :class:`torch.autograd.Function` إما :meth:`~Function.forward` الذي يقبل كائن ctx،
+أو يمكن أن يكون له :meth:`~Function.forward` منفصل (الذي لا يقبل ``ctx``) و :meth:`~Function.setup_context`
+staticmethod الذي يعدل كائن ``ctx``.
 
-Only the latter is supported with function transforms:
+يتم دعم الأخير فقط مع تحويلات الوظائف:
 
-- :meth:`~Function.forward` is the code that performs the operation and it should not accept
-  a ``ctx`` object.
-- ``setup_context(ctx, inputs, output)`` is the code where you can
-  call methods on ``ctx``. Here is where you should save Tensors for backward
-  (by calling ``ctx.save_for_backward(*tensors)``), or save non-Tensors
-  (by assigning them to the ``ctx`` object).
+- :meth:`~Function.forward` هو الكود الذي يؤدي العملية ويجب ألا يقبل
+  كائن ``ctx``.
+- ``setup_context(ctx، inputs، output)`` هو الكود الذي يمكنك من خلاله
+  استدعاء الطرق على ``ctx``. هنا حيث يجب عليك حفظ المنسوجات للخلف
+  (عن طريق استدعاء ``ctx.save_for_backward(*tensors)``)، أو حفظ غير المنسوجات
+  عن طريق تعيينها على كائن ``ctx``.
 
-Because :meth:`~Function.setup_context` accepts only ``inputs`` and ``output``,
-the only quantities that can be saved are either objects (such as Tensors) in
-the inputs or outputs or quantities (like ``Tensor.shape``) derived from them.
-If you wish to save a non-input intermediate activation from
-:meth:`Function.forward` for backward, then you'll need to return it as an
-output from :meth:`~Function.forward` so that it gets passed to
+بما أن :meth:`~Function.setup_context` يقبل فقط ``inputs`` و ``output``،
+الكميات الوحيدة التي يمكن حفظها هي إما كائنات (مثل المنسوجات) في
+الإدخالات أو الإخراج أو الكميات (مثل ``Tensor.shape``) المستمدة منها.
+إذا كنت ترغب في حفظ تنشيط وسيط غير إدخال من
+:meth:`Function.forward` للخلف، ثم ستحتاج إلى إعادته كإخراج
+من :meth:`~Function.forward` حتى يتم تمريره إلى
 :meth:`~Function.setup_context`.
 
-Depending on the transform,
+اعتمادًا على التحويل،
 
-- to support reverse-mode AD (:func:`torch.func.grad`, :func:`torch.func.vjp`),
-  the :class:`torch.autograd.Function` needs a :meth:`~Function.backward` staticmethod.
-- to support :func:`torch.vmap`, the :class:`torch.autograd.Function` needs a :meth:`~Function.vmap` staticmethod.
-- to support :func:`torch.func.jvp`, the :class:`torch.autograd.Function` needs a :meth:`~Function.jvp` staticmethod.
-- to support compositions of transforms (like :func:`torch.func.jacrev`,
-  :func:`torch.func.jacfwd`, :func:`torch.func.hessian`) -- you may need multiple
-  of the above.
+- لدعم AD باتجاه عكسي (:func:`torch.func.grad`، :func:`torch.func.vjp`)،
+  يحتاج :class:`torch.autograd.Function` إلى :meth:`~Function.backward` staticmethod.
+- لدعم :func:`torch.vmap`، يحتاج :class:`torch.autograd.Function` إلى :meth:`~Function.vmap` staticmethod.
+- لدعم :func:`torch.func.jvp`، يحتاج :class:`torch.autograd.Function` إلى :meth:`~Function.jvp` staticmethod.
+- لدعم تركيبات من التحويلات (مثل :func:`torch.func.jacrev`،
+  :func:`torch.func.jacfwd`، :func:`torch.func.hessian`) -- قد تحتاج إلى عدة
+  من ما سبق.
 
-In order for the :class:`torch.autograd.Function` to be arbitrarily composable with function
-transforms, we recommend that all other staticmethods other than :meth:`~Function.forward` and
-:meth:`~Function.setup_context` must be transformable: that is, they must consist of only PyTorch
-operators or call other :class:`torch.autograd.Function` (that may call into C++/CUDA/etc).
+لجعل :class:`torch.autograd.Function` قابلًا للتكوين بشكل تعسفي مع تحويلات الدالة، نوصي بأن تكون جميع الطرق الثابتة الأخرى بخلاف :meth:`~Function.forward` و
+:meth:`~Function.setup_context` قابلة للتحويل: أي أنها يجب أن تتكون فقط من مشغلي PyTorch أو استدعاء :class:`torch.autograd.Function` آخر (قد يستدعي C++/CUDA/etc).
 
-Let's go over some examples of common use cases.
+دعونا نلقي نظرة على بعض الأمثلة على حالات الاستخدام الشائعة.
 
-Example 1: autograd.Function calls into another system
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+المثال 1: autograd.Function يستدعي نظامًا آخر
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A common case is a :class:`torch.autograd.Function` with both forward() and backward() calling
-into another system (like C++, CUDA, numpy, triton).
+الحالة الشائعة هي :class:`torch.autograd.Function` مع كل من forward() و backward() استدعاء
+إلى نظام آخر (مثل C++، CUDA، numpy، triton).
 
 ::
 
@@ -77,112 +74,108 @@ into another system (like C++, CUDA, numpy, triton).
         return tensor.cpu().numpy()
 
     class NumpySort(torch.autograd.Function):
-        # Note that forward does not take ctx
+        # لاحظ أن forward لا تأخذ ctx
         @staticmethod
-        def forward(x, dim):
-            device = x.device
+        def forward(x، dim):
+            الجهاز = x.device
             x = to_numpy(x)
-            ind = np.argsort(x, axis=dim)
-            ind_inv = np.argsort(ind, axis=dim)
-            result = np.take_along_axis(x, ind, axis=dim)
-            # Any intermediates to be saved in backward must be returned as
-            # outputs.
+            ind = np.argsort(x، axis=dim)
+            ind_inv = np.argsort(ind، axis=dim)
+            النتيجة = np.take_along_axis(x، ind، axis=dim)
+            # يجب إرجاع أي وسيطات مؤقتة يتم حفظها في الخلف كـ
+            # الإخراج.
             return (
-                # The desired output
-                torch.tensor(result, device=device),
-                # intermediate to save for backward
-                torch.tensor(ind, device=device),
-                # intermediate to save for backward
-                torch.tensor(ind_inv, device=device),
+                # الإخراج المطلوب
+                torch.tensor(result، device=device)،
+                # الوسيط المؤقت لحفظ الخلف
+                torch.tensor(ind، device=device)،
+                # الوسيط المؤقت لحفظ الخلف
+                torch.tensor(ind_inv، device=device)،
             )
 
-        # setup_context is responsible for calling methods and/or assigning to
-        # the ctx object. Please do not do additional compute (e.g. add
-        # Tensors together) in setup_context.
+        # setup_context مسؤول عن استدعاء الطرق و/أو تعيين كائن
+        # ctx. يرجى عدم إجراء حسابات إضافية (مثل إضافة
+        # المنسوجات معًا) في setup_context.
         @staticmethod
-        def setup_context(ctx, inputs, output):
-            x, dim = inputs
-            # Note that output is whatever you returned from forward.
-            # If you returned multiple values, then output is a Tuple of multiple values.
-            # If you returned a single Tensor, then output is a Tensor.
-            # If you returned a Tuple with a single Tensor, then output is a
-            # Tuple with a single Tensor.
-            _, ind, ind_inv = output
-            ctx.mark_non_differentiable(ind, ind_inv)
-            # Tensors must be saved via ctx.save_for_backward. Please do not
-            # assign them directly onto the ctx object.
-            ctx.save_for_backward(ind, ind_inv)
-            # Non-tensors may be saved by assigning them as attributes on the ctx object.
+        def setup_context(ctx، inputs، output):
+            x، dim = inputs
+            # لاحظ أن الإخراج هو ما قمت بإرجاعه من forward.
+            # إذا قمت بإرجاع قيم متعددة، فإن الإخراج عبارة عن Tuple من قيم متعددة.
+            # إذا قمت بإرجاع Tensor واحد، فإن الإخراج هو Tensor.
+            # إذا قمت بإرجاع Tuple مع Tensor واحد، فإن الإخراج عبارة عن
+            # Tuple مع Tensor واحد.
+            _، ind، ind_inv = output
+            ctx.mark_non_differentiable(ind، ind_inv)
+            # يجب حفظ المنسوجات عبر ctx.save_for_backward. يرجى عدم
+            # تعيينها مباشرة على كائن ctx.
+            ctx.save_for_backward(ind، ind_inv)
+            # يمكن حفظ غير المنسوجات عن طريق تعيينها كسمات على كائن ctx.
             ctx.dim = dim
 
         @staticmethod
-        def backward(ctx, grad_output, _0, _1):
-            # For the autograd.Function to be arbitrarily composable with function
-            # transforms, all staticmethod other than forward and setup_context
-            # must be implemented in a "transformable" way; that is, they must
-            # only consist of PyTorch operations or autograd.Function.
+        def backward(ctx، grad_output، _0، _1):
+            # لكي يكون autograd.Function قابلاً للتكوين بشكل تعسفي مع تحويلات الدالة
+            # يجب تنفيذ جميع الطرق الثابتة الأخرى بخلاف forward و setup_context
+            # بطريقة "قابلة للتحويل"؛ أي أنها يجب أن
+            # تتكون فقط من عمليات PyTorch أو autograd.Function.
             #
-            # For example, this allows us to do double backwards and/or compute
-            # second order gradients.
+            # على سبيل المثال، يسمح لنا ذلك بإجراء عمليات التراجع المزدوج و/أو حساب
+            # المشتقات من الدرجة الثانية.
             #
-            # We've written the backward pass of NumpySort in terms of another
-            # autograd.Function, NumpyTake.
-            ind, ind_inv = ctx.saved_tensors
-            return NumpyTake.apply(grad_output, ind_inv, ind, ctx.dim), None
+            # لقد كتبنا تمريرة الخلف لـ NumpySort من حيث autograd.Function آخر، NumpyTake.
+            ind، ind_inv = ctx.saved_tensors
+            return NumpyTake.apply(grad_output، ind_inv، ind، ctx.dim)، None
 
     class NumpyTake(torch.autograd.Function):
         @staticmethod
-        def forward(x, ind, ind_inv, dim):
-            device = x.device
+        def forward(x، ind، ind_inv، dim):
+            الجهاز = x.device
             x = to_numpy(x)
             ind = to_numpy(ind)
-            return torch.tensor(np.take_along_axis(x, ind, dim), device=device)
+            return torch.tensor(np.take_along_axis(x، ind، dim)، device=device)
 
         @staticmethod
-        def setup_context(ctx, inputs, output):
-            x, ind, ind_inv, dim = inputs
-            ctx.save_for_backward(ind, ind_inv)
+        def setup_context(ctx، inputs، output):
+            x، ind، ind_inv، dim = inputs
+            ctx.save_for_backward(ind، ind_inv)
             ctx.dim = dim
 
         @staticmethod
-        def backward(ctx, grad_output):
-            ind, ind_inv = ctx.saved_tensors
-            result = NumpyTake.apply(grad_output, ind_inv, ind, ctx.dim)
-            return result, None, None, None
+        def backward(ctx، grad_output):
+            ind، ind_inv = ctx.saved_tensors
+            النتيجة = NumpyTake.apply(grad_output، ind_inv، ind، ctx.dim)
+            return النتيجة، None، None، None
 
 
-Now, to make it easier to use ``NumpySort`` (to hide away the intermediates we
-returned as outputs, as well as allow default args and kwargs), we create a new
-function that invokes it::
+الآن، لتسهيل استخدام ``NumpySort`` (لإخفاء الوسيطات المؤقتة التي
+أعدناها كإخراج، وكذلك السماح بالوسيطات الافتراضية والوسيطات المتغيرة)، نقوم بإنشاء دالة جديدة تستدعيها::
 
-    def numpy_sort(x, dim=-1):
-        result, _, _ = NumpySort.apply(x, dim)
+    def numpy_sort(x، dim=-1):
+        result، _، _ = NumpySort.apply(x، dim)
         return result
 
-And here's a sanity check::
+وهنا فحص السلامة::
 
-    x = torch.randn(2, 3)
+    x = torch.randn(2، 3)
     grad_x = torch.func.grad(lambda x: numpy_sort(x).sum())(x)
-    assert torch.allclose(grad_x, torch.ones_like(x))
+    التأكيد على أن torch.allclose(grad_x، torch.ones_like(x))
 
 
 
-Example 2: autograd.Function specifies custom gradient rules
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+المثال 2: autograd.Function يحدد قواعد تدرج مخصصة
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Another common case is an :class:`torch.autograd.Function` that is implemented with PyTorch
-operations. PyTorch is able to compute gradients for PyTorch operations automatically,
-but perhaps we wish to customize how the gradients are computed. Some reasons why
-we may want a custom backward different from the one PyTorch gives us are:
+الحالة الشائعة الأخرى هي :class:`torch.autograd.Function` الذي يتم تنفيذه باستخدام عمليات PyTorch. يمكن لـ PyTorch حساب التدرجات لعمليات PyTorch تلقائيًا،
+ولكن ربما نرغب في تخصيص كيفية حساب التدرجات. بعض الأسباب التي قد نرغب في الحصول على تدرج مخصص مختلف عما يقدمه PyTorch هي:
 
-- improving numeric stability
-- changing the performance characteristics of the backward
-- changing how edge cases are handled (e.g. nans, inf)
-- modifying the gradient (e.g. gradient clipping)
+- تحسين الاستقرار العددي
+- تغيير خصائص الأداء للخلف
+- تغيير كيفية التعامل مع حالات الحواف (على سبيل المثال، nans، inf)
+- تعديل التدرج (على سبيل المثال، قص التدرج)
 
-Here's an example of an :class:`torch.autograd.Function` for the function ``y = x ** 3`` where we
-change the performance characteristics (some computation that would normally happen
-during the backward pass, computing dx, happens in the forward pass).
+فيما يلي مثال على :class:`torch.autograd.Function` للدالة ``y = x ** 3`` حيث نقوم
+تغيير خصائص الأداء (يحدث بعض الحساب الذي يحدث عادة
+أثناء تمريرة الخلف، يتم حساب dx، في تمريرة للأمام).
 
 ::
 
@@ -190,95 +183,89 @@ during the backward pass, computing dx, happens in the forward pass).
       @staticmethod
       def forward(x):
           result = x ** 3
-          # In regular PyTorch, if we had just run y = x ** 3, then the backward
-          # pass computes dx = 3 * x ** 2. In this autograd.Function, we've done
-          # that computation here in the forward pass instead.
+          # في PyTorch العادي، إذا كنا قد قمنا ببساطة بتشغيل y = x ** 3، فإن تمريرة الخلف
+          # يحسب dx = 3 * x ** 2. في هذا autograd.Function، لقد قمنا
+          # هذا الحساب هنا في تمريرة للأمام بدلاً من ذلك.
           dx = 3 * x ** 2
-          return result, dx
+          return result، dx
 
       @staticmethod
-      def setup_context(ctx, inputs, output):
-          x, = inputs
-          result, dx = output
-          ctx.save_for_backward(x, dx)
+      def setup_context(ctx، inputs، output):
+          x، = inputs
+          result، dx = output
+          ctx.save_for_backward(x، dx)
 
       @staticmethod
-      def backward(ctx, grad_output, grad_dx):
-          x, dx = ctx.saved_tensors
-          # In order for the autograd.Function to work with higher-order
-          # gradients, we must add the gradient contribution of `dx`.
-          result = grad_output * dx + grad_dx * 6 * x
+      def backward(ctx، grad_output، grad_dx):
+          x، dx = ctx.saved_tensors
+          # لكي يعمل autograd.Function مع المشتقات من الدرجة العليا
+          # يجب علينا إضافة مساهمة التدرج من `dx`.
+          النتيجة = grad_output * dx + grad_dx * 6 * x
           return result
 
-Now, to make it easier to use ``NumpySort`` (and hide away the intermediates we
-returned as outputs) we create a new function that invokes it::
+الآن، لتسهيل استخدام ``NumpySort`` (وإخفاء الوسيطات المؤقتة التي
+أعدناها كإخراج) نقوم بإنشاء دالة جديدة تستدعيها::
 
     def my_cube(x):
-        result, _ = MyCube.apply(x)
+        result، _ = MyCube.apply(x)
         return result
 
-Here's a sanity check computing the second-order gradients::
+فيما يلي فحص سلامة لحساب المشتقات من الدرجة الثانية::
 
     x = torch.randn([])
     ggx = torch.func.grad(torch.func.grad(my_cube))(x)
-    assert torch.allclose(ggx, 6 * x)
+    التأكيد على أن torch.allclose(ggx، 6 * x)
 
-Limitations and gotchas
+القيود والمشكلات
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. warning::
 
-    Please read these limitations of :class:`torch.autograd.Function` with torch.func transforms
-    carefully. We are not able to catch many of these situations and error out
-    gracefully so they will lead to undefined behavior.
+    يرجى قراءة هذه القيود المفروضة على :class:`torch.autograd.Function` مع تحويلات torch.func
+    بعناية. لا يمكننا التقاط العديد من هذه المواقف والخطأ بسلاسة
+    لذلك سوف يؤدي إلى سلوك غير محدد.
 
-Please do not capture Tensors that are being transformed over, have
-requires_grad=True, or are dual tensors, into the methods of the
-:class:`torch.autograd.Function`. The way to be completely safe is to ensure that the only
-Tensors being used inside any method of the :class:`torch.autograd.Function` must be directly
-passed as inputs (or via the ctx object) rather than come from outside
-the :class:`torch.autograd.Function`.
+يرجى عدم التقاط المنسوجات التي يتم تحويلها، يكون لها
+requires_grad=True، أو هي المنسوجات المزدوجة، في طرق
+:class:`torch.autograd.Function`. الطريقة الآمنة تمامًا هي التأكد من أن المنسوجات الوحيدة المستخدمة داخل أي طريقة من :class:`torch.autograd.Function` يجب أن يتم تمريرها مباشرة كإدخالات (أو عبر كائن ctx) بدلاً من المجيء من خارج
+:class:`torch.autograd.Function`.
 
-:class:`torch.autograd.Function` does not handle Tensors in pytrees (arbitrary nested
-Python data structures that may or may not contain Tensors). For
-those Tensors to be tracked by autograd, they must be passed directly as
-an argument to :class:`torch.autograd.Function`. This is in contrast to
-jax.{custom_vjp, custom_jvp}, which do accept pytrees.
+:class:`torch.autograd.Function` لا يتعامل مع المنسوجات في pytrees (هياكل البيانات المتداخلة التعسفية التي قد تحتوي أو لا تحتوي على المنسوجات).
+لتتبع هذه المنسوجات بواسطة autograd، يجب تمريرها مباشرة كـ
+حجة إلى :class:`torch.autograd.Function`. هذا على النقيض من
+jax.{custom_vjp، custom_jvp}، والتي تقبل pytrees.
 
-Please only use :meth:`~torch.autograd.function.FunctionCtx.save_for_backward` or
-:meth:`~torch.autograd.function.FunctionCtx.save_for_forward` to save Tensors.
-Please do not assign Tensors or collections of Tensors directly onto the ctx object -
-these Tensors will not get tracked
+يرجى استخدام :meth:`~torch.autograd.function.FunctionCtx.save_for_backward` أو
+:meth:`~torch.autograd.function.FunctionCtx.save_for_forward` لحفظ المنسوجات فقط.
+يرجى عدم تعيين المنسوجات أو مجموعات المنسوجات مباشرة على كائن ctx -
+لن يتم تتبع هذه المنسوجات
 
 
-:func:`torch.vmap` Support
---------------------------
+دعم :func:`torch.vmap`
+لاستخدام :class:`torch.autograd.Function` مع :func:`torch.vmap`، يجب عليك إما:
 
-To use an :class:`torch.autograd.Function` with :func:`torch.vmap`, you must either:
+- توفير :meth:`~Function.vmap` طريقة ثابتة تخبرنا بسلوك :class:`torch.autograd.Function`
+  تحت :func:`torch.vmap`
+- اطلب منا توليدها تلقائيًا عن طريق تعيين ``generate_vmap_rule=True``.
 
-- provide a :meth:`~Function.vmap` staticmethod that tells us the behavior of the :class:`torch.autograd.Function`
-  under :func:`torch.vmap`
-- ask us to autogenerate it by setting ``generate_vmap_rule=True``.
+توليد قاعدة vmap تلقائيًا
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Automatically generate a vmap rule
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If your :class:`torch.autograd.Function` fulfills the following additional constraints, then we
-are able to generate a vmap rule for it. If it doesn't fulfill the constraints or if you
-want custom behavior under vmap, please manually define a vmap staticmethod (see next section).
+إذا استوفت :class:`torch.autograd.Function` الخاص بك القيود الإضافية التالية، فسنتمكن
+من إنشاء قاعدة vmap لها. إذا لم يستوف القيود أو إذا كنت
+تريد سلوكًا مخصصًا في vmap، فيرجى تعريف طريقة vmap ثابتة يدويًا (راجع القسم التالي).
 
 .. warning::
 
-     We are not easily able to check for the following constraints and error
-     out gracefully. Violation of the constraints may lead to undefined
-     behavior.
+     لا يمكننا التحقق بسهولة من القيود التالية والخروج
+     بسلاسة. قد يؤدي انتهاك القيود إلى سلوك غير محدد.
 
-- The :class:`torch.autograd.Function`'s :meth:`~Function.forward`, :meth:`~Function.backward` (if it exists) and :meth:`~Function.jvp`
-  (if it exists) staticmethods must be transformable via :func:`torch.vmap`. That
-  is, they must consist of only PyTorch operations (as opposed to e.g. NumPy or custom
-  CUDA kernels).
+- يجب أن تكون :meth:`~Function.forward` لـ :class:`torch.autograd.Function`، :meth:`~Function.backward` (إذا كان موجودًا) و:meth:`~Function.jvp`
+  (إذا كان موجودًا) يمكن تحويلها عبر :func:`torch.vmap`. أي
+  يجب أن تتكون فقط من عمليات PyTorch (على عكس على سبيل المثال NumPy أو CUDA
+  نواة مخصصة).
 
-Example::
+مثال::
 
     class MyCube(torch.autograd.Function):
         # Set generate_vmap_rule to True to ask PyTorch to automatically generate
@@ -312,52 +299,50 @@ Example::
     assert torch.allclose(result, x ** 3)
 
 
-Defining the vmap staticmethod
+تعريف طريقة vmap الثابتة
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If your :class:`torch.autograd.Function` calls into another system (like NumPy, C++, CUDA, triton),
-then to get it to work with :func:`torch.vmap` or transforms that use it, you'll
-need to manually define a :meth:`~Function.vmap` staticmethod.
+إذا كانت :class:`torch.autograd.Function` تستدعي نظامًا آخر (مثل NumPy أو C++ أو CUDA أو Triton)،
+ثم لجعله يعمل مع :func:`torch.vmap` أو التحويلات التي تستخدمها، ستحتاج
+لتحديد طريقة :meth:`~Function.vmap` ثابتة يدويًا.
 
-Depending on what transforms you want to use and your use case, you may not need
-to add a :meth:`~Function.vmap` staticmethod to all of your :class:`torch.autograd.Function`:
+اعتمادًا على التحويلات التي تريد استخدامها وحالتك الاستخدامية، قد لا تحتاج
+إلى إضافة :meth:`~Function.vmap` طريقة ثابتة إلى جميع :class:`torch.autograd.Function`:
 
-- For example, :func:`torch.func.jacrev` performs :func:`~torch.vmap` over the backward pass.
-  So if you're only interested in using :func:`torch.func.jacrev`, only
-  the :meth:`~Function.backward` staticmethod needs to be vmappable.
+- على سبيل المثال، يؤدي :func:`torch.func.jacrev` إلى :func:`~torch.vmap` عبر تمريرة الخلف.
+  لذا إذا كنت مهتمًا فقط باستخدام :func:`torch.func.jacrev`، فقط
+  يجب أن تكون طريقة :meth:`~Function.backward` ثابتة قابلة للتحويل إلى vmap.
 
-We do recommend ensuring all of your :class:`torch.autograd.Function` have support for
-:func:`torch.vmap` though, especially if you are writing a third-party library and you want your
-:class:`torch.autograd.Function` to work with all combinations of :func:`torch.func` transforms.
+نوصي بالتأكد من أن جميع :class:`torch.autograd.Function` لديكم دعم لـ
+:func:`torch.vmap` على الرغم من ذلك، خاصة إذا كنت تكتب مكتبة تابعة لجهة خارجية وتريد :class:`torch.autograd.Function`
+للعمل مع جميع مجموعات :func:`torch.func` من التحويلات.
 
-Conceptually, the vmap staticmethod is responsible for defining how the :meth:`~Function.forward`
-should behave under :func:`torch.vmap`. That is, it defines how to transform
-the :meth:`~Function.forward` to run over inputs with an additional dimension (the dimension
-being vmapped over). This is similar to how :func:`torch.vmap` is implemented over
-PyTorch operations: for each operation, we define a vmap rule (sometimes also
-referred to as a "batching rule").
+مفاهيمياً، الطريقة الثابتة vmap مسؤولة عن تحديد كيفية سلوك :meth:`~Function.forward`
+تحت :func:`torch.vmap`. أي، فهو يحدد كيفية تحويل
+:meth:`~Function.forward` لتشغيله على مدخلات ذات بُعد إضافي (البعد
+يتم إجراء vmap عليه). هذا مشابه لكيفية تنفيذ :func:`torch.vmap` على
+عمليات PyTorch: لكل عملية، نحدد قاعدة vmap (يشار إليها أحيانًا أيضًا باسم "قاعدة التجميع").
 
-Here's how to define the :meth:`~Function.vmap` staticmethod:
+فيما يلي كيفية تحديد :meth:`~Function.vmap` الطريقة الثابتة:
 
-- the signature is ``vmap(info, in_dims: Tuple[Optional[int]], *args)``, where
-  ``*args`` is the same as the args to :meth:`~Function.forward`.
-- The vmap staticmethod is responsible for defining how the :meth:`~Function.forward` should behave
-  under :func:`torch.vmap`. That is, given inputs with an additional dimension
-  (specified by ``in_dims``), how do we compute the batched version of :meth:`~Function.forward`?
-- For each arg in ``args``, ``in_dims`` has a corresponding ``Optional[int]``.
-  It is ``None`` if the arg is not a Tensor or if the arg is not being vmapped over,
-  otherwise, it is an integer specifying what dimension of the Tensor is being vmapped
-  over.
-- ``info`` is a collection of additional metadata that may be helpful:
-  ``info.batch_size`` specifies the size of the dimension being vmapped over, while
-  ``info.randomness`` is the ``randomness`` option that was passed to :func:`torch.vmap`.
-- The return of the vmap staticmethod is a tuple of ``(output, out_dims)``. Similar
-  to ``in_dims``, ``out_dims`` should be of the same structure as ``output`` and contain
-  one ``out_dim`` per output that specifies if the output has the vmapped
-  dimension and what index it is in.
+- التوقيع هو ``vmap(info, in_dims: Tuple[Optional[int]], *args)``، حيث
+  ``*args`` هو نفسه مثل args إلى :meth:`~Function.forward`.
+- الطريقة الثابتة vmap مسؤولة عن تحديد كيفية سلوك :meth:`~Function.forward`
+  في ظل :func:`torch.vmap`. أي، بالنظر إلى المدخلات ذات البعد الإضافي
+  (محدد بواسطة ``in_dims``)، كيف نحسب الإصدار المجمع من :meth:`~Function.forward`؟
+- لكل arg في ``args``، يحتوي ``in_dims`` على ``Optional[int]`` المقابل.
+  إنه ``None`` إذا لم يكن arg عبارة عن Tensor أو إذا لم يتم إجراء vmap على arg،
+  وإلا، فهو رقم صحيح يحدد البعد في Tensor الذي يتم إجراء vmap عليه.
+- ``info`` عبارة عن مجموعة من البيانات الوصفية الإضافية التي قد تكون مفيدة:
+  يحدد ``info.batch_size`` حجم البعد الذي يتم إجراء vmap عليه، بينما
+  ``info.randomness`` هو خيار "randomness" الذي تم تمريره إلى :func:`torch.vmap`.
+- تكون نتيجة الطريقة الثابتة vmap عبارة عن زوج مرتب من ``(output, out_dims)``. مشابه
+  لـ ``in_dims``، يجب أن يكون لـ ``out_dims`` نفس بنية ``output`` وأن يحتوي
+  على ``out_dim`` واحد لكل إخراج يحدد ما إذا كان الإخراج يحتوي على البعد المحدد
+  وما رقمه.
 
 
-Example::
+مثال::
 
     def to_numpy(tensor):
         return tensor.cpu().numpy()
@@ -372,7 +357,7 @@ Example::
             result = np.take_along_axis(x, ind, axis=dim)
             return (
                 torch.tensor(result, device=device),
-                torch.tensor(ind, device=device),
+                torch Mieczyslaw,
                 torch.tensor(ind_inv, device=device),
             )
 
@@ -483,22 +468,22 @@ Example::
 
 .. note::
 
-    The vmap staticmethod should aim to preserve the semantics of the
-    entire :class:`~torch.autograd.Function`. That is, (pseudocode) ``grad(vmap(MyFunc))``
-    should be replaceable with a ``grad(map(MyFunc))``.
+    يجب أن تهدف طريقة vmap الثابتة إلى الحفاظ على دلالية
+    :class:`~torch.autograd.Function` بأكمله. أي، (كود زائف) ``grad(vmap(MyFunc))``
+    يجب أن يكون قابلاً للاستبدال بـ ``grad(map(MyFunc))``.
 
-    If your autograd.Function has any custom behavior in the backward pass, please
-    keep this in mind.
+    إذا كان لديك autograd.Function أي سلوك مخصص في تمريرة الخلف، يرجى
+    ضع ذلك في اعتبارك.
 
 .. note::
 
-    It is a legitimate use case to write a custom vmap staticmethod for a
-    :class:`~torch.autograd.Function` that PyTorch is able to generate a vmap
-    rule for via ``generate_vmap_rule=True``. You may wish to do this if the
-    generated vmap rule doesn't have the semantics you're looking for.
+    من الاستخدامات المشروعة كتابة طريقة vmap مخصصة ثابتة لـ
+    :class:`~torch.autograd.Function` يمكن لـ PyTorch إنشاء قاعدة vmap لها
+    عبر ``generate_vmap_rule=True``. قد ترغب في القيام بذلك إذا كانت قاعدة vmap المولدة
+    لا يحتوي على الدلالات التي تبحث عنها.
 
-:func:`torch.func.jvp` Support
+:func:`torch.func.jvp` الدعم
 ------------------------------
 
-To support forward-mode AD, a :class:`torch.autograd.Function` must have a :meth:`~Function.jvp` staticmethod.
-Please see :ref:`forward-ad-autograd-function` for details.
+لدعم التمايز التلقائي للأمام، يجب أن يكون لـ :class:`torch.autograd.Function` :meth:`~Function.jvp` طريقة ثابتة.
+يرجى الاطلاع على :ref:`forward-ad-autograd-function` للحصول على التفاصيل.
