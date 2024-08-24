@@ -7,9 +7,7 @@ torch.nn.init
 =============
 
 .. warning::
-    All the functions in this module are intended to be used to initialize neural network
-    parameters, so they all run in :func:`torch.no_grad` mode and will not be taken into
-    account by autograd.
+    جميع الوظائف في هذا الوحدة مصممة لتستخدم في تهيئة معاملات الشبكة العصبية، لذا فهي تعمل جميعها في وضع :func:`torch.no_grad` ولن تؤخذ في الاعتبار بواسطة autograd.
 
 .. currentmodule:: torch.nn.init
 .. autofunction:: calculate_gain
@@ -23,7 +21,7 @@ torch.nn.init
 .. autofunction:: xavier_uniform_
 .. autofunction:: xavier_normal_
 .. autofunction:: kaiming_uniform_
-.. autofunction:: kaiming_normal_
+.. autofunction:: kaim
 .. autofunction:: trunc_normal_
 .. autofunction:: orthogonal_
 .. autofunction:: sparse_
