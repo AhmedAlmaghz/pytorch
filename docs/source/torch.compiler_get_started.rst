@@ -1,22 +1,17 @@
 .. _torch.compiler_get_started:
 
-Getting Started
-===============
+البدء
+======
 
-Before you read this section, make sure to read the :ref:`torch.compiler_overview`.
+قبل قراءة هذا القسم، تأكد من قراءة :ref:`torch.compiler_overview`.
 
-Let's start by looking at a simple ``torch.compile`` example that demonstrates
-how to use ``torch.compile`` for inference. This example demonstrates the
-``torch.cos()`` and ``torch.sin()`` features which are examples of pointwise
-operators as they operate element by element on a vector. This example might
-not show significant performance gains but should help you form an intuitive
-understanding of how you can use ``torch.compile`` in your own programs.
+لنبدأ بالنظر في مثال بسيط على ``torch.compile`` يوضح كيفية استخدام ``torch.compile`` للاستنتاج. يوضح هذا المثال ميزتي ``torch.cos()`` و ``torch.sin()`` اللتين تعتبران مثالاً على المشغلين النقطيين لأنهم يعملون عنصرًا تلو الآخر على متجه. قد لا يظهر هذا المثال مكاسب أداء كبيرة، ولكنه يجب أن يساعدك على تكوين فهم بديهي لكيفية استخدام ``torch.compile`` في برامجك الخاصة.
 
 .. note::
-   To run this script, you need to have at least one GPU on your machine.
-   If you do not have a GPU, you can remove the ``.to(device="cuda:0")`` code
-   in the snippet below and it will run on CPU. You can also set device to
-   ``xpu:0`` to run on Intel® GPUs.
+   لتشغيل هذا البرنامج النصي، يجب أن يكون لديك وحدة معالجة رسومية واحدة على الأقل على جهازك.
+   إذا لم يكن لديك وحدة GPU، فيمكنك إزالة التعليمات البرمجية ``.to(device="cuda:0")``
+   في المقتطف أدناه وسيعمل على وحدة المعالجة المركزية. يمكنك أيضًا تعيين الجهاز إلى
+   ``xpu:0`` لتشغيله على وحدات معالجة الرسوميات Intel®.
 
 .. code:: python
 
@@ -29,31 +24,24 @@ understanding of how you can use ``torch.compile`` in your own programs.
    input_tensor = torch.randn(10000).to(device="cuda:0")
    a = new_fn(input_tensor)
 
-A more famous pointwise operator you might want to use would
-be something like ``torch.relu()``. Pointwise ops in eager mode are
-suboptimal because each one would need to read a tensor from the
-memory, make some changes, and then write back those changes. The single
-most important optimization that inductor performs is fusion. In the
-example above we can turn 2 reads (``x``, ``a``) and
-2 writes (``a``, ``b``) into 1 read (``x``) and 1 write (``b``), which
-is crucial especially for newer GPUs where the bottleneck is memory
-bandwidth (how quickly you can send data to a GPU) rather than compute
-(how quickly your GPU can crunch floating point operations).
+هناك مشغل نقطي أكثر شهرة قد ترغب في استخدامه وهو
+شيء مثل ``torch.relu()``. تعد العمليات النقطية في وضع الحريص دون المستوى الأمثل لأن كل منها ستحتاج إلى قراءة مصفوفة من الذاكرة، وإجراء بعض التغييرات، ثم إعادة كتابة تلك التغييرات. أهم عملية تحسين يقوم بها المحرك هي الاندماج. في
+يمكننا في المثال أعلاه تحويل قراءتين (``x``، ``a``) و
+2 كتابات (``a``، ``b``) إلى قراءة واحدة (``x``) وكتابة واحدة (``b``)، وهو أمر بالغ الأهمية خاصة لوحدات معالجة الرسومات الأحدث حيث يكون الاختناق هو عرض النطاق الترددي للذاكرة (مدى السرعة التي يمكنك بها إرسال البيانات إلى وحدة معالجة الرسومات) بدلاً من الحوسبة (مدى سرعة وحدة معالجة الرسومات في معالجة عمليات النقطة العائمة).
 
-Another major optimization that inductor provides is automatic
-support for CUDA graphs.
-CUDA graphs help eliminate the overhead from launching individual
-kernels from a Python program which is especially relevant for newer GPUs.
+وهناك تحسين رئيسي آخر يوفره المحرك هو الدعم التلقائي
+لرسوم CUDA.
+تساعد رسوم CUDA في القضاء على العبء الزائد الناتج عن إطلاق نوى فردية
+من برنامج Python وهو أمر ذو صلة خاصة بوحدات معالجة الرسومات الأحدث.
 
-TorchDynamo supports many different backends, but TorchInductor specifically works
-by generating `Triton <https://github.com/openai/triton>`__ kernels. Let's save
-our example above into a file called ``example.py``. We can inspect the code
-generated Triton kernels by running ``TORCH_COMPILE_DEBUG=1 python example.py``.
-As the script executes, you should see ``DEBUG`` messages printed to the
-terminal. Closer to the end of the log, you should see a path to a folder
-that contains ``torchinductor_<your_username>``. In that folder, you can find
-the ``output_code.py`` file that contains the generated kernel code similar to
-the following:
+يدعم TorchDynamo العديد من backends المختلفة، ولكن TorchInductor يعمل على وجه التحديد
+من خلال إنشاء نوى Triton <https://github.com/openai/triton>. دعنا نحفظ
+مثالنا أعلاه في ملف يسمى ``example.py``. يمكننا فحص التعليمات البرمجية
+تم إنشاء نوى Triton عن طريق تشغيل ``TORCH_COMPILE_DEBUG=1 python example.py``.
+مع تنفيذ البرنامج النصي، يجب أن ترى رسائل "DEBUG" المطبوعة على
+المحطة الطرفية. بالقرب من نهاية السجل، يجب أن ترى مسارًا إلى مجلد
+يحتوي على ``torchinductor_ <your_username>``. في هذا المجلد، يمكنك العثور على
+يحتوي ملف "output_code.py" على كود النواة المولد المشابه لما يلي:
 
 .. code-block:: python
 
@@ -70,20 +58,19 @@ the following:
       tmp2 = tl.sin(tmp1)
       tl.store(out_ptr0 + (x0 + tl.zeros([XBLOCK], tl.int32)), tmp2, xmask)
 
-.. note:: The above code snippet is an example. Depending on your hardware,
-   you might see different code generated.
+.. note:: مقتطف الكود أعلاه هو مثال. اعتمادًا على الأجهزة الخاصة بك،
+   قد تشاهد كودًا مختلفًا تم إنشاؤه.
 
-And you can verify that fusing the ``cos`` and ``sin`` did actually occur
-because the ``cos`` and ``sin`` operations occur within a single Triton kernel
-and the temporary variables are held in registers with very fast access.
+ويمكنك التحقق من أن دمج "cos" و "sin" قد حدث بالفعل
+لأن عمليات "cos" و "sin" تحدث داخل نواة Triton واحدة
+وتتم الاحتفاظ بالمتغيرات المؤقتة في سجلات ذات وصول سريع جدًا.
 
-Read more on Triton's performance
-`here <https://openai.com/blog/triton/>`__. Because the code is written
-in Python, it's fairly easy to understand even if you have not written all that
-many CUDA kernels.
+اقرأ المزيد حول أداء Triton
+`هنا <https://openai.com/blog/triton/>`__. نظرًا لأن الكود مكتوب
+في Python، فمن السهل إلى حد ما فهمه حتى إذا لم تكن قد كتبت الكثير من نوى CUDA.
 
-Next, let's try a real model like resnet50 from the PyTorch
-hub.
+بعد ذلك، دعنا نجرب نموذجًا حقيقيًا مثل resnet50 من PyTorch
+مركز التطوير.
 
 .. code-block:: python
 
@@ -92,42 +79,38 @@ hub.
    opt_model = torch.compile(model, backend="inductor")
    opt_model(torch.randn(1,3,64,64))
 
-And that is not the only available backend, you can run in a REPL
-``torch.compiler.list_backends()`` to see all the available backends. Try out the
-``cudagraphs`` next as inspiration.
+وهذه ليست backend الوحيدة المتاحة، يمكنك تشغيلها في REPL
+``torch.compiler.list_backends()`` لمعرفة جميع backends المتاحة. جرب التالي
+``cudagraphs`` للإلهام.
 
-Using a pretrained model
+استخدام نموذج مُدرب مسبقًا
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-PyTorch users frequently leverage pretrained models from
-`transformers <https://github.com/huggingface/transformers>`__ or
-`TIMM <https://github.com/rwightman/pytorch-image-models>`__ and one of
-the design goals is TorchDynamo and TorchInductor is to work out of the box with
-any model that people would like to author.
+غالبًا ما يستفيد مستخدمو PyTorch من النماذج المُدربة مسبقًا من
+`المحولات <https://github.com/huggingface/transformers>`__ أو
+`تيم <https://github.com/rwightman/pytorch-image-models>`__ ويتمثل أحد الأهداف التصميمية في أن يعمل TorchDynamo و TorchInductor خارج الصندوق مع
+أي نموذج يرغب الأشخاص في تأليفه.
 
-Let's download a pretrained model directly from the HuggingFace hub and optimize
-it:
+دعنا نقوم بتنزيل نموذج مُدرب مسبقًا مباشرةً من مركز Hub الخاص بـ HuggingFace وتحسينه:
 
 .. code-block:: python
 
    import torch
    from transformers import BertTokenizer, BertModel
-   # Copy pasted from here https://huggingface.co/bert-base-uncased
+   # نسخ ولصق من هنا https://huggingface.co/bert-base-uncased
    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
    model = BertModel.from_pretrained("bert-base-uncased").to(device="cuda:0")
-   model = torch.compile(model, backend="inductor") # This is the only line of code that we changed
-   text = "Replace me by any text you'd like."
+   model = torch.compile(model, backend="inductor") # هذا هو سطر الكود الوحيد الذي قمنا بتغييره
+   text = "استبدلني بأي نص تريده."
    encoded_input = tokenizer(text, return_tensors='pt').to(device="cuda:0")
    output = model(**encoded_input)
 
-If you remove the ``to(device="cuda:0")`` from the model and
-``encoded_input``, then Triton will generate C++ kernels that will be
-optimized for running on your CPU. You can inspect both Triton or C++
-kernels for BERT. They are more complex than the trigonometry
-example we tried above but you can similarly skim through it and see if you
-understand how PyTorch works.
+إذا قمت بإزالة ``to(device="cuda:0")`` من النموذج و
+``encoded_input``، فستقوم Triton بإنشاء نوى C++ التي سيتم
+تحسينها لتشغيلها على وحدة المعالجة المركزية الخاصة بك. يمكنك فحص كل من Triton أو C++
+نوى لبيرت. إنها أكثر تعقيدًا من مثال الرياضيات المثلثية الذي جربناه أعلاه ولكن يمكنك بالمثل تصفحها ومعرفة ما إذا كنت تفهم كيفية عمل PyTorch.
 
-Similarly, let's try out a TIMM example:
+وبالمثل، دعنا نجرب مثالًا على TIMM:
 
 .. code-block:: python
 
@@ -137,12 +120,12 @@ Similarly, let's try out a TIMM example:
    opt_model = torch.compile(model, backend="inductor")
    opt_model(torch.randn(64,3,7,7))
 
-Next Steps
+الخطوات التالية
 ~~~~~~~~~~
 
-In this section, we have reviewed a few inference examples and developed a
-basic understanding of how torch.compile works. Here is what you check out next:
+في هذا القسم، راجعنا بعض أمثلة الاستدلال وتوصلنا إلى فهم أساسي
+كيف يعمل torch.compile. إليك ما يمكنك التحقق منه بعد ذلك:
 
-- `torch.compile tutorial on training <https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html>`_
+- `تعليمات torch.compile على التدريب <https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html>`_
 - :ref:`torch.compiler_api`
 - :ref:`torchdynamo_fine_grain_tracing`
