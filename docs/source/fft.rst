@@ -4,13 +4,13 @@
 torch.fft
 =========
 
-Discrete Fourier transforms and related functions.
+تحويلات فورييه المتقطعة والوظائف ذات الصلة.
 
 .. automodule:: torch.fft
 .. currentmodule:: torch.fft
 
-Fast Fourier Transforms
------------------------
+تحويلات فورييه السريعة
+----------------
 
 .. autosummary::
     :toctree: generated
@@ -35,8 +35,8 @@ Fast Fourier Transforms
     hfftn
     ihfftn
 
-Helper Functions
-----------------
+وظائف مساعدة
+-----------
 
 .. autosummary::
     :toctree: generated
