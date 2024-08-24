@@ -4,27 +4,25 @@ torch.overrides
 ---------------
 .. py:module:: torch.overrides
 
-This module exposes various helper functions for the ``__torch_function__``
-protocol. See :ref:`extending-torch-python` for more details on the
-``__torch_function__`` protocol.
+يقدم هذا النموذج عدة دوال مساعدة لبروتوكول ``__torch_function__``. للمزيد من التفاصيل حول بروتوكول ``__torch_function__``، راجع :ref:`extending-torch-python`.
 
-Functions
+الدوال
 ~~~~~~~~~
 
-.. autofunction::  get_ignored_functions
+.. autofunction:: get_ignored_functions
 
-.. autofunction::  get_overridable_functions
+.. autofunction:: get_overridable_functions
 
-.. autofunction::  resolve_name
+.. autofunction:: resolve_name
 
-.. autofunction::  get_testing_overrides
+.. autofunction:: get_testing_overrides
 
-.. autofunction::  handle_torch_function
+.. autofunction:: handle_torch_function
 
-.. autofunction::  has_torch_function
+.. autofunction:: has_torch_function
 
-.. autofunction::  is_tensor_like
+.. autofunction:: is_tensor_like
 
-.. autofunction::  is_tensor_method_or_property
+.. autofunction:: is_tensor_method_or_property
 
-.. autofunction::  wrap_torch_function
+.. autofunction:: wrap_torch_function
