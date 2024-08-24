@@ -1,126 +1,117 @@
-Dynamic shapes
-==============
+الأشكال الديناميكية
+============
 
-Code: `symbolic_shapes.py <https://github.com/pytorch/pytorch/blob/db4572dbf18f1cf50cf662547e272d3117063747/torch/fx/experimental/symbolic_shapes.py>`_
+الرمز: `symbolic_shapes.py <https://github.com/pytorch/pytorch/blob/db4572dbf18f1cf50cf662547e272d3117063747/torch/fx/experimental/symbolic_shapes.py>`_
 
-See also: `The dynamic shapes manual <https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.fh8zzonyw8ng>`_
+انظر أيضًا: `دليل الأشكال الديناميكية <https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.fh8zzonyw8ng>`_
 
-Motivation
-----------
+الدافع
+------
 
-Deep learning compilers commonly only work for static shapes, that is to say, they produced compiled programs which only work for a single specific configuration of input shapes, and must recompile if any input shape changes. This assumption works great for the majority of commonly run deep learning models today, but there are a few situations where it is insufficient:
+عادةً ما تعمل برامج التجميع الخاصة بالتعلم العميق فقط للأشكال الثابتة، أي أنها تنتج برامج مجمعة تعمل فقط لتكوين إدخال واحد محدد، ويجب إعادة التجميع إذا تغير أي شكل من أشكال الإدخال. يعمل هذا الافتراض بشكل رائع لمعظم نماذج التعلم العميق التي يتم تشغيلها حاليًا، ولكن هناك بعض الحالات التي لا تكون كافية فيها:
 
-- Some dimensions, such as batch size or sequence length, may vary. For example, an inference service performing adaptive batching will execute inference requests with varying batch sizes depending on how many requests it received within its batching window. We may also want to consider padding out variable size sequences only to the maximum sequence length within a batch, which may vary from batch-to-batch.
-- Some models exhibit data-dependent output shapes, that is to say, the size of their outputs and intermediates may depend on the actual input data which may vary across runs. For example, detection models may first generate a variable number of potential bounding boxes before running a more expensive image recognition model to identify if the subject is in a bounding box. The number of bounding boxes is data dependent.
-- One particularly important case of data-dependent shapes occurs when dealing with sparse representations, such as sparse tensors, jagged tensors, and graph neural networks. In all of these cases, the amount of data to be processed depends on the sparse structure of the problem, which will typically vary in a data-dependent way.
+- قد تختلف بعض الأبعاد، مثل حجم الدفعة أو طول التسلسل. على سبيل المثال، ستقوم خدمة الاستدلال التي تقوم بالدفعات التكيفية بتنفيذ طلبات الاستدلال مع أحجام دفعات مختلفة اعتمادًا على عدد الطلبات التي تم تلقيها في نافذة الدفعة الخاصة بها. قد نرغب أيضًا في التفكير في توسيع تسلسلات متغيرة الحجم فقط إلى طول التسلسل الأقصى ضمن دفعة، والتي قد تختلف من دفعة إلى دفعة.
+- تُظهر بعض النماذج أشكال إخراج تعتمد على البيانات، أي أن حجم المخرجات والوسيطات قد يعتمد على بيانات الإدخال الفعلية التي قد تختلف عبر التشغيل. على سبيل المثال، قد تقوم نماذج الكشف أولاً بتوليد عدد متغير من صناديق الحدود المحتملة قبل تشغيل نموذج التعرف على الصور الأكثر تكلفة لتحديد ما إذا كان الموضوع موجودًا في صندوق محدد. يعتمد عدد صناديق الحدود على البيانات.
+- تحدث حالة مهمة بشكل خاص للأشكال التي تعتمد على البيانات عند التعامل مع التمثيلات المتناثرة، مثل المصفوفات المتناثرة، والمصفوفات غير المنتظمة، وشبكات الأعصاب الرسومية. في كل هذه الحالات، يعتمد مقدار البيانات التي سيتم معالجتها على البنية المتناثرة للمشكلة، والتي ستختلف عادةً بطريقة تعتمد على البيانات.
 
-In supporting dynamic shapes, we chose not to support dynamic rank programs, e.g., programs whose inputs tensors change in dimensionality, as this pattern rarely occurs in real-world deep learning programs, and it avoids the need to reason inductively over symbolic lists of shapes.
+لدعم الأشكال الديناميكية، اخترنا عدم دعم البرامج الديناميكية ذات الرتب، أي البرامج التي تتغير فيها المصفوفات المدخلة في البعدية، حيث نادرًا ما يحدث هذا النمط في برامج التعلم العميق في العالم الحقيقي، ويتم تجنب الحاجة إلى الاستدلال الاستقرائي على قوائم الأشكال الرمزية.
 
-Abridged public API
--------------------
+واجهة برمجة التطبيقات العامة المختصرة
+-----------------------------
 
-The default dynamic behavior in PyTorch 2.1 is:
+السلوك الديناميكي الافتراضي في PyTorch 2.1 هو:
 
-- PT2 assumes everything is static by default
+- يفترض PT2 أن كل شيء ثابت بشكل افتراضي
 
-- If we recompile because a size changed, we will instead attempt to recompile
-  that size as being dynamic (sizes that have changed are likely to change in
-  the future).  This generalization may fail (e.g., because user code does a
-  conditional branch on the size in question or missing dynamic shapes support
-  in PT2).  If you are trying to understand why PT2 has overspecialized some
-  code, run with ``TORCH_LOGS=dynamic`` and look for "eval" entries that say
-  when guards are added and why.
+- إذا قمنا بإعادة التجميع لأن الحجم قد تغير، فسنحاول بدلاً من ذلك إعادة تجميع
+  أن هذا الحجم ديناميكي (من المحتمل أن تتغير الأحجام التي تغيرت في
+  المستقبل). قد يفشل هذا التعميم (على سبيل المثال، لأن كود المستخدم يقوم بفرع مشروط على الحجم المعني أو بسبب عدم وجود دعم للأشكال الديناميكية في PT2). إذا كنت تحاول فهم سبب تخصص PT2 المفرط لبعض التعليمات البرمجية، فقم بتشغيله باستخدام ``TORCH_LOGS=dynamic`` وابحث عن إدخالات "eval" التي تشير إلى متى تتم إضافة الحرس ولماذا.
 
-- If you know ahead of time something will be dynamic, you can skip the first
-  recompile with ``torch._dynamo.mark_dynamic(tensor, dim)``. If you know ahead of time
-  the ``min`` and ``max`` value this dimension can take, you can specify ``torch._dynamo.mark_dynamic(tensor, dim, min=min, max=max)``
+- إذا كنت تعرف مسبقًا أن شيئًا ما سيكون ديناميكيًا، فيمكنك تخطي إعادة التجميع الأولى باستخدام ``torch._dynamo.mark_dynamic(tensor، dim)``. إذا كنت تعرف مسبقًا
+  القيمة "min" و "max" التي يمكن أن يأخذها هذا البعد، فيمكنك تحديد ``torch._dynamo.mark_dynamic(tensor، dim، min=min، max=max)``
 
-- If you say ``torch.compile(dynamic=False)``, we will turn off automatic
-  dynamic shapes on recompiles and always recompile for each distinct size.
-  Conversely, if you say ``torch.compile(dynamic=True)``, we will try to make
-  everything as dynamic as possible.  This is mostly useful for small
-  operators; if you try it on a big model it will (1) probably crash PT2 and
-  (2) run slow for no good reason.
+- إذا قلت ``torch.compile(dynamic=False)``، فسنقوم بتعطيل الأشكال الديناميكية التلقائية عند إعادة التجميع وسنقوم بإعادة التجميع لكل حجم مميز.
+  على العكس من ذلك، إذا قلت ``torch.compile(dynamic=True)``، فسنحاول جعل
+  كل شيء ديناميكيًا قدر الإمكان. هذا مفيد بشكل أساسي للمشغلين الصغار؛ إذا حاولت ذلك على نموذج كبير، فسيؤدي ذلك إلى (1) تحطم PT2 على الأرجح و
+  (2) تشغيل بطيء بدون سبب وجيه.
 
-The Guard Model
----------------
+نموذج الحرس
+-----------
 
-When considering how to add support for dynamic shapes to TorchDynamo and TorchInductor, we made a major design decision: in order to reuse decompositions and other preexisting code written in Python/C++ targeting the PyTorch API, we must be able to trace through dynamic shapes. Unlike a fully symbolic system which might capture both branches of a conditional, we always pick one branch and specialize our trace under the assumption that we only use this trace when we would have made the same choice for that branch in the future. To do this, we maintain a "hint" for every symbolic size saying what its concrete value is at compile time (as TorchDynamo is a just-in-time compiler, it always knows what the actual input sizes are.) When we perform a condition on a tensor, we simply consult the hint to find out which branch to take.
+عند النظر في كيفية إضافة دعم للأشكال الديناميكية إلى TorchDynamo وTorchInductor، اتخذنا قرارًا تصميميًا رئيسيًا: من أجل إعادة استخدام التحليلات والتعليمات البرمجية الأخرى الموجودة مكتوبة في Python/C++ التي تستهدف واجهة برمجة تطبيقات PyTorch، يجب أن نتمكن من تتبع الأشكال الديناميكية. على عكس النظام الرمزي الكامل الذي قد يلتقط كلا فرعي الشرط، فإننا دائمًا ما نختار فرعًا واحدًا ونخصص أثره بافتراض أننا نستخدم هذا الأثر فقط عندما نتخذ نفس الاختيار لهذا الفرع في المستقبل. للقيام بذلك، نحتفظ بـ "تلميح" لكل حجم رمزي يقول ما هي قيمته الملموسة في وقت التجميع (نظرًا لأن TorchDynamo عبارة عن مترجم Just-In-Time، فهو يعرف دائمًا الأحجام الفعلية للإدخال). عندما نقوم بتنفيذ شرط على مصفوفة، ما علينا سوى استشارة التلميح لمعرفة الفرع الذي يجب اتخاذه.
 
-This greatly simplifies the symbolic shape formulas we produce, but means we have a much more involved system for managing guards. Consider, for example, the following program:
+هذا يبسط بشكل كبير الصيغ الشكلية الرمزية التي ننتجها، ولكنه يعني أن لدينا نظامًا أكثر تعقيدًا لإدارة الحرس. على سبيل المثال، ضع في اعتبارك البرنامج التالي:
 
 .. code-block:: python
 
-    def f(x, y):
-        z = torch.cat([x, y])
-        if z.size(0) > 2:
-            return z.mul(2)
+    def f(x، y):
+        z = torch.cat ([x، y])
+        if z.size (0)> 2:
+            return z.mul (2)
         else:
-            return z.add(2)
+            return z.add (2)
 
-The final IR we will compile with TorchInductor will either be ``torch.cat([x, y]).add(2)`` or ``torch.cat([x, y]).mul(2)`` (with the condition flattened away), but to determine which branch we are in, we would need to know the size of ``z``, an intermediate. Because TorchDynamo must know upfront if a compiled trace is valid (we do not support bailouts, like some JIT compilers), we must be able to reduce ``z.size(0)`` as an expression in terms of the inputs, ``x.size(0) + y.size(0)``. This is done by writing meta functions for all operators in PyTorch which can propagate size information to the output of a tensor without actually performing computation on the node.
+سيكون IR النهائي الذي سنقوم بتجميعه باستخدام TorchInductor إما ``torch.cat ([x، y]).add (2)`` أو ``torch.cat ([x، y]).mul (2)`` (مع تسطيح الشرط)، ولكن لتحديد الفرع الذي نحن فيه، يجب أن نعرف حجم ``z``، وهو متوسط. نظرًا لأنه يجب على TorchDynamo أن يعرف مقدمًا ما إذا كان الأثر المجمع صالحًا (لا ندعم عمليات الاسترداد، مثل بعض برامج التجميع JIT)، فيجب أن نتمكن من تقليل ``z.size (0)`` كتعبير من حيث المدخلات، ``x.size (0) + y.size (0)``. يتم ذلك عن طريق كتابة وظائف ميتا لجميع المشغلين في PyTorch والتي يمكنها نشر معلومات الحجم إلى إخراج مصفوفة دون إجراء الحساب فعليًا على العقدة.
 
-Overall architecture
---------------------
+الهندسة المعمارية الشاملة
+----------------------
 
-Symbolic shapes workflow:
+سير عمل الأشكال الرمزية:
 
-1. When we start compiling a frame in Dynamo, we allocate a ShapeEnv (attached to FakeTensorMode) which keeps track of symbolic shapes state.
-2. We allocate symbolic sizes for tensors on entry (what is static or dynamic is a policy decision, with some knobs).
-3. We propagate the symbolic sizes through operators, maintaining both (1) FX IR so that we can faithfully export symbolic compute, and (2) Sympy expressions representing the size vars, so we can reason about them.
-4. When we condition on symbolic sizes, either in Dynamo tracing or in Inductor optimization, we add guards based on the conditional. These can be induced from both Python and C++.
-5. These guards can induce further simplifications on symbolic variables. For example, if you assert ``s0 == 4``, we can now replace all occurrences of ``s0`` with ``4``.
-6. When we're done tracing and optimizing, we install all of these guards with the compiled code; the compiled code is only reusable if all the guards evaluate true.
+1. عندما نبدأ بتجميع إطار في دينامو، نقوم بتخصيص ShapeEnv (مرفق بـ FakeTensorMode) والذي يتتبع حالة الأشكال الرمزية.
+2. نقوم بتخصيص أحجام رمزية للمصفوفات عند الإدخال (ما هو ثابت أو ديناميكي هو قرار سياسي، مع بعض الأزرار).
+3. نقوم بنشر الأحجام الرمزية عبر المشغلين، مع الحفاظ على كل من (1) FX IR بحيث يمكننا تصدير الحساب الرمزي بأمانة، و (2) تعبيرات Sympy التي تمثل متغيرات الحجم، بحيث يمكننا الاستدلال عليها.
+4. عندما نشترط على الأحجام الرمزية، سواء في تتبع دينامو أو في تحسين إندكتور، نضيف حراسًا بناءً على الشرطي. يمكن استنتاج هذه من كل من Python و C++.
+5. يمكن أن تؤدي هذه الحراس إلى مزيد من التبسيط على المتغيرات الرمزية. على سبيل المثال، إذا أكدت أن "s0 == 4"، فيمكننا الآن استبدال جميع حالات "s0" بـ "4".
+6. عندما ننتهي من التتبع والتحسين، نقوم بتثبيت جميع هذه الحراس مع الكود المجمع؛ الكود المجمع قابل لإعادة الاستخدام فقط إذا تم تقييم جميع الحراس على أنها صحيحة.
 
-Important files:
+الملفات المهمة:
 
-- C++ SymInt API: ``c10/core/SymInt.h``, ``SymFloat.h``, ``SymBool.h``
-- Python SymInt API: ``torch/__init__.py`` (look for ``SymInt/SymFloat/SymBool``)
-- C++ plumbing: ``c10/core/SymNodeImpl.h``, ``torch/csrc/utils/python_symnode.h``, ``torch/csrc/jit/python/init.cpp``
-- Python infrastructure: ``torch/fx/experimental/symbolic_shapes.py``
-- Other important files: ``torch/_subclasses/fake_tensor.py``, ``torch/_meta_registrations.py``, decomps, PrimTorch refs
+- واجهة برمجة التطبيقات SymInt C++: ``c10/core/SymInt.h``، ``SymFloat.h``، ``SymBool.h``
+- واجهة برمجة تطبيقات Python SymInt: ``torch/__init__.py`` (ابحث عن ``SymInt/SymFloat/SymBool``)
+- السباكة C++: ``c10/core/SymNodeImpl.h``، ``torch/csrc/utils/python_symnode.h``، ``torch/csrc/jit/python/init.cpp``
+- البنية التحتية Python: ``torch/fx/experimental/symbolic_shapes.py``
+- ملفات مهمة أخرى: ``torch/_subclasses/fake_tensor.py``، ``torch/_meta_registrations.py``، decomps، PrimTorch refs
 
-Abridged internal API
----------------------
+واجهة برمجة التطبيقات الداخلية المختصرة
+--------------------------
 
-Understanding the Python class hierarchy:
+فهم التسلسل الهرمي للصفوف في Python:
 
-- SymInt/SymFloat/SymBool: these are user-visible classes that simulate their int/float/bool counterparts. If you add two SymInts, we give you a new SymInt that symbolically tracks that the integer addition had occurred.
-- SymNode: this is the internal structure (accessible via e.g., ``symint.node``) which holds the actual symbolic tracking info. SymNode is type erased; this makes it more convenient to represent mixed-type operations. Note that technically you don't have to call into Python SymNode from SymInt; for example, XLA's C++ ``SymNodeImpl`` would take the place of SymNode.
-- ShapeEnv: per-compile context state which keeps track of all the free symbols and guards we have accumulated so far. Every SymNode records its ShapeEnv (but not vice versa; SymNodes only get used if they participate in a guard).
+- SymInt/SymFloat/SymBool: هذه هي الفئات المرئية للمستخدم التي تحاكي نظرائها int/float/bool. إذا أضفت اثنين من SymInts، فسنعطيك SymInt جديدًا يتتبع رمزيًا أن عملية الجمع الصحيحة قد حدثت.
+- SymNode: هذا هو الهيكل الداخلي (يمكن الوصول إليه عبر e.g.، ``symint.node``) الذي يحتفظ بمعلومات التتبع الرمزي الفعلية. يتم محو نوع SymNode؛ مما يجعل من الأكثر ملاءمة لتمثيل العمليات المختلطة الأنواع. لاحظ أنه من الناحية الفنية، لا يلزم استدعاء SymNode من SymInt؛ على سبيل المثال، سيحل SymNodeImpl الخاص بـ C++ من XLA محل SymNode.
+- ShapeEnv: حالة سياق لكل عملية تجميع والتي تتتبع جميع الرموز الحرة والحراس التي تراكمت لدينا حتى الآن. يسجل كل SymNode ShapeEnv الخاص به (ولكن ليس العكس؛ لا يتم استخدام SymNodes إلا إذا شاركوا في حارس).
 
-C++ is fairly similar:
+C++ مشابه جدًا:
 
-- c10::SymInt/SymFloat/SymBool: user-visible classes that simulate int/float/bool.
-- c10::SymNode/SymNodeImpl: analogous to SymNode
-- There is no ShapeEnv in C++; for ease of debugging, the entire symbolic reasoning apparatus is in Python.
+- c10::SymInt/SymFloat/SymBool: فئات مرئية للمستخدم تحاكي int/float/bool.
+- c10::SymNode/SymNodeImpl: مماثلة لشركة SymNode
+- لا يوجد ShapeEnv في C++؛ لتسهيل التصحيح، توجد آلية الاستدلال الرمزي بأكملها في Python.
 
-When you write code that is traceable with ``make_fx``, it must be able to deal with SymInt/SymFloat/SymBool flowing through it. `The dynamic shapes manual <https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.fh8zzonyw8ng>`_ gives some guidance for how to do this.
+عندما تكتب كودًا يمكن تتبعه باستخدام ``make_fx``، يجب أن يكون قادرًا على التعامل مع SymInt/SymFloat/SymBool المتدفقة من خلاله. `دليل الأشكال الديناميكية <https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.fh8zzonyw8ng>`_ يقدم بعض الإرشادات حول كيفية القيام بذلك.
 
-DimDynamic policy
------------------
-
-Symbolic reasoning:
-
-- Value ranges
-- Sympy usage notes
-- Constraints
-- DimDynamic/Constraint
-
-Unbacked SymInts
+سياسة DimDynamic
 ----------------
 
-To resolve control flow, we check the hint, aka actual value, of a symbolic integer to determine which branch to go. However, in some cases, we may not have a hint: so-called unbacked symbolic integers arise when a size variable emerges from a data-dependent operation like ``.nonzero()`` or ``.item()``. It is illegal to perform control flow on these symbolic integers, so we must graph break on these operations.
+الاستدلال الرمزي:
 
-Naively implemented, this is too restrictive: most PyTorch programs will immediately fail if you try to do anything with unbacked symbolic integers. Here are the most important enhancements to make this actually work:
+- نطاقات القيم
+- ملاحظات استخدام Sympy
+- القيود
+- DimDynamic/Constraint
 
-- On tensor creation, PyTorch precomputes a lot of data about a tensor; for example, if you use ``empty_strided`` to create a tensor, we will eagerly sort the strides and determine if the tensor is non-overlapping and dense. Sorts produce a lot of guards. However, it is more common to produce a tensor directly with a higher-level API like ``empty``, which is guaranteed to produce a non-overlapping and dense tensor. We modified PyTorch to avoid needlessly recomputing these properties.
-- Even if nontrivial compute is needed, sometimes a property is never actually queried at all. Making these precomputed properties lazy allows us to avoid guarding on an unbacked symbolic integer unless it is actually needed.
-- The data in an integer tensor is generally not known to be non-negative. However, we provide an API ``constrain_range`` whereby a user can specify that a size is bounded above and below by known limits.
+SymInts غير المدعومة
+--------------------
 
-In future versions of PT2 (beyond PT2.1), we will extend our reasoning system
-to infer that an unbacked symbolic integer is size-like based on usage.  For
-example, if you pass the result of an ``.item()`` call to a factory function
-like ``torch.empty``, we will automatically infer that the result is a size
-(because if it was not, it would fail.)  This assumption would get validated
-at runtime, raising an error if it was not fulfilled.
+لحل التحكم في التدفق، نتحقق من التلميح، أي القيمة الفعلية، لعدد صحيح رمزي لتحديد الفرع الذي يجب الانتقال إليه. ومع ذلك، في بعض الحالات، قد لا يكون لدينا تلميح: تنشأ الأعداد الصحيحة الرمزية غير المدعومة عندما تظهر متغيرات الحجم من عملية تعتمد على البيانات مثل ``.nonzero()`` أو ``.item()``. من غير القانوني إجراء التحكم في التدفق على هذه الأعداد الصحيحة الرمزية، لذلك يجب علينا كسر الرسم البياني على هذه العمليات.
+
+إذا تم تنفيذه بشكل ساذج، يكون هذا تقييديًا للغاية: ستفشل معظم برامج PyTorch على الفور إذا حاولت القيام بأي شيء باستخدام الأعداد الصحيحة الرمزية غير المدعومة. فيما يلي أهم التحسينات لجعل هذا الأمر يعمل بالفعل:
+
+- عند إنشاء مصفوفة، تقوم PyTorch مسبقًا بحساب الكثير من البيانات حول مصفوفة؛ على سبيل المثال، إذا استخدمت ``empty_strided`` لإنشاء مصفوفة، فسنقوم بفرز الخطوات مسبقًا وتحديد ما إذا كانت المصفوفة غير متداخلة وكثيفة. تنتج الفرزات الكثير من الحراس. ومع ذلك، من الأكثر شيوعًا إنتاج مصفوفة مباشرة باستخدام واجهة برمجة تطبيقات ذات مستوى أعلى مثل ``empty``، والتي تضمن إنتاج مصفوفة غير متداخلة وكثيفة. لقد قمنا بتعديل PyTorch لتجنب إعادة حساب هذه الخصائص بلا داع.
+- حتى إذا كانت هناك حاجة إلى حسابات غير بسيطة، ففي بعض الأحيان لا يتم استعلام خاصية على الإطلاق. يجعل جعل هذه الخصائص المحسوبة مسبقًا كسولة تجنب الحماية على عدد صحيح رمزي غير مدعوم ما لم يكن مطلوبًا بالفعل.
+- لا تُعرف البيانات الموجودة في مصفوفة الأعداد الصحيحة على أنها غير سالبة. ومع ذلك، نوفر واجهة برمجة تطبيقات ``constrain_range`` يمكن للمستخدم من خلالها تحديد أن الحجم محدود من الأعلى والأسفل بحدود معروفة.
+
+في الإصدارات المستقبلية من PT2 (بعد PT2.1)، سنقوم بتوسيع نظام الاستدلال لدينا
+لاستنتاج أن عددًا صحيحًا رمزيًا غير مدعوم يعتمد على الحجم بناءً على الاستخدام.  على سبيل المثال، إذا قمت بتمرير نتيجة مكالمة ``.item()`` إلى دالة مصنع
+مثل ``torch.empty``، فسنفترض تلقائيًا أن النتيجة هي حجم
+(لأنه إذا لم يكن كذلك، فسوف يفشل.)  سيتم التحقق من هذا الافتراض في وقت التشغيل، مما يؤدي إلى حدوث خطأ إذا لم يتم الوفاء به.
