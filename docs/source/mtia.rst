@@ -1,7 +1,7 @@
 torch.mtia
-===================================
+=============
 
-The MTIA backend is implemented out of the tree, only interfaces are be defined here.
+تم تنفيذ backend MTIA خارج الشجرة، ويتم تعريف الواجهات هنا فقط.
 
 .. automodule:: torch.mtia
 .. currentmodule:: torch.mtia
@@ -28,8 +28,8 @@ The MTIA backend is implemented out of the tree, only interfaces are be defined 
     get_rng_state
     DeferredMtiaCallError
 
-Streams and events
-------------------
+التدفقات والأحداث
+-------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
