@@ -1,27 +1,23 @@
 .. _jit_unsupported:
 
-TorchScript Unsupported PyTorch Constructs
-============================================
+عمليات PyTorch غير المدعومة في TorchScript
+=======================================
 
-Torch and Tensor Unsupported Attributes
-------------------------------------------
+الصفات غير المدعومة في Torch و Tensor
+----------------------------------
 
-
-TorchScript supports most methods defined on ``torch`` and ``torch.Tensor``, but we do not have full coverage.
-Here are specific known ops and categories of ops which have diverging behavior between
-Python and TorchScript. If you encounter something else that is not supported please
-file a GitHub issue. Deprecated ops are not listed below.
-
-
+يدعم TorchScript معظم الطرق المحددة في "torch" و "torch.Tensor"، ولكن لا يوجد لدينا تغطية كاملة.
+فيما يلي عمليات وفئات محددة من العمليات التي تختلف سلوكياتها بين
+بايثون و TorchScript. إذا صادفت شيئًا آخر غير مدعوم، يرجى
+إرسال مشكلة على GitHub. العمليات المتقادمة غير مدرجة أدناه.
 
 .. automodule:: torch.jit.unsupported_tensor_ops
 
+الوظائف غير المرتبطة بشكل صحيح على Torch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Functions Not Correctly Bound on Torch
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following functions will fail if used in TorchScript, either because they
-are not bound on `torch` or because Python expects a different schema than
+ستفشل الوظائف التالية إذا تم استخدامها في TorchScript، إما لأنها
+غير مرتبطة بـ `torch` أو لأن بايثون تتوقع مخططًا مختلفًا عن
 TorchScript.
 
   * :func:`torch.tensordot`
@@ -32,14 +28,13 @@ TorchScript.
   * :func:`torch.nn.init.orthogonal_`
   * :func:`torch.nn.init.sparse`
 
+فئات العمليات ذات المخططات المتباينة بين Torch و Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Ops With Divergent Schemas Between Torch & Python
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+توجد الفئات التالية من العمليات ذات المخططات المتباينة:
 
-The following categories of ops have divergent schemas:
-
-Functions which construct tensors from non-tensor inputs do not support the `requires_grad`
-argument, except for `torch.tensor`. This covers the following ops:
+الوظائف التي تقوم ببناء المتوترات من الإدخالات غير المتوترة لا تدعم الحجة `requires_grad`،
+باستثناء `torch.tensor`. يغطي هذا العمليات التالية:
 
   * :func:`torch.norm`
   * :func:`torch.bartlett_window`
@@ -68,21 +63,20 @@ argument, except for `torch.tensor`. This covers the following ops:
   * :func:`torch.zeros`
   * :func:`torch.zeros_like`
 
-The following functions require `dtype`, `layout`, `device` as parameters in TorchScript,
-but these parameters are optional in Python.
+تتطلب الوظائف التالية `dtype`، `layout`، `device` كمعلمات في TorchScript،
+ولكن هذه المعلمات اختيارية في بايثون.
 
   * :func:`torch.randint`
   * :func:`torch.sparse_coo_tensor`
   * :meth:`~torch.Tensor.to`
 
+وحدات وفئات PyTorch غير المدعومة
+---------------------------
 
-PyTorch Unsupported Modules and Classes
-------------------------------------------
-
-TorchScript cannot currently compile a number of other commonly used PyTorch
-constructs. Below are listed the modules that TorchScript does not support, and
-an incomplete list of PyTorch classes that are not supported. For unsupported modules
-we suggest using :meth:`torch.jit.trace`.
+لا يمكن لـ TorchScript حاليًا تجميع عدد من البنيات PyTorch
+المستخدمة بشكل شائع. أدناه، ترد الوحدات التي لا يدعمها TorchScript،
+وقائمة غير مكتملة بفئات PyTorch غير المدعومة. بالنسبة للوحدات غير المدعومة
+نقترح استخدام :meth:`torch.jit.trace`.
 
   * :class:`torch.nn.RNN`
   * :class:`torch.nn.AdaptiveLogSoftmaxWithLoss`
