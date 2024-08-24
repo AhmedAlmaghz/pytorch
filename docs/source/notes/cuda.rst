@@ -1,96 +1,86 @@
 .. meta::
-   :description: A guide to torch.cuda, a PyTorch module to run CUDA operations
-   :keywords: memory management, PYTORCH_CUDA_ALLOC_CONF, optimize PyTorch, CUDA
+   :description: دليل حول torch.cuda، وهو وحدة في PyTorch لتنفيذ عمليات CUDA
+   :keywords: إدارة الذاكرة، PYTORCH_CUDA_ALLOC_CONF، تحسين PyTorch، CUDA
 
 .. _cuda-semantics:
 
-CUDA semantics
+دلالات CUDA
 ==============
 
+تُستخدم وحدة :mod:`torch.cuda` لإعداد وتشغيل العمليات المتعلقة بـ CUDA. حيث تقوم بتتبع وحدة GPU المحددة حالياً، وجميع مصفوفات CUDA التي تقوم بتخصيصها يتم إنشاؤها افتراضياً على تلك الوحدة. ويمكن تغيير الوحدة المحددة باستخدام مدير السياق :any:`torch.cuda.device`.
 
-:mod:`torch.cuda` is used to set up and run CUDA operations. It keeps track of
-the currently selected GPU, and all CUDA tensors you allocate will by default be
-created on that device. The selected device can be changed with a
-:any:`torch.cuda.device` context manager.
+ومع ذلك، بمجرد تخصيص مصفوفة، يمكنك إجراء العمليات عليها بغض النظر عن الوحدة المحددة، وستكون النتائج دائماً على نفس الوحدة التي توجد عليها المصفوفة.
 
-However, once a tensor is allocated, you can do operations on it irrespective
-of the selected device, and the results will be always placed on the same
-device as the tensor.
+العمليات عبر وحدات GPU غير مسموح بها افتراضياً، باستثناء :meth:`~torch.Tensor.copy_` والطرق الأخرى ذات الوظائف المشابهة للنسخ مثل :meth:`~torch.Tensor.to` و :meth:`~torch.Tensor.cuda`. ما لم تقم بتمكين الوصول المباشر إلى الذاكرة بين الأقران، فإن أي محاولات لتشغيل العمليات على المصفوفات المنتشرة عبر وحدات مختلفة ستؤدي إلى حدوث خطأ.
 
-Cross-GPU operations are not allowed by default, with the exception of
-:meth:`~torch.Tensor.copy_` and other methods with copy-like functionality
-such as :meth:`~torch.Tensor.to` and :meth:`~torch.Tensor.cuda`.
-Unless you enable peer-to-peer memory access, any attempts to launch ops on
-tensors spread across different devices will raise an error.
+فيما يلي مثال صغير يوضح ذلك::
 
-Below you can find a small example showcasing this::
-
-    cuda = torch.device('cuda')     # Default CUDA device
+    cuda = torch.device('cuda')     # وحدة CUDA الافتراضية
     cuda0 = torch.device('cuda:0')
-    cuda2 = torch.device('cuda:2')  # GPU 2 (these are 0-indexed)
+    cuda2 = torch.device('cuda:2')  # وحدة المعالجة الرسومية 2 (ذات ترقيم من نوع صفر)
 
     x = torch.tensor([1., 2.], device=cuda0)
-    # x.device is device(type='cuda', index=0)
+    # x.device هي device(type='cuda', index=0)
     y = torch.tensor([1., 2.]).cuda()
-    # y.device is device(type='cuda', index=0)
+    # y.device هي device(type='cuda', index=0)
 
-    with torch.cuda.device(1):
-        # allocates a tensor on GPU 1
+    مع torch.cuda.device(1):
+        # يقوم بتخصيص مصفوفة على وحدة GPU 1
         a = torch.tensor([1., 2.], device=cuda)
 
-        # transfers a tensor from CPU to GPU 1
+        # ينقل مصفوفة من وحدة المعالجة المركزية إلى وحدة GPU 1
         b = torch.tensor([1., 2.]).cuda()
-        # a.device and b.device are device(type='cuda', index=1)
+        # a.device و b.device هما device(type='cuda', index=1)
 
-        # You can also use ``Tensor.to`` to transfer a tensor:
+        # يمكنك أيضاً استخدام ``Tensor.to`` لنقل مصفوفة:
         b2 = torch.tensor([1., 2.]).to(device=cuda)
-        # b.device and b2.device are device(type='cuda', index=1)
+        # b.device و b2.device هما device(type='cuda', index=1)
 
         c = a + b
-        # c.device is device(type='cuda', index=1)
+        # c.device هي device(type='cuda', index=1)
 
         z = x + y
-        # z.device is device(type='cuda', index=0)
+        # z.device هي device(type='cuda', index=0)
 
-        # even within a context, you can specify the device
-        # (or give a GPU index to the .cuda call)
+        # حتى ضمن سياق، يمكنك تحديد الوحدة
+        # (أو إعطاء مؤشر وحدة GPU إلى مكالمة .cuda)
         d = torch.randn(2, device=cuda2)
         e = torch.randn(2).to(cuda2)
         f = torch.randn(2).cuda(cuda2)
-        # d.device, e.device, and f.device are all device(type='cuda', index=2)
+        # d.device و e.device و f.device جميعها هي device(type='cuda', index=2)
 
 .. _tf32_on_ampere:
 
-TensorFloat-32 (TF32) on Ampere (and later) devices
+TensorFloat-32 (TF32) على أجهزة Ampere (والأجهزة الأحدث)
 ---------------------------------------------------
 
-Starting in PyTorch 1.7, there is a new flag called `allow_tf32`. This flag
-defaults to True in PyTorch 1.7 to PyTorch 1.11, and False in PyTorch 1.12 and later.
-This flag controls whether PyTorch is allowed to use the TensorFloat32 (TF32) tensor cores,
-available on NVIDIA GPUs since Ampere, internally to compute matmul (matrix multiplies
-and batched matrix multiplies) and convolutions.
+بدءاً من PyTorch 1.7، هناك علم جديد يسمى `allow_tf32`. هذا العلم
+افتراضي إلى True في PyTorch 1.7 إلى PyTorch 1.11، وإلى False في PyTorch 1.12 والإصدارات الأحدث.
+يتحكم هذا العلم فيما إذا كان مسموحاً لـ PyTorch باستخدام TensorFloat32 (TF32) tensor cores،
+المتوفرة على وحدات معالجة الرسوميات NVIDIA منذ Ampere، داخلياً لحساب عمليات الضرب في المصفوفة (عمليات الضرب في المصفوفة
+وضرب المصفوفة المعززة) والعمليات التحويلية.
 
-TF32 tensor cores are designed to achieve better performance on matmul and convolutions on
-`torch.float32` tensors by rounding input data to have 10 bits of mantissa, and accumulating
-results with FP32 precision, maintaining FP32 dynamic range.
+تم تصميم TensorFloat32 tensor cores لتحقيق أداء أفضل في عمليات الضرب في المصفوفة والعمليات التحويلية على
+مصفوفات `torch.float32` عن طريق تقريب بيانات الإدخال لتكون 10 بتات من الفاصلة العائمة، وتراكم
+النتائج بدقة FP32، مع الحفاظ على نطاق FP32 الديناميكي.
 
-matmuls and convolutions are controlled separately, and their corresponding flags can be accessed at:
+يتم التحكم في عمليات الضرب في المصفوفة والعمليات التحويلية بشكل منفصل، ويمكن الوصول إلى الأعلام المقابلة لها على النحو التالي:
 
 .. code:: python
 
-  # The flag below controls whether to allow TF32 on matmul. This flag defaults to False
-  # in PyTorch 1.12 and later.
+  # يتحكم العلم أدناه فيما إذا كان مسموحاً باستخدام TF32 في عمليات الضرب في المصفوفة. هذا العلم افتراضي إلى False
+  # في PyTorch 1.12 والإصدارات الأحدث.
   torch.backends.cuda.matmul.allow_tf32 = True
 
-  # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
+  # يتحكم العلم أدناه فيما إذا كان مسموحاً باستخدام TF32 في cuDNN. هذا العلم افتراضي إلى True.
   torch.backends.cudnn.allow_tf32 = True
 
-The precision of matmuls can also be set more broadly (limited not just to CUDA) via :meth:`~torch.set_float_32_matmul_precision`.
-Note that besides matmuls and convolutions themselves, functions and nn modules that internally uses
-matmuls or convolutions are also affected. These include `nn.Linear`, `nn.Conv*`, cdist, tensordot,
-affine grid and grid sample, adaptive log softmax, GRU and LSTM.
+يمكن أيضاً تعيين دقة عمليات الضرب في المصفوفة بشكل أكثر عمومية (ليس فقط على CUDA) عبر :meth:`~torch.set_float_32_matmul_precision`.
+لاحظ أنه بالإضافة إلى عمليات الضرب في المصفوفة والعمليات التحويلية نفسها، فإن الدوال ووحدات nn التي تستخدم داخلياً
+عمليات الضرب في المصفوفة أو العمليات التحويلية تتأثر أيضاً. وتشمل هذه `nn.Linear`، `nn.Conv*`، cdist، tensordot،
+affine grid و grid sample، adaptive log softmax، GRU و LSTM.
 
-To get an idea of the precision and speed, see the example code and benchmark data (on A100) below:
+للحصول على فكرة عن الدقة والسرعة، راجع كود المثال وبيانات المعيار المرجعي (على A100) أدناه:
 
 .. code:: python
 
@@ -102,38 +92,38 @@ To get an idea of the precision and speed, see the example code and benchmark da
   a = a_full.float()
   b = b_full.float()
 
-  # Do matmul at TF32 mode.
+  # قم بعملية ضرب المصفوفة في وضع TF32.
   torch.backends.cuda.matmul.allow_tf32 = True
-  ab_tf32 = a @ b  # takes 0.016s on GA100
+  ab_tf32 = a @ b  # يستغرق 0.016 ثانية على GA100
   error = (ab_tf32 - ab_full).abs().max()  # 0.1747
   relative_error = error / mean  # 0.0022
 
-  # Do matmul with TF32 disabled.
+  # قم بعملية ضرب المصفوفة مع تعطيل TF32.
   torch.backends.cuda.matmul.allow_tf32 = False
-  ab_fp32 = a @ b  # takes 0.11s on GA100
+  ab_fp32 = a @ b  # يستغرق 0.11 ثانية على GA100
   error = (ab_fp32 - ab_full).abs().max()  # 0.0031
   relative_error = error / mean  # 0.000039
 
-From the above example, we can see that with TF32 enabled, the speed is ~7x faster on A100, and that
-relative error compared to double precision is approximately 2 orders of magnitude larger. Note that
-the exact ratio of TF32 to single precision speed depends on the hardware generation, as properties
-such as the ratio of memory bandwidth to compute as well as the ratio of TF32 to FP32 matmul throughput
-may vary from generation to generation or model to model.
-If full FP32 precision is needed, users can disable TF32 by:
+من المثال أعلاه، يمكننا أن نرى أنه مع تمكين TF32، تكون السرعة أسرع بحوالي 7 مرات على A100، وأن
+الخطأ النسبي مقارنة بالدقة المزدوجة أكبر بحوالي مرتبتين من حيث الحجم. لاحظ أن
+النسبة الدقيقة لـ TF32 إلى سرعة الدقة الفردية تعتمد على جيل الأجهزة، حيث قد تختلف الخصائص
+مثل نسبة عرض النطاق الترددي للذاكرة إلى الحوسبة، وكذلك نسبة الإنتاجية TF32 إلى FP32 في عمليات الضرب في المصفوفة
+قد تختلف من جيل إلى جيل أو من نموذج إلى نموذج.
+إذا كانت الدقة FP32 الكاملة مطلوبة، يمكن للمستخدمين تعطيل TF32 عن طريق:
 
 .. code:: python
 
   torch.backends.cuda.matmul.allow_tf32 = False
   torch.backends.cudnn.allow_tf32 = False
 
-To toggle the TF32 flags off in C++, you can do
+للتبديل بين أعلام TF32 في C++، يمكنك القيام بما يلي:
 
 .. code:: C++
 
-  at::globalContext().setAllowTF32CuBLAS(false);
-  at::globalContext().setAllowTF32CuDNN(false);
+  at::globalContext().setAllowTF32CuBLAS(false)؛
+  at::globalContext().setAllowTF32CuDNN(false)؛
 
-For more information about TF32, see:
+للحصول على مزيد من المعلومات حول TF32، راجع:
 
 - `TensorFloat-32`_
 - `CUDA 11`_
@@ -145,12 +135,12 @@ For more information about TF32, see:
 
 .. _fp16reducedprecision:
 
-Reduced Precision Reduction in FP16 GEMMs
+خفض الدقة في عمليات الضرب في المصفوفة FP16
 -----------------------------------------
 
-fp16 GEMMs are potentially done with some intermediate reduced precision reductions (e.g., in fp16 rather than fp32). These selective reductions in precision can allow for higher performance on certain workloads (particularly those with a large `k` dimension) and GPU architectures at the cost of numerical precision and potential for overflow.
+قد يتم إجراء عمليات الضرب في المصفوفة FP16 ببعض التخفيضات في الدقة الوسيطة (على سبيل المثال، في FP16 بدلاً من FP32). يمكن أن تسمح هذه التخفيضات الانتقائية في الدقة بتحقيق أداء أعلى في بعض أعباء العمل (خاصة تلك التي تحتوي على بعد "k" كبير) وبنى وحدات معالجة الرسوميات بتكلفة الدقة العددية واحتمال حدوث فيض.
 
-Some example benchmark data on V100:
+فيما يلي بعض بيانات المعيار المرجعي على V100:
 
 .. code::
 
@@ -170,382 +160,243 @@ Some example benchmark data on V100:
         [4096, 5120, 4096]    |           2142.8        |           2631.0
         [4096, 9728, 4096]    |           3875.1        |           5779.8
         [4096, 16384, 4096]   |           6182.9        |           9656.5
-  (times in microseconds).
+  (الأوقات بالميكروثانية).
 
-If full precision reductions are needed, users can disable reduced precision reductions in fp16 GEMMs with:
+إذا كانت التخفيضات في الدقة الكاملة مطلوبة، يمكن للمستخدمين تعطيل التخفيضات في الدقة الوسيطة في عمليات الضرب في المصفوفة FP16 مع:
 
 .. code:: python
 
   torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
 
-To toggle the reduced precision reduction flags in C++, one can do
+للتبديل بين أعلام التخفيض في الدقة في C++، يمكنك القيام بما يلي:
 
 .. code:: C++
 
-  at::globalContext().setAllowFP16ReductionCuBLAS(false);
+  at::globalContext().setAllowFP16ReductionCuBLAS(false)؛
 
 .. _bf16reducedprecision:
 
-Reduced Precision Reduction in BF16 GEMMs
------------------------------------------
+خفض الدقة في عمليات الضرب في المصفوفة BF16
+-------------------------------------
 
-A similar flag (as above) exists for BFloat16 GEMMs.
-Note that this switch is set to `True` by default for BF16, if you observe
-numerical instability in your workload, you may wish to set it to `False`.
+يوجد علم مماثل (كما هو موضح أعلاه) لعمليات الضرب في المصفوفة BFloat16.
+لاحظ أن هذا المفتاح مضبوط على `True` افتراضياً لـ BF16، إذا لاحظت
+عدم استقرار عددي في عبء العمل الخاص بك، فقد ترغب في تعيينه على `False`.
 
-If reduced precision reductions are not desired, users can disable reduced
-precision reductions in bf16 GEMMs with:
+إذا لم تكن التخفيضات في الدقة المرغوبة، يمكن للمستخدمين تعطيل التخفيضات
+في الدقة في عمليات الضرب في المصفوفة bf16 مع:
 
 .. code:: python
 
   torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
 
-To toggle the reduced precision reduction flags in C++, one can do
+للتبديل بين أعلام التخفيض في الدقة في C++، يمكنك القيام بما يلي:
 
 .. code:: C++
 
-  at::globalContext().setAllowBF16ReductionCuBLAS(true);
+  at::globalContext().setAllowBF16ReductionCuBLAS(true)؛
 
-Asynchronous execution
+التنفيذ غير المتزامن
 ----------------------
 
-By default, GPU operations are asynchronous.  When you call a function that
-uses the GPU, the operations are *enqueued* to the particular device, but not
-necessarily executed until later.  This allows us to execute more computations
-in parallel, including operations on CPU or other GPUs.
+بشكل افتراضي، تكون عمليات GPU غير متزامنة. فعندما تستدعي دالة تستخدم وحدة معالجة الرسوميات (GPU)، يتم *وضع* العمليات في قائمة الانتظار على الجهاز المحدد، ولكنها لا تنفذ بالضرورة حتى وقت لاحق. يسمح لنا ذلك بتنفيذ المزيد من الحسابات بشكل متوازي، بما في ذلك العمليات على وحدة المعالجة المركزية (CPU) أو وحدات معالجة الرسوميات الأخرى.
 
-In general, the effect of asynchronous computation is invisible to the caller,
-because (1) each device executes operations in the order they are queued, and
-(2) PyTorch automatically performs necessary synchronization when copying data
-between CPU and GPU or between two GPUs.  Hence, computation will proceed as if
-every operation was executed synchronously.
+وبشكل عام، يكون تأثير الحساب غير المتزامن غير مرئي للمستدعي، وذلك لأن (1) كل جهاز ينفذ العمليات بالترتيب الذي يتم وضعها في قائمة الانتظار، و (2) PyTorch يقوم تلقائيًا بمزامنة ضرورية عند نسخ البيانات بين وحدة المعالجة المركزية ووحدة معالجة الرسوميات أو بين وحدتي معالجة رسوميات. وبالتالي، ستستمر عملية الحساب كما لو أن كل عملية تم تنفيذها بشكل متزامن.
 
-You can force synchronous computation by setting environment variable
-``CUDA_LAUNCH_BLOCKING=1``.  This can be handy when an error occurs on the GPU.
-(With asynchronous execution, such an error isn't reported until after the
-operation is actually executed, so the stack trace does not show where it was
-requested.)
+يمكنك فرض الحساب المتزامن عن طريق تعيين متغير البيئة ``CUDA_LAUNCH_BLOCKING=1``. قد يكون هذا مفيدًا عندما يحدث خطأ في وحدة معالجة الرسوميات. (مع التنفيذ غير المتزامر، لا يتم الإبلاغ عن مثل هذا الخطأ حتى يتم تنفيذ العملية بالفعل، لذا لا يظهر تتبع المكدس المكان الذي تم طلبها منه.)
 
-A consequence of the asynchronous computation is that time measurements without
-synchronizations are not accurate. To get precise measurements, one should either
-call :func:`torch.cuda.synchronize()` before measuring, or use :class:`torch.cuda.Event`
-to record times as following::
+ومن نتائج الحساب غير المتزامن أن قياسات الوقت دون مزامنات غير دقيقة. للحصول على قياسات دقيقة، يجب على المرء إما استدعاء :func:`torch.cuda.synchronize()` قبل القياس، أو استخدام :class:`torch.cuda.Event` لتسجيل الأوقات كما يلي::
 
     start_event = torch.cuda.Event(enable_timing=True)
     end_event = torch.cuda.Event(enable_timing=True)
     start_event.record()
 
-    # Run some things here
+    # قم بتشغيل بعض الأشياء هنا
 
     end_event.record()
-    torch.cuda.synchronize()  # Wait for the events to be recorded!
+    torch.cuda.synchronize()  # انتظر حتى يتم تسجيل الأحداث!
     elapsed_time_ms = start_event.elapsed_time(end_event)
 
-As an exception, several functions such as :meth:`~torch.Tensor.to` and
-:meth:`~torch.Tensor.copy_` admit an explicit :attr:`non_blocking` argument,
-which lets the caller bypass synchronization when it is unnecessary.
-Another exception is CUDA streams, explained below.
+وكاستثناء، هناك العديد من الدوال مثل :meth:`~torch.Tensor.to` و :meth:`~torch.Tensor.copy_` التي تقبل وسيط :attr:`non_blocking` صريح، مما يسمح للمستدعي بتجاوز المزامنة عندما لا تكون ضرورية.
 
-CUDA streams
-^^^^^^^^^^^^
+وهناك استثناء آخر هو تيارات CUDA، الموضحة أدناه.
 
-A `CUDA stream`_ is a linear sequence of execution that belongs to a specific
-device.  You normally do not need to create one explicitly: by default, each
-device uses its own "default" stream.
+تيارات CUDA
+^^^^^^^^^^
 
-Operations inside each stream are serialized in the order they are created,
-but operations from different streams can execute concurrently in any
-relative order, unless explicit synchronization functions (such as
-:meth:`~torch.cuda.synchronize` or :meth:`~torch.cuda.Stream.wait_stream`) are
-used.  For example, the following code is incorrect::
+تيار CUDA هو تسلسل خطي للتنفيذ ينتمي إلى جهاز محدد. عادةً لا تحتاج إلى إنشاء واحد بشكل صريح: بشكل افتراضي، يستخدم كل جهاز تيار "افتراضي" الخاص به.
+
+يتم تسلسل العمليات داخل كل تيار بالترتيب الذي يتم إنشاؤها به، ولكن يمكن أن تُنفذ العمليات من تيارات مختلفة بشكل متزامن بأي ترتيب نسبي، ما لم يتم استخدام دوال المزامنة الصريحة (مثل :meth:`~torch.cuda.synchronize` أو :meth:`~torch.cuda.Stream.wait_stream`). على سبيل المثال، الكود التالي غير صحيح::
 
     cuda = torch.device('cuda')
-    s = torch.cuda.Stream()  # Create a new stream.
+    s = torch.cuda.Stream()  # إنشاء تيار جديد.
     A = torch.empty((100, 100), device=cuda).normal_(0.0, 1.0)
     with torch.cuda.stream(s):
-        # sum() may start execution before normal_() finishes!
+        # قد تبدأ الدالة sum() التنفيذ قبل انتهاء normal_()!
         B = torch.sum(A)
 
-When the "current stream" is the default stream, PyTorch automatically performs
-necessary synchronization when data is moved around, as explained above.
-However, when using non-default streams, it is the user's responsibility to
-ensure proper synchronization.  The fixed version of this example is::
+عندما يكون التيار "الحالي" هو التيار الافتراضي، يقوم PyTorch تلقائيًا بمزامنة ضرورية عند نقل البيانات، كما هو موضح أعلاه. ومع ذلك، عند استخدام تيارات غير افتراضية، يكون المستخدم مسؤولاً عن ضمان المزامنة الصحيحة. النسخة المصححة من هذا المثال هي::
 
     cuda = torch.device('cuda')
-    s = torch.cuda.Stream()  # Create a new stream.
+    s = torch.cuda.Stream()  # إنشاء تيار جديد.
     A = torch.empty((100, 100), device=cuda).normal_(0.0, 1.0)
-    s.wait_stream(torch.cuda.default_stream(cuda))  # NEW!
+    s.wait_stream(torch.cuda.default_stream(cuda))  # جديد!
     with torch.cuda.stream(s):
         B = torch.sum(A)
-    A.record_stream(s)  # NEW!
+    A.record_stream(s)  # جديد!
 
-There are two new additions.  The :meth:`torch.cuda.Stream.wait_stream` call
-ensures that the ``normal_()`` execution has finished before we start running
-``sum(A)`` on a side stream.  The :meth:`torch.Tensor.record_stream` (see for
-more details) ensures that we do not deallocate A before ``sum(A)`` has
-completed.  You can also manually wait on the stream at some later point in
-time with ``torch.cuda.default_stream(cuda).wait_stream(s)`` (note that it
-is pointless to wait immediately, since that will prevent the stream execution
-from running in parallel with other work on the default stream.)  See the
-documentation for :meth:`torch.Tensor.record_stream` on more details on when
-to use one or another.
+هناك إضافتان جديدتان. تضمن مكالمة :meth:`torch.cuda.Stream.wait_stream` أن تنفيذ ``normal_()`` قد انتهى قبل أن نبدأ تشغيل ``sum(A)`` على تيار جانبي. تضمن :meth:`torch.Tensor.record_stream` (راجع التفاصيل للحصول على مزيد من التفاصيل) أننا لا نقوم بإلغاء تخصيص A قبل اكتمال ``sum(A)``. يمكنك أيضًا الانتظار يدويًا على التيار في وقت لاحق باستخدام ``torch.cuda.default_stream(cuda).wait_stream(s)`` (لاحظ أنه من غير المجدي الانتظار فورًا، حيث أن ذلك سيمنع تنفيذ التيار من العمل بشكل متوازٍ مع الأعمال الأخرى على التيار الافتراضي.) راجع وثائق :meth:`torch.Tensor.record_stream` للحصول على مزيد من التفاصيل حول متى يجب استخدام أحدهما أو الآخر.
 
-Note that this synchronization is necessary even when there is no
-read dependency, e.g., as seen in this example::
+لاحظ أن هذه المزامنة ضرورية حتى في حالة عدم وجود تبعية قراءة، كما هو موضح في هذا المثال::
 
     cuda = torch.device('cuda')
-    s = torch.cuda.Stream()  # Create a new stream.
+    s = torch.cuda.Stream()  # إنشاء تيار جديد.
     A = torch.empty((100, 100), device=cuda)
-    s.wait_stream(torch.cuda.default_stream(cuda))  # STILL REQUIRED!
+    s.wait_stream(torch.cuda.default_stream(cuda))  # لا يزال مطلوبًا!
     with torch.cuda.stream(s):
         A.normal_(0.0, 1.0)
         A.record_stream(s)
 
-Despite the computation on ``s`` not reading the contents of ``A`` and no
-other uses of ``A``, it is still necessary to synchronize, because ``A``
-may correspond to memory reallocated by the CUDA caching allocator, with
-pending operations from the old (deallocated) memory.
+على الرغم من أن الحساب على التيار "s" لا يقرأ محتويات "A" ولا توجد استخدامات أخرى لـ "A"، إلا أنه لا يزال من الضروري المزامنة، لأن "A" قد تتوافق مع الذاكرة التي أعاد تخصيصها مخصص ذاكرة التخزين المؤقت CUDA، مع وجود عمليات معلقة من الذاكرة القديمة (الملغاة).
 
 .. _bwd-cuda-stream-semantics:
 
-Stream semantics of backward passes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+دلالة التيار لعمليات التقهقر
+^^^^^^^^^^^^^^^^^^^
 
-Each backward CUDA op runs on the same stream that was used for its corresponding forward op.
-If your forward pass runs independent ops in parallel on different streams,
-this helps the backward pass exploit that same parallelism.
+يتم تشغيل كل عملية تقهقر CUDA على نفس التيار الذي تم استخدامه لعملية التقدير المقابلة.
+إذا قمت بتشغيل عمليات مستقلة بشكل متوازٍ على تيارات مختلفة في التقدير،
+فإن هذا يساعد عملية التقهقر على استغلال نفس الموازاة.
 
-The stream semantics of a backward call with respect to surrounding ops are the same
-as for any other call. The backward pass inserts internal syncs to ensure this even when
-backward ops run on multiple streams as described in the previous paragraph.
-More concretely, when calling
-:func:`autograd.backward<torch.autograd.backward>`,
-:func:`autograd.grad<torch.autograd.grad>`, or
-:meth:`tensor.backward<torch.Tensor.backward>`,
-and optionally supplying CUDA tensor(s) as the  initial gradient(s) (e.g.,
-:func:`autograd.backward(..., grad_tensors=initial_grads)<torch.autograd.backward>`,
-:func:`autograd.grad(..., grad_outputs=initial_grads)<torch.autograd.grad>`, or
-:meth:`tensor.backward(..., gradient=initial_grad)<torch.Tensor.backward>`),
-the acts of
+إن دلالة التيار لمكالمة تقهقر فيما يتعلق بالعمليات المحيطة هي نفسها
+كما هو الحال مع أي مكالمة أخرى. تقوم عملية التقهقر بإدراج مزامنات داخلية لضمان ذلك حتى عند
+تشغيل عمليات التقهقر على تيارات متعددة كما هو موضح في الفقرة السابقة.
+وبشكل أكثر تحديدًا، عند استدعاء
+:func:`autograd.backward<torch.autograd.backward>`،
+:func:`autograd.grad<torch.autograd.grad>`، أو
+:meth:`tensor.backward<torch.Tensor.backward>`،
+واختياريًا توفير Tensor(s) CUDA كـ gradient(s) الأولي (على سبيل المثال،
+:func:`autograd.backward(..., grad_tensors=initial_grads)<torch.autograd.backward>`،
+:func:`autograd.grad(..., grad_outputs=initial_grads)<torch.autograd.grad>`، أو
+:meth:`tensor.backward(..., gradient=initial_grad)<torch.Tensor.backward>`)،
+تتمثل أفعال
 
-1. optionally populating initial gradient(s),
-2. invoking the backward pass, and
-3. using the gradients
+1. اختياريًا، ملء تدرجات أولية،
+2. استدعاء عملية التقهقر، و
+3. استخدام التدرجات
 
-have the same stream-semantics relationship as any group of ops::
+في نفس علاقة دلالة التيار مثل أي مجموعة من العمليات::
 
     s = torch.cuda.Stream()
 
-    # Safe, grads are used in the same stream context as backward()
+    # آمن، يتم استخدام التدرجات في نفس سياق التيار مثل backward()
     with torch.cuda.stream(s):
         loss.backward()
-        use grads
+        استخدم التدرجات
 
-    # Unsafe
+    # غير آمن
     with torch.cuda.stream(s):
         loss.backward()
-    use grads
+    استخدم التدرجات
 
-    # Safe, with synchronization
+    # آمن، مع المزامنة
     with torch.cuda.stream(s):
         loss.backward()
     torch.cuda.current_stream().wait_stream(s)
-    use grads
+    استخدم التدرجات
 
-    # Safe, populating initial grad and invoking backward are in the same stream context
+    # آمن، يتم ملء التدرج الأولي واستدعاء عملية التقهقر في نفس سياق التيار
     with torch.cuda.stream(s):
         loss.backward(gradient=torch.ones_like(loss))
 
-    # Unsafe, populating initial_grad and invoking backward are in different stream contexts,
-    # without synchronization
+    # غير آمن، يتم ملء التدرج الأولي واستدعاء عملية التقهقر في سياقات تيارات مختلفة،
+    # بدون مزامنة
     initial_grad = torch.ones_like(loss)
     with torch.cuda.stream(s):
         loss.backward(gradient=initial_grad)
 
-    # Safe, with synchronization
+    # آمن، مع المزامنة
     initial_grad = torch.ones_like(loss)
     s.wait_stream(torch.cuda.current_stream())
     with torch.cuda.stream(s):
         initial_grad.record_stream(s)
         loss.backward(gradient=initial_grad)
 
-BC note: Using grads on the default stream
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ملاحظة BC: استخدام التدرجات على التيار الافتراضي
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In prior versions of PyTorch (1.9 and earlier), the autograd engine always synced
-the default stream with all backward ops, so the following pattern::
+في الإصدارات السابقة من PyTorch (1.9 والإصدارات الأقدم)، قامت محرك autograd دائمًا بمزامنة
+التيار الافتراضي مع جميع عمليات التقهقر، لذا فإن النمط التالي::
 
     with torch.cuda.stream(s):
         loss.backward()
-    use grads
+    استخدم التدرجات
 
-was safe as long as ``use grads`` happened on the default stream.
-In present PyTorch, that pattern is no longer safe. If ``backward()``
-and ``use grads`` are in different stream contexts, you must sync the streams::
+كان آمنًا طالما حدث "استخدم التدرجات" على التيار الافتراضي.
+في PyTorch الحالي، لم يعد هذا النمط آمنًا. إذا كان "backward()"
+و "استخدم التدرجات" في سياقات تيارات مختلفة، فيجب عليك مزامنة التيارات::
 
     with torch.cuda.stream(s):
         loss.backward()
     torch.cuda.current_stream().wait_stream(s)
-    use grads
+    استخدم التدرجات
 
-even if ``use grads`` is on the default stream.
+حتى إذا كان "استخدم التدرجات" على التيار الافتراضي.
 
 .. _CUDA stream: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams
 
 .. _cuda-memory-management:
 
-Memory management
------------------
+إدارة الذاكرة
+هذا النص بتنسيق ReStructuredText:
 
-PyTorch uses a caching memory allocator to speed up memory allocations. This
-allows fast memory deallocation without device synchronizations. However, the
-unused memory managed by the allocator will still show as if used in
-``nvidia-smi``. You can use :meth:`~torch.cuda.memory_allocated` and
-:meth:`~torch.cuda.max_memory_allocated` to monitor memory occupied by
-tensors, and use :meth:`~torch.cuda.memory_reserved` and
-:meth:`~torch.cuda.max_memory_reserved` to monitor the total amount of memory
-managed by the caching allocator. Calling :meth:`~torch.cuda.empty_cache`
-releases all **unused** cached memory from PyTorch so that those can be used
-by other GPU applications. However, the occupied GPU memory by tensors will not
-be freed so it can not increase the amount of GPU memory available for PyTorch.
+---------------
 
-To better understand how CUDA memory is being used over time,
-:ref:`torch_cuda_memory` describes tools for capturing and visualizing traces of memory use.
+يستخدم PyTorch مخصص ذاكرة مؤقت للتسريع عمليات تخصيص الذاكرة. يسمح ذلك بالإفراج السريع عن الذاكرة دون مزامنات للجهاز. ومع ذلك، فإن الذاكرة غير المستخدمة التي يديرها المخصص ستظهر كما لو كانت مستخدمة في "nvidia-smi". يمكنك استخدام "torch.cuda.memory_allocated" و "torch.cuda.max_memory_allocated" لمراقبة الذاكرة التي تشغلها المصفوفات، واستخدام "torch.cuda.memory_reserved" و "torch.cuda.max_memory_reserved" لمراقبة إجمالي حجم الذاكرة التي يديرها المخصص المؤقت. يؤدي استدعاء "torch.cuda.empty_cache" إلى تحرير كل الذاكرة المؤقتة غير المستخدمة من PyTorch بحيث يمكن استخدامها من قبل تطبيقات GPU الأخرى. ومع ذلك، فإن ذاكرة GPU التي تشغلها المصفوفات لن يتم تحريرها، لذا لا يمكنها زيادة حجم ذاكرة GPU المتاحة لـ PyTorch.
 
-For more advanced users, we offer more comprehensive memory benchmarking via
-:meth:`~torch.cuda.memory_stats`. We also offer the capability to capture a
-complete snapshot of the memory allocator state via
-:meth:`~torch.cuda.memory_snapshot`, which can help you understand the
-underlying allocation patterns produced by your code.
+لفهم أفضل لكيفية استخدام ذاكرة CUDA بمرور الوقت، يوضح القسم المرجعي "torch_cuda_memory" الأدوات الخاصة بالتقاط مخططات استخدام الذاكرة وتصويرها.
+
+بالنسبة للمستخدمين المتقدمين، نقدم معايير أكثر شمولاً لذاكرة GPU من خلال "torch.cuda.memory_stats". كما نقدم القدرة على التقاط لقطة كاملة لحالة مخصص الذاكرة من خلال "torch.cuda.memory_snapshot"، والتي يمكن أن تساعدك على فهم أنماط التخصيص الأساسية التي ينتجها رمزك.
 
 .. _cuda-memory-envvars:
 
-Optimizing memory usage  with ``PYTORCH_CUDA_ALLOC_CONF``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تحسين استخدام الذاكرة باستخدام "PYTORCH_CUDA_ALLOC_CONF"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Use of a caching allocator can interfere with memory checking tools such as
-``cuda-memcheck``.  To debug memory errors using ``cuda-memcheck``, set
-``PYTORCH_NO_CUDA_MEMORY_CACHING=1`` in your environment to disable caching.
+يمكن أن يتعارض استخدام مخصص مؤقت مع أدوات فحص الذاكرة مثل "cuda-memcheck". ولتصحيح أخطاء الذاكرة باستخدام "cuda-memcheck"، قم بتعيين "PYTORCH_NO_CUDA_MEMORY_CACHING=1" في بيئتك لإيقاف التشغيل المؤقت.
 
-The behavior of the caching allocator can be controlled via the environment variable
-``PYTORCH_CUDA_ALLOC_CONF``.
-The format is ``PYTORCH_CUDA_ALLOC_CONF=<option>:<value>,<option2>:<value2>...``
-Available options:
+يمكن التحكم في سلوك المخصص المؤقت عبر المتغير البيئي "PYTORCH_CUDA_ALLOC_CONF". التنسيق هو "PYTORCH_CUDA_ALLOC_CONF=<option>:<value>,<option2>:<value2>...". الخيارات المتاحة:
 
-* ``backend`` allows selecting the underlying allocator implementation.
-  Currently, valid options are ``native``, which uses PyTorch's native
-  implementation, and ``cudaMallocAsync``, which uses
-  `CUDA's built-in asynchronous allocator`_.
-  ``cudaMallocAsync`` requires CUDA 11.4 or newer. The default is ``native``.
-  ``backend`` applies to all devices used by the process, and can't be
-  specified on a per-device basis.
-* ``max_split_size_mb`` prevents the native allocator
-  from splitting blocks larger than this size (in MB). This can reduce
-  fragmentation and may allow some borderline workloads to complete without
-  running out of memory. Performance cost can range from 'zero' to 'substantial'
-  depending on allocation patterns.  Default value is unlimited, i.e. all blocks
-  can be split. The
-  :meth:`~torch.cuda.memory_stats` and
-  :meth:`~torch.cuda.memory_summary` methods are useful for tuning.  This
-  option should be used as a last resort for a workload that is aborting
-  due to 'out of memory' and showing a large amount of inactive split blocks.
-  ``max_split_size_mb`` is only meaningful with ``backend:native``.
-  With ``backend:cudaMallocAsync``, ``max_split_size_mb`` is ignored.
-* ``roundup_power2_divisions`` helps with rounding the requested allocation
-  size to nearest power-2 division and making better use of the blocks. In
-  the native CUDACachingAllocator, the sizes are rounded up in multiple
-  of blocks size of 512, so this works fine for smaller sizes. However, this
-  can be inefficient for large near-by allocations as each will go to different
-  size of blocks and re-use of those blocks are minimized. This might create
-  lots of unused blocks and will waste GPU memory capacity. This option enables
-  the rounding of allocation size to nearest power-2 division. For example, if
-  we need to round-up size of 1200 and if number of divisions is 4,
-  the size 1200 lies between 1024 and 2048 and if we do 4 divisions between
-  them, the values are 1024, 1280, 1536, and 1792. So, allocation size of 1200
-  will be rounded to 1280 as the nearest ceiling of power-2 division.
-  Specify a single value to apply for all allocation sizes or specify an
-  array of key value pairs to set power-2 division individually for each
-  power of two interval. For example to set 1 division for all allocations
-  under 256MB, 2 division for allocations between 256MB and 512MB, 4 divisions
-  for allocations between 512MB and 1GB and 8 divisions for any larger allocations,
-  set the knob value to: [256:1,512:2,1024:4,>:8].
-  ``roundup_power2_divisions`` is only meaningful with ``backend:native``.
-  With ``backend:cudaMallocAsync``, ``roundup_power2_divisions`` is ignored.
-* ``garbage_collection_threshold`` helps actively reclaiming unused GPU memory to
-  avoid triggering expensive sync-and-reclaim-all operation (release_cached_blocks),
-  which can be unfavorable to latency-critical GPU applications (e.g., servers).
-  Upon setting this threshold (e.g., 0.8), the allocator will start reclaiming
-  GPU memory blocks if the GPU memory capacity usage exceeds the threshold (i.e.,
-  80% of the total memory allocated to the GPU application). The algorithm prefers
-  to free old & unused blocks first to avoid freeing blocks that are actively being
-  reused. The threshold value should be between greater than 0.0 and less than 1.0.
-  ``garbage_collection_threshold`` is only meaningful with ``backend:native``.
-  With ``backend:cudaMallocAsync``, ``garbage_collection_threshold`` is ignored.
-* ``expandable_segments`` (experimental, default: `False`) If set to `True`, this setting instructs
-  the allocator to create CUDA allocations that can later be expanded to better handle cases
-  where a job changing allocation sizes frequently, such as having a changing batch size.
-  Normally for large (>2MB) allocations, the allocator calls cudaMalloc to get allocations
-  that are the same size as what the user requests. In the future, parts of these
-  allocations can be reused for other requests if they are free. This works well
-  when the program makes many requests of exactly the same size or of sizes that
-  even multiples of that size. Many deep learning models follow this behavior.
-  However, one common exception is when the batch size changes slightly from one
-  iteration to the next, e.g. in batched inference. When the program runs
-  initially with batch size `N`, it will make allocations appropriate for that size.
-  If in the future, it runs at size `N - 1`, the existing allocations will still be
-  big enough. However, if it runs at size `N + 1`, then it will have to make new
-  allocations that are slightly larger. Not all the tensors are the same size.
-  Some might be `(N + 1)*A` and others `(N + 1)*A*B` where `A` and `B` are some non-batch
-  dimensions in the model. Because the allocator reuses existing allocations when
-  they are big enough, some number of `(N + 1)*A` allocations will actually fit in
-  the already existing `N*B*A` segments, though not perfectly. As the model runs it
-  will partially fill up all of these segments leaving unusable free slices of
-  memory at the end of these segments. The allocator at some point will need to
-  `cudaMalloc` a new `(N + 1)*A*B` segment. If there is not enough memory, there is
-  now no way to recover the slices of memory that are free at the end of existing
-  segments. With models 50+ layers deep, this pattern might repeat 50+ times
-  creating many slivers.
+* "backend" يسمح باختيار تنفيذ مخصص الأساسي. حاليًا، الخيارات الصالحة هي "native"، والتي تستخدم التنفيذ الأصلي لـ PyTorch، و "cudaMallocAsync"، والتي تستخدم مخصص CUDA الأساسي غير المتزامن. يتطلب "cudaMallocAsync" CUDA 11.4 أو أحدث. الافتراضي هو "native". ينطبق "backend" على جميع الأجهزة التي تستخدمها العملية، ولا يمكن تحديدها لكل جهاز على حدة.
 
-  `expandable_segments` allows the allocator to create a segment initially and then
-  expand its size later when more memory is needed. Instead of making one segment
-  per allocation, it tries to make one segment (per stream) that grows as
-  necessary. Now when the `N + 1` case runs, the allocations will tile nicely into
-  the one large segment until it fills up. Then more memory is requested and
-  appended to the end of the segment. This process does not create as many slivers
-  of unusable memory, so it is more likely to succeed at finding this memory.
+* "max_split_size_mb" يمنع المخصص الأصلي من تقسيم الكتل الأكبر من هذا الحجم (بالميغابايت). يمكن أن يقلل ذلك من التجزئة وقد يسمح لبعض أحمال العمل الحدية بالاكتمال دون نفاد الذاكرة. يمكن أن تتراوح التكلفة من "صفر" إلى "كبيرة" اعتمادًا على أنماط التخصيص. القيمة الافتراضية غير محدودة، أي يمكن تقسيم جميع الكتل. تعد طرق "torch.cuda.memory_stats" و "torch.cuda.memory_summary" مفيدة للضبط الدقيق. يجب استخدام هذا الخيار كملاذ أخير لحمل العمل الذي يتم إنهاؤه بسبب "نفاد الذاكرة" ويظهر عددًا كبيرًا من الكتل غير النشطة المقسمة. "max_split_size_mb" له معنى فقط مع "backend:native". مع "backend:cudaMallocAsync"، يتم تجاهل "max_split_size_mb".
 
-  `pinned_use_cuda_host_register` option is a boolean flag that determines whether to
-  use the CUDA API's cudaHostRegister function for allocating pinned memory instead
-  of the default cudaHostAlloc. When set to True, the memory is allocated using regular
-  malloc and then pages are mapped to the memory before calling cudaHostRegister.
-  This pre-mapping of pages helps reduce the lock time during the execution
-  of cudaHostRegister.
+* "roundup_power2_divisions" يساعد في تقريب حجم التخصيص المطلوب إلى أقرب تقسيم لقوة 2 والاستفادة بشكل أفضل من الكتل. في المخصص الأصلي لـ CUDA، يتم تقريب الأحجام إلى أعلى بمضاعفات حجم الكتلة 512، لذا فإن هذا يعمل بشكل جيد للأحجام الصغيرة. ومع ذلك، يمكن أن يكون هذا غير فعال لتخصيصات كبيرة قريبة حيث سيذهب كل منها إلى حجم مختلف من الكتل ويتم تقليل إعادة استخدام تلك الكتل. قد يؤدي هذا إلى إنشاء العديد من الكتل غير المستخدمة وإهدار سعة ذاكرة GPU. يمكّن هذا الخيار تقريب حجم التخصيص إلى أقرب تقسيم لقوة 2. على سبيل المثال، إذا كنا بحاجة إلى تقريب حجم 1200 وإذا كان عدد التقسيمات 4، فإن الحجم 1200 يقع بين 1024 و 2048 وإذا قمنا بـ 4 تقسيمات بينهما، فإن القيم هي 1024 و 1280 و 1536 و 1792. لذلك، سيتم تقريب حجم التخصيص 1200 إلى 1280 كأقرب تقسيم لسقف قوة 2. حدد قيمة واحدة لتطبيقها على جميع أحجام التخصيص أو حدد مصفوفة من أزواج القيم الرئيسية والقيم لضبط قوة 2 بشكل فردي لكل فاصل طاقة اثنين. على سبيل المثال، لتعيين 1 تقسيم لجميع التخصيصات أقل من 256 ميجابايت، و 2 تقسيم للتخصيصات بين 256 ميجابايت و 512 ميجابايت، و 4 تقسيمات للتخصيصات بين 512 ميجابايت و 1 جيجابايت و 8 تقسيمات لأي تخصيصات أكبر، قم بتعيين قيمة المفتاح إلى: [256:1،512:2،1024:4،>:8]. "roundup_power2_divisions" له معنى فقط مع "backend:native". مع "backend:cudaMallocAsync"، يتم تجاهل "roundup_power2_divisions".
 
-  `pinned_num_register_threads` option is only valid when pinned_use_cuda_host_register
-  is set to True. By default, one thread is used to map the pages. This option allows
-  using more threads to parallelize the page mapping operations to reduce the overall
-  allocation time of pinned memory. A good value for this option is 8 based on
-  benchmarking results.
+* "garbage_collection_threshold" يساعد في الاستعادة النشطة لذاكرة GPU غير المستخدمة لتجنب تشغيل عملية sync-and-reclaim-all الباهظة (release_cached_blocks)، والتي قد تكون غير مواتية لتطبيقات GPU الحساسة للاتصال (مثل الخوادم). عند تعيين هذا العتبة (على سبيل المثال، 0.8)، سيبدأ المخصص في استعادة كتل ذاكرة GPU إذا تجاوز استخدام سعة ذاكرة GPU العتبة (أي 80% من إجمالي الذاكرة المخصصة لتطبيق GPU). تفضل الخوارزمية تحرير الكتل القديمة وغير المستخدمة أولاً لتجنب تحرير الكتل التي يجري إعادة استخدامها بشكل نشط. يجب أن تكون قيمة العتبة أكبر من 0.0 وأقل من 1.0. "garbage_collection_threshold" له معنى فقط مع "backend:native". مع "backend:cudaMallocAsync"، يتم تجاهل "garbage_collection_threshold".
+
+* "expandable_segments" (تجريبي، الافتراضي: "False") إذا تم تعيينه على "True"، فإن هذا الإعداد يوجه المخصص إلى إنشاء تخصيصات CUDA يمكن توسيعها لاحقًا للتعامل بشكل أفضل مع الحالات التي تتغير فيها أحجام التخصيص بشكل متكرر، مثل وجود حجم دفعة متغير. عادةً ما يقوم المخصص، بالنسبة للتخصيصات الكبيرة (>2 ميجابايت)، باستدعاء "cudaMalloc" للحصول على تخصيصات بنفس حجم ما يطلبه المستخدم. في المستقبل، يمكن إعادة استخدام أجزاء من هذه التخصيصات لطلبات أخرى إذا كانت مجانية. يعمل هذا بشكل جيد عندما يقوم البرنامج بالعديد من الطلبات بنفس الحجم تمامًا أو بأحجام تكون مضاعفات لذلك الحجم. يتبع العديد من نماذج التعلم العميق هذا السلوك. ومع ذلك، فإن أحد الاستثناءات الشائعة هو عندما يتغير حجم الدفعة قليلاً من تكرار إلى آخر، على سبيل المثال في الاستدلال بالدفعات. عندما يعمل البرنامج في البداية بحجم دفعة "N"، فإنه سيقوم بعمليات تخصيص مناسبة لذلك الحجم. إذا قام في المستقبل بتشغيله بحجم "N - 1"، فستظل التخصيصات الموجودة كبيرة بما يكفي. ومع ذلك، إذا تم تشغيله بحجم "N + 1"، فسيتعين عليه إجراء تخصيصات جديدة أكبر قليلاً. ليست جميع المصفوفات بنفس الحجم. قد يكون البعض "(N + 1) * A" والبعض الآخر "(N + 1) * A * B" حيث "A" و "B" هما بعض الأبعاد غير الدفعية في النموذج. نظرًا لأن المخصص يعيد استخدام التخصيصات الموجودة عندما تكون كبيرة بما يكفي، فإن بعض عدد المصفوفات من النوع "(N + 1) * A" ستتناسب بالفعل مع المقاطع الموجودة مسبقًا "N * B * A"، على الرغم من عدم كمالها. مع تشغيل النموذج، فإنه سيملأ جزئيًا جميع هذه المقاطع تاركًا شرائح ذاكرة غير مستخدمة في نهاية هذه المقاطع. في مرحلة ما، سيتعين على المخصص استدعاء "cudaMalloc" لمقطع جديد من النوع "(N + 1) * A * B". إذا لم تكن هناك ذاكرة كافية، فلن يكون هناك الآن طريقة لاسترداد شرائح الذاكرة الحرة في نهاية المقاطع الموجودة. مع النماذج التي يزيد عمقها عن 50 طبقة، قد يتكرر هذا النمط 50 مرة أو أكثر مما يؤدي إلى إنشاء العديد من الشرائح.
+
+  يسمح "expandable_segments" للمخصص بإنشاء مقطع في البداية ثم توسيعه لاحقًا عند الحاجة إلى المزيد من الذاكرة. بدلاً من إجراء تخصيص واحد لكل تخصيص، فإنه يحاول إجراء تخصيص واحد (لكل تدفق) ينمو حسب الضرورة. الآن عندما يتم تشغيل حالة "N + 1"، ستتبلط المخصصات بشكل جميل في المقطع الكبير الواحد حتى تمتلئ. ثم يتم طلب المزيد من الذاكرة وإلحاقها بنهاية المقطع. لا تخلق هذه العملية العديد من شرائح الذاكرة غير المستخدمة، لذا فمن المرجح أن تنجح في العثور على هذه الذاكرة.
+
+  "pinned_use_cuda_host_register" هو علم منطقي يحدد ما إذا كان سيتم استخدام دالة "cudaHostRegister" من واجهة برمجة تطبيقات CUDA لتخصيص الذاكرة المثبتة بدلاً من "cudaHostAlloc" الافتراضية. عند تعيينه إلى "True"، يتم تخصيص الذاكرة باستخدام "malloc" العادي، ثم يتم تعيين الصفحات إلى الذاكرة قبل استدعاء "cudaHostRegister". تساعد عملية تعيين الصفحات المسبقة هذه في تقليل وقت القفل أثناء تنفيذ "cudaHostRegister".
+
+  "pinned_num_register_threads" صالح فقط عندما يكون "pinned_use_cuda_host_register" تعيينه على "True". افتراضيًا، يتم استخدام خيط واحد لتعيين الصفحات. يسمح هذا الخيار باستخدام المزيد من الخيوط لتوازي عمليات تعيين الصفحة لتقليل وقت التخصيص الإجمالي للذاكرة المثبتة. وفقًا لنتائج المعايرة، فإن القيمة الجيدة لهذا الخيار هي 8.
 
 .. note::
 
-    Some stats reported by the
-    :ref:`CUDA memory management API<cuda-memory-management-api>`
-    are specific to ``backend:native``, and are not meaningful with
-    ``backend:cudaMallocAsync``.
-    See each function's docstring for details.
+    بعض الإحصاءات التي يبلغ عنها واجهة برمجة تطبيقات إدارة ذاكرة CUDA محددة لـ "backend:native"، وليس لها معنى مع "backend:cudaMallocAsync".
+    راجع توثيق الدالة للحصول على التفاصيل.
 
 .. _CUDA's built-in asynchronous allocator:
     https://developer.nvidia.com/blog/using-cuda-stream-ordered-memory-allocator-part-1/
 
 .. _cuda-memory-custom-allocator:
 
-Using custom memory allocators for CUDA
----------------------------------------
+استخدام مخصصات ذاكرة CUDA مخصصة
+---------------------------------
 
-It is possible to define allocators as simple functions in C/C++ and compile
-them as a shared library, the code below shows a basic allocator that just
-traces all the memory operations.
+من الممكن تحديد مخصصات كدالات بسيطة في C/C++ وتجميعها كمكتبة مشتركة، ويوضح الكود أدناه مخصصًا أساسيًا يقوم فقط بتتبع جميع عمليات الذاكرة.
 
 .. code:: C++
 
@@ -568,9 +419,7 @@ traces all the memory operations.
    }
 
 
-This can be used in python through the :class:`torch.cuda.memory.CUDAPluggableAllocator`.
-The user is responsible for supplying the path to the `.so` file and the name
-of the alloc/free functions that match the signatures specified above.
+يمكن استخدام هذا في Python من خلال "torch.cuda.memory.CUDAPluggableAllocator". يتحمل المستخدم مسؤولية توفير المسار إلى ملف ".so" وأسماء دالات "alloc" و "free" التي تتطابق مع التواقيع المحددة أعلاه.
 
 .. code:: python
 
@@ -581,7 +430,7 @@ of the alloc/free functions that match the signatures specified above.
        'alloc.so', 'my_malloc', 'my_free')
    # Swap the current allocator
    torch.cuda.memory.change_current_allocator(new_alloc)
-   # This will allocate memory in the device using the new allocator
+   # This will allocate memory on the device using the new allocator
    b = torch.zeros(10, device='cuda')
 
 
@@ -599,80 +448,44 @@ of the alloc/free functions that match the signatures specified above.
 
 .. cublas-workspaces:
 
-cuBLAS workspaces
+مساحات عمل cuBLAS
 -----------------
 
-For each combination of cuBLAS handle and CUDA stream, a cuBLAS workspace will be allocated
-if that handle and stream combination executes a cuBLAS kernel that requires a workspace.
-In order to avoid repeatedly allocating workspaces, these workspaces are not deallocated unless
-``torch._C._cuda_clearCublasWorkspaces()`` is called. The workspace size per allocation can be
-specified via the environment variable ``CUBLAS_WORKSPACE_CONFIG`` with the format ``:[SIZE]:[COUNT]``.
-As an example, the default workspace size per allocation is ``CUBLAS_WORKSPACE_CONFIG=:4096:2:16:8``
-which specifies a total size of ``2 * 4096 + 8 * 16 KiB``. To force cuBLAS to avoid using workspaces,
-set ``CUBLAS_WORKSPACE_CONFIG=:0:0``.
+بالنسبة لكل مجموعة من مقبض cuBLAS وتدفق CUDA، سيتم تخصيص مساحة عمل cuBLAS إذا نفذت تلك المجموعة من المقبض والتدفق نواة cuBLAS التي تتطلب مساحة عمل. لتجنب تخصيص مساحات العمل بشكل متكرر، لا يتم إلغاء تخصيص مساحات العمل هذه إلا إذا تم استدعاء "torch._C._cuda_clearCublasWorkspaces()". يمكن تحديد حجم مساحة العمل لكل تخصيص عبر المتغير البيئي "CUBLAS_WORKSPACE_CONFIG" بالتنسيق ":[SIZE]:[COUNT]". على سبيل المثال، حجم مساحة العمل الافتراضي لكل تخصيص هو "CUBLAS_WORKSPACE_CONFIG=:4096:2:16:8" والذي يحدد حجمًا إجماليًا يبلغ "2 * 4096 + 8 * 16 KiB". لإجبار cuBLAS على تجنب استخدام مساحات العمل، قم بتعيين "CUBLAS_WORKSPACE_CONFIG=:0:0".
 
 .. _cufft-plan-cache:
 
-cuFFT plan cache
-----------------
+ذاكرة التخزين المؤقت لخطة cuFFT
+بالنسبة لكل جهاز CUDA، يتم استخدام ذاكرة تخزين مؤقت LRU لخطط cuFFT لتسريع تشغيل طرق FFT المتكررة (مثل: func:`torch.fft.fft`) على مصفوفات CUDA من نفس الهندسة بنفس التكوين. نظرًا لأن بعض خطط cuFFT قد تخصص ذاكرة GPU، فإن ذاكرات التخزين المؤقت هذه لها سعة قصوى.
 
-For each CUDA device, an LRU cache of cuFFT plans is used to speed up repeatedly
-running FFT methods (e.g., :func:`torch.fft.fft`) on CUDA tensors of same geometry
-with same configuration. Because some cuFFT plans may allocate GPU memory,
-these caches have a maximum capacity.
+يمكنك التحكم في خصائص ذاكرة التخزين المؤقت للجهاز الحالي والاستعلام عنها باستخدام واجهات برمجة التطبيقات التالية:
 
-You may control and query the properties of the cache of current device with
-the following APIs:
+* ``torch.backends.cuda.cufft_plan_cache.max_size`` يعطي سعة ذاكرة التخزين المؤقت (افتراضي هو 4096 في CUDA 10 والإصدارات الأحدث، و 1023 في الإصدارات الأقدم من CUDA). يؤدي تعيين هذه القيمة مباشرة إلى تعديل السعة.
 
-* ``torch.backends.cuda.cufft_plan_cache.max_size`` gives the capacity of the
-  cache (default is 4096 on CUDA 10 and newer, and 1023 on older CUDA versions).
-  Setting this value directly modifies the capacity.
+* ``torch.backends.cuda.cufft_plan_cache.size`` يعطي عدد الخطط الموجودة حاليًا في ذاكرة التخزين المؤقت.
 
-* ``torch.backends.cuda.cufft_plan_cache.size`` gives the number of plans
-  currently residing in the cache.
+* ``torch.backends.cuda.cufft_plan_cache.clear()`` يقوم بمسح ذاكرة التخزين المؤقت.
 
-* ``torch.backends.cuda.cufft_plan_cache.clear()`` clears the cache.
-
-To control and query plan caches of a non-default device, you can index the
-``torch.backends.cuda.cufft_plan_cache`` object with either a :class:`torch.device`
-object or a device index, and access one of the above attributes. E.g., to set
-the capacity of the cache for device ``1``, one can write
-``torch.backends.cuda.cufft_plan_cache[1].max_size = 10``.
+لمراقبة ذاكرات التخزين المؤقت للخطة واستعلامها لجهاز غير افتراضي، يمكنك فهرسة كائن "torch.backends.cuda.cufft_plan_cache" إما باستخدام كائن "جهاز" أو فهرس جهاز، والوصول إلى أحد السمات المذكورة أعلاه. على سبيل المثال، لتعيين سعة ذاكرة التخزين المؤقت للجهاز "1"، يمكنك كتابة "torch.backends.cuda.cufft_plan_cache[1].max_size = 10".
 
 .. _cuda-just-in-time-compilation:
 
-Just-in-Time Compilation
-------------------------
+الترجمة الآنية
+----------
 
-PyTorch just-in-time compiles some operations, like torch.special.zeta, when
-performed on CUDA tensors. This compilation can be time consuming
-(up to a few seconds depending on your hardware and software)
-and may occur multiple times for a single operator since many PyTorch operators actually
-select from a variety of kernels, each of which must be compiled once, depending on their input.
-This compilation occurs once per process, or just once if a kernel cache is used.
+يقوم PyTorch بالترجمة الآنية لبعض العمليات، مثل torch.special.zeta، عند تنفيذها على مصفوفات CUDA. يمكن أن تكون هذه الترجمة مكلفة من حيث الوقت (حتى بضع ثوانٍ اعتمادًا على الأجهزة والبرامج الخاصة بك) وقد تحدث عدة مرات لمشغل واحد نظرًا لأن العديد من مشغلات PyTorch تقوم بالفعل باختيار مجموعة متنوعة من النواة، ويجب تجميع كل منها مرة واحدة، اعتمادًا على مدخلاتها. تحدث هذه الترجمة مرة واحدة لكل عملية، أو مرة واحدة فقط إذا تم استخدام ذاكرة تخزين مؤقت للنواة.
 
-By default, PyTorch creates a kernel cache in $XDG_CACHE_HOME/torch/kernels if
-XDG_CACHE_HOME is defined and $HOME/.cache/torch/kernels if it's not (except on Windows,
-where the kernel cache is not yet supported). The caching behavior can be directly
-controlled with two environment variables. If USE_PYTORCH_KERNEL_CACHE is set to 0 then no
-cache will be used, and if PYTORCH_KERNEL_CACHE_PATH is set then that path will be used
-as a kernel cache instead of the default location.
+بشكل افتراضي، يقوم PyTorch بإنشاء ذاكرة تخزين مؤقت للنواة في $XDG_CACHE_HOME/torch/kernels إذا تم تعريف XDG_CACHE_HOME وفي $HOME/.cache/torch/kernels إذا لم يكن كذلك (باستثناء Windows، حيث لا يتم دعم ذاكرة التخزين المؤقت للنواة بعد). يمكن التحكم في سلوك التخزين المؤقت مباشرة باستخدام متغيرين من متغيرات البيئة. إذا تم تعيين USE_PYTORCH_KERNEL_CACHE على 0، فلن يتم استخدام أي ذاكرة تخزين مؤقت، وإذا تم تعيين PYTORCH_KERNEL_CACHE_PATH، فسيتم استخدام هذا المسار كذاكرة تخزين مؤقت للنواة بدلاً من الموقع الافتراضي.
 
-Best practices
+أفضل الممارسات
 --------------
 
-Device-agnostic code
+رمز غير مرتبط بالجهاز
 ^^^^^^^^^^^^^^^^^^^^
 
-Due to the structure of PyTorch, you may need to explicitly write
-device-agnostic (CPU or GPU) code; an example may be creating a new tensor as
-the initial hidden state of a recurrent neural network.
+بسبب بنية PyTorch، قد تحتاج إلى كتابة رمز غير مرتبط بالجهاز (CPU أو GPU) صراحةً؛ قد يكون أحد الأمثلة هو إنشاء مصفوفة جديدة كحالة مخفية أولية لشبكة عصبية متكررة.
 
-The first step is to determine whether the GPU should be used or not. A common
-pattern is to use Python's ``argparse`` module to read in user arguments, and
-have a flag that can be used to disable CUDA, in combination with
-:meth:`~torch.cuda.is_available`. In the following, ``args.device`` results in a
-:class:`torch.device` object that can be used to move tensors to CPU or CUDA.
+الخطوة الأولى هي تحديد ما إذا كان يجب استخدام GPU أم لا. نمط شائع هو استخدام وحدة "argparse" في Python لقراءة الحجج المقدمة من المستخدم، وامتلاك علم يمكن استخدامه لتعطيل CUDA، بالاقتران مع: meth:`~torch.cuda.is_available`. في ما يلي، يؤدي "args.device" إلى كائن "جهاز" يمكن استخدامه لنقل المصفوفات إلى CPU أو CUDA.
 
 ::
 
@@ -691,34 +504,22 @@ have a flag that can be used to disable CUDA, in combination with
 
 .. note::
 
-    When assessing the availability of CUDA in a given environment (:meth:`~torch.cuda.is_available`), PyTorch's default
-    behavior is to call the CUDA Runtime API method `cudaGetDeviceCount`_. Because this call in turn initializes the
-    CUDA Driver API (via `cuInit`_) if it is not already initialized, subsequent forks of a process that has run
-    :meth:`~torch.cuda.is_available` will fail with a CUDA initialization error.
+    عند تقييم توفر CUDA في بيئة معينة (:meth:`~torch.cuda.is_available`)، يكون السلوك الافتراضي لـ PyTorch هو استدعاء طريقة CUDA Runtime API `cudaGetDeviceCount`_. نظرًا لأن هذه المكالمة تقوم بدورها بتinitializing CUDA Driver API (عبر `cuInit`_) إذا لم يتم initializingها بالفعل، فإن الفروع اللاحقة لعملية تم تشغيلها: meth:`~torch.cuda.is_available` ستفشل مع خطأ تهيئة CUDA.
 
-    One can set ``PYTORCH_NVML_BASED_CUDA_CHECK=1`` in your environment before importing PyTorch modules that execute
-    :meth:`~torch.cuda.is_available` (or before executing it directly) in order to direct
-    :meth:`~torch.cuda.is_available` to attempt an NVML-based assessment (`nvmlDeviceGetCount_v2`_). If the
-    NVML-based assessment is successful (i.e. NVML discovery/initialization does not fail),
-    :meth:`~torch.cuda.is_available` calls will not poison subsequent forks.
+    يمكنك تعيين "PYTORCH_NVML_BASED_CUDA_CHECK=1" في بيئتك قبل استيراد وحدات PyTorch التي تنفذ: meth:`~torch.cuda.is_available` (أو قبل تنفيذها مباشرةً) لتوجيه: meth:`~torch.cuda.is_available` لمحاولة تقييم قائم على NVML (`nvmlDeviceGetCount_v2`_). إذا نجح التقييم القائم على NVML (أي اكتشاف/تهيئة NVML لا يفشل)، فلن تسمم مكالمات: meth:`~torch.cuda.is_available` الفروع اللاحقة.
 
-    If NVML discovery/initialization fails, :meth:`~torch.cuda.is_available` will fallback to the standard CUDA Runtime
-    API assessment and the aforementioned fork constraint will apply.
+    إذا فشل اكتشاف/تهيئة NVML، فسيتم استخدام: meth:`~torch.cuda.is_available` للتراجع إلى تقييم CUDA Runtime API الافتراضي وسينطبق قيد التفرع المذكور أعلاه.
 
-    Note that the above NVML-based CUDA availability assessment provides a weaker guarantee than the default CUDA
-    Runtime API approach (which requires CUDA initialization to succeed). In some circumstances, the NVML-based check
-    may succeed while later CUDA initialization fails.
+    لاحظ أن فحص توفر CUDA القائم على NVML أعلاه يوفر ضمانًا أضعف من نهج CUDA Runtime API الافتراضي (الذي يتطلب نجاح تهيئة CUDA). في بعض الظروف، قد ينجح الفحص القائم على NVML بينما تفشل تهيئة CUDA لاحقًا.
 
-Now that we have ``args.device``, we can use it to create a Tensor on the
-desired device.
+الآن بعد أن أصبح لدينا "args.device"، يمكننا استخدامه لإنشاء مصفوفة على الجهاز المطلوب.
 
 ::
 
     x = torch.empty((8, 42), device=args.device)
     net = Network().to(device=args.device)
 
-This can be used in a number of cases to produce device agnostic code. Below
-is an example when using a dataloader:
+يمكن استخدام هذا في عدد من الحالات لإنتاج رمز غير مرتبط بالجهاز. فيما يلي مثال عند استخدام برنامج تحميل البيانات:
 
 ::
 
@@ -726,10 +527,7 @@ is an example when using a dataloader:
     for i, x in enumerate(train_loader):
         x = x.to(cuda0)
 
-When working with multiple GPUs on a system, you can use the
-``CUDA_VISIBLE_DEVICES`` environment flag to manage which GPUs are available to
-PyTorch. As mentioned above, to manually control which GPU a tensor is created
-on, the best practice is to use a :any:`torch.cuda.device` context manager.
+عند العمل باستخدام وحدات معالجة الرسومات المتعددة على نظام، يمكنك استخدام علم البيئة "CUDA_VISIBLE_DEVICES" لإدارة وحدات معالجة الرسومات المتوفرة لـ PyTorch. كما ذُكر أعلاه، للتحكم يدويًا في وحدة معالجة الرسومات التي يتم إنشاء مصفوفة عليها، فإن أفضل ممارسة هي استخدام سياق "جهاز" "torch.cuda.device".
 
 ::
 
@@ -738,16 +536,10 @@ on, the best practice is to use a :any:`torch.cuda.device` context manager.
         print("Inside device is 1")  # On device 1
     print("Outside device is still 0")  # On device 0
 
-If you have a tensor and would like to create a new tensor of the same type on
-the same device, then you can use a ``torch.Tensor.new_*`` method
-(see :class:`torch.Tensor`).
-Whilst the previously mentioned ``torch.*`` factory functions
-(:ref:`tensor-creation-ops`) depend on the current GPU context and
-the attributes arguments you pass in, ``torch.Tensor.new_*`` methods preserve
-the device and other attributes of the tensor.
+إذا كان لديك مصفوفة وترغب في إنشاء مصفوفة جديدة من نفس النوع على نفس الجهاز، فيمكنك استخدام طريقة "torch.Tensor.new_*" (راجع: class:`torch.Tensor`).
+في حين أن وظائف "torch.*" المذكورة أعلاه تعتمد على سياق GPU الحالي وحجج السمات التي تقوم بتمريرها، فإن طرق "torch.Tensor.new_*" تحافظ على الجهاز والسمات الأخرى للمصفوفة.
 
-This is the recommended practice when creating modules in which new
-tensors need to be created internally during the forward pass.
+هذه هي الممارسة الموصى بها عند إنشاء وحدات يتم فيها إنشاء مصفوفات جديدة داخليًا أثناء التمرير للأمام.
 
 ::
 
@@ -776,10 +568,7 @@ tensors need to be created internally during the forward pass.
         tensor([[ 1,  2,  3]])
 
 
-If you want to create a tensor of the same type and size of another tensor, and
-fill it with either ones or zeros, :meth:`~torch.ones_like` or
-:meth:`~torch.zeros_like` are provided as convenient helper functions (which
-also preserve :class:`torch.device` and :class:`torch.dtype` of a Tensor).
+إذا كنت تريد إنشاء مصفوفة من نفس النوع والحجم لمصفوفة أخرى، وملؤها إما بواحد أو صفر، فيتم توفير: meth:`~torch.ones_like` أو: meth:`~torch.zeros_like` كدالات مساعدة مريحة (والتي تحافظ أيضًا على: class:`torch.device` و: class:`torch.dtype` لمصفوفة).
 
 ::
 
@@ -792,54 +581,33 @@ also preserve :class:`torch.device` and :class:`torch.dtype` of a Tensor).
 
 .. _cuda-memory-pinning:
 
-Use pinned memory buffers
-^^^^^^^^^^^^^^^^^^^^^^^^^
+استخدم مخازن الذاكرة المؤقتة للذاكرة المثبتة
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. warning::
 
-    This is an advanced tip. If you overuse pinned memory, it can cause serious
-    problems when running low on RAM, and you should be aware that pinning is
-    often an expensive operation.
+    هذه نصيحة متقدمة. إذا قمت بالإفراط في استخدام الذاكرة المثبتة، فقد يتسبب ذلك في مشكلات خطيرة عند انخفاض RAM، ويجب أن تكون على دراية بأن التثبيت غالبًا ما يكون عملية مكلفة.
 
-Host to GPU copies are much faster when they originate from pinned (page-locked)
-memory. CPU tensors and storages expose a :meth:`~torch.Tensor.pin_memory`
-method, that returns a copy of the object, with data put in a pinned region.
+تكون النسخ من المضيف إلى GPU أسرع بكثير عندما تنشأ من ذاكرة مثبتة (صفحة مقفلة). تعرض المصفوفات وتخزينات CPU طريقة: meth:`~torch.Tensor.pin_memory`، والتي تعيد نسخة من الكائن، مع وضع البيانات في منطقة مثبتة.
 
-Also, once you pin a tensor or storage, you can use asynchronous GPU copies.
-Just pass an additional ``non_blocking=True`` argument to a
-:meth:`~torch.Tensor.to` or a :meth:`~torch.Tensor.cuda` call. This can be used
-to overlap data transfers with computation.
+أيضًا، بمجرد تثبيت مصفوفة أو تخزين، يمكنك استخدام نسخ GPU غير المتزامن. ما عليك سوى تمرير حجة "non_blocking=True" إضافية إلى مكالمة: meth:`~torch.Tensor.to` أو: meth:`~torch.Tensor.cuda`. يمكن استخدام هذا لتشغيل عمليات النقل بالبيانات مع الحساب.
 
-You can make the :class:`~torch.utils.data.DataLoader` return batches placed in
-pinned memory by passing ``pin_memory=True`` to its constructor.
+يمكنك جعل "DataLoader" يعيد الدفعات الموجودة في ذاكرة التخزين المؤقت المثبتة عن طريق تمرير "pin_memory=True" إلى الباني الخاص به.
 
 .. _cuda-nn-ddp-instead:
 
-Use nn.parallel.DistributedDataParallel instead of multiprocessing or nn.DataParallel
+استخدم nn.parallel.DistributedDataParallel بدلاً من multiprocessing أو nn.DataParallel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Most use cases involving batched inputs and multiple GPUs should default to
-using :class:`~torch.nn.parallel.DistributedDataParallel` to utilize more
-than one GPU.
+يجب أن تكون معظم حالات الاستخدام التي تتضمن إدخالات مجمعة وعدة وحدات معالجة الرسومات الافتراضية لاستخدام: class:`~torch.nn.parallel.DistributedDataParallel` لاستخدام أكثر من وحدة معالجة الرسومات.
 
-There are significant caveats to using CUDA models with
-:mod:`~torch.multiprocessing`; unless care is taken to meet the data handling
-requirements exactly, it is likely that your program will have incorrect or
-undefined behavior.
+هناك تحذيرات كبيرة لاستخدام نماذج CUDA مع: mod:`~torch.multiprocessing`؛ ما لم يتم توخي الحذر لتلبية متطلبات التعامل مع البيانات بالضبط، فمن المحتمل أن يكون لبرنامجك سلوك غير صحيح أو غير محدد.
 
-It is recommended to use :class:`~torch.nn.parallel.DistributedDataParallel`,
-instead of :class:`~torch.nn.DataParallel` to do multi-GPU training, even if
-there is only a single node.
+يوصى باستخدام: class:`~torch.nn.parallel.DistributedDataParallel`، بدلاً من: class:`~torch.nn.DataParallel` للقيام بالتدريب متعدد وحدات معالجة الرسومات، حتى إذا كان هناك عقدة واحدة فقط.
 
-The difference between :class:`~torch.nn.parallel.DistributedDataParallel` and
-:class:`~torch.nn.DataParallel` is: :class:`~torch.nn.parallel.DistributedDataParallel`
-uses multiprocessing where a process is created for each GPU, while
-:class:`~torch.nn.DataParallel` uses multithreading. By using multiprocessing,
-each GPU has its dedicated process, this avoids the performance overhead caused
-by GIL of Python interpreter.
+الفرق بين: class:`~torch.nn.parallel.DistributedDataParallel` و: class:`~torch.nn.DataParallel` هو: يستخدم: class:`~torch.nn.parallel.DistributedDataParallel` multiprocessing حيث يتم إنشاء عملية لكل وحدة معالجة الرسومات، بينما يستخدم: class:`~torch.nn.DataParallel` multithreading. من خلال استخدام multiprocessing، يكون لكل وحدة معالجة الرسومات عملية مخصصة، مما يتجنب التكاليف العامة للأداء التي يسببها GIL لمفسر Python.
 
-If you use :class:`~torch.nn.parallel.DistributedDataParallel`, you could use
-`torch.distributed.launch` utility to launch your program, see :ref:`distributed-launch`.
+إذا كنت تستخدم: class:`~torch.nn.parallel.DistributedDataParallel`، فيمكنك استخدام أداة "torch.distributed.launch" لبدء تشغيل برنامجك، راجع: ref:`distributed-launch`.
 
 .. _cudaGetDeviceCount:
     https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html#group__CUDART__DEVICE_1g18808e54893cfcaafefeab31a73cc55f
@@ -852,290 +620,266 @@ If you use :class:`~torch.nn.parallel.DistributedDataParallel`, you could use
 
 .. _cuda-graph-semantics:
 
-CUDA Graphs
+مخططات CUDA
 -----------
 
-A CUDA graph is a record of the work (mostly kernels and their arguments) that a
-CUDA stream and its dependent streams perform.
-For general principles and details on the underlying CUDA API, see
-`Getting Started with CUDA Graphs`_ and the
-`Graphs section`_ of the CUDA C Programming Guide.
+تسجيل CUDA هو سجل للعمل (معظمه نوى وحججها) الذي يؤديه تيار CUDA والتدفقات التابعة له.
+لمبادئ وتفاصيل عامة حول واجهة برمجة التطبيقات CUDA الأساسية، راجع
+`البدء مع رسومات CUDA`_ و
+قسم الرسومات`_ من دليل برمجة CUDA C.
 
-PyTorch supports the construction of CUDA graphs using `stream capture`_, which puts a
-CUDA stream in *capture mode*. CUDA work issued to a capturing stream doesn't actually
-run on the GPU. Instead, the work is recorded in a graph.
+يدعم PyTorch إنشاء رسومات CUDA باستخدام `التقاط التدفق`_، والذي يضع
+تيار CUDA في *وضع التقاط*. لا يتم تشغيل العمل CUDA الصادر إلى تيار التقاط فعليًا
+على وحدة معالجة الرسومات. بدلاً من ذلك، يتم تسجيل العمل في رسم بياني.
 
-After capture, the graph can be *launched* to run the GPU work as many times as needed.
-Each replay runs the same kernels with the same arguments. For pointer arguments this
-means the same memory addresses are used.
-By filling input memory with new data (e.g., from a new batch) before each replay,
-you can rerun the same work on new data.
+بعد الالتقاط، يمكن *إطلاق* الرسم البياني لتشغيل عمل وحدة معالجة الرسومات (GPU) حسب الحاجة.
+يقوم كل إعادة تشغيل بتشغيل نفس النواة بنفس الحجج. بالنسبة للحجج المؤشر،
+هذا يعني استخدام نفس عناوين الذاكرة.
+من خلال ملء ذاكرة الإدخال ببيانات جديدة (على سبيل المثال، من دفعة جديدة) قبل كل إعادة تشغيل،
+يمكنك إعادة تشغيل نفس العمل على بيانات جديدة.
 
-Why CUDA Graphs?
-^^^^^^^^^^^^^^^^
+لماذا الرسوم البيانية CUDA؟
+^^^^^^^^^^^^^^^^^^^^
 
-Replaying a graph sacrifices the dynamic flexibility of typical eager execution in exchange for
-**greatly reduced CPU overhead**. A graph's arguments and kernels are fixed, so a graph replay
-skips all layers of argument setup and kernel dispatch, including Python, C++, and CUDA driver
-overheads. Under the hood, a replay submits the entire graph's work to the GPU with
-a single call to `cudaGraphLaunch`_.  Kernels in a replay also execute slightly faster
-on the GPU, but eliding CPU overhead is the main benefit.
+يعوض إعادة تشغيل الرسم التضحية بالمرونة الديناميكية للتنفيذ الحريص المعتاد مقابل
+**انخفاض كبير في عبء العمل على وحدة المعالجة المركزية**. يتم تثبيت حجج الرسم البياني والنواة،
+لذلك تخطي إعادة تشغيل الرسم البياني جميع طبقات إعداد الحجة ونشر النواة، بما في ذلك
+الأحمال الزائدة لـ Python وC++ وCUDA. تحت الغطاء، يقدم إعادة التشغيل عمل الرسم البياني بالكامل
+إلى وحدة معالجة الرسومات (GPU) بمكالمة واحدة إلى `cudaGraphLaunch`_. أيضًا،
+تنفذ النواة في إعادة التشغيل بشكل أسرع قليلاً على وحدة معالجة الرسومات (GPU)،
+ولكن التخلص من عبء العمل على وحدة المعالجة المركزية (CPU) هو الفائدة الرئيسية.
 
-You should try CUDA graphs if all or part of your network is graph-safe (usually this means
-static shapes and static control flow, but see the other :ref:`constraints<capture-constraints>`)
-and you suspect its runtime is at least somewhat CPU-limited.
+يجب عليك تجربة الرسوم البيانية CUDA إذا كانت شبكتك بأكملها أو جزء منها آمنة للرسوم البيانية
+(غالبًا ما يعني ذلك أشكالًا ثابتة وتدفق تحكم ثابتًا، ولكن راجع
+القيود الأخرى: ref: <capture-constraints>)
+وتشتبه في أن وقت تشغيلها محدود على الأقل إلى حد ما بوحدة المعالجة المركزية.
 
 .. _Getting Started with CUDA Graphs:
-    https://developer.nvidia.com/blog/cuda-graphs/
+   https://developer.nvidia.com/blog/cuda-graphs/
 .. _Graphs section:
-    https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-graphs
+   https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-graphs
 .. _stream capture:
-    https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#creating-a-graph-using-stream-capture
+   https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#creating-a-graph-using-stream-capture
 .. _cudaGraphLaunch:
-    https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__GRAPH.html#group__CUDART__GRAPH_1g1accfe1da0c605a577c22d9751a09597
+   https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__GRAPH.html#group__CUDART__GRAPH_1g1accfe1da0c605a577c22d9751a09597
 
-PyTorch API
-^^^^^^^^^^^
+واجهة برمجة التطبيقات PyTorch
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. warning::
-    This API is in beta and may change in future releases.
+   هذه الواجهة في الإصدار التجريبي وقد تتغير في الإصدارات المستقبلية.
 
-PyTorch exposes graphs via a raw :class:`torch.cuda.CUDAGraph` class
-and two convenience wrappers,
-:class:`torch.cuda.graph` and
-:class:`torch.cuda.make_graphed_callables`.
+يكشف PyTorch عن الرسوم البيانية عبر فئة :class: `torch.cuda.CUDAGraph` الخام
+وملصقين مريحين،
+:class: `torch.cuda.graph` و
+:class: `torch.cuda.make_graphed_callables`.
 
-:class:`torch.cuda.graph` is a simple, versatile context manager that
-captures CUDA work in its context.
-Before capture, warm up the workload to be captured by running
-a few eager iterations. Warmup must occur on a side stream.
-Because the graph reads from and writes to the same memory addresses in every
-replay, you must maintain long-lived references to tensors that hold
-input and output data during capture.
-To run the graph on new input data, copy new data to the capture's input tensor(s),
-replay the graph, then read the new output from the capture's output tensor(s).
-Example::
+:class: `torch.cuda.graph` هو مدير سياق بسيط ومتعدد الاستخدامات يقوم بالتقاط عمل CUDA في سياقه.
+قبل الالتقاط، قم بتسخين عبء العمل الذي سيتم التقاطه عن طريق تشغيل
+بضع تكرارات حريصة. يجب أن يحدث التسخين في تيار جانبي.
+نظرًا لأن الرسم البياني يقرأ من عناوين الذاكرة نفسها ويكتب إليها في كل
+إعادة تشغيل، يجب عليك الاحتفاظ بالإشارات طويلة الأمد إلى المنسوجات التي تحتفظ
+ببيانات الإدخال والإخراج أثناء الالتقاط.
+لتشغيل الرسم البياني على بيانات الإدخال الجديدة، قم بنسخ بيانات جديدة إلى منسوجات الإدخال الخاصة بالالتقاط،
+قم بإعادة تشغيل الرسم البياني، ثم اقرأ الإخراج الجديد من منسوجات الإخراج الخاصة بالالتقاط.
+مثال::
 
-    g = torch.cuda.CUDAGraph()
+   ز = تورتش.كودا.كوداجراف ()
 
-    # Placeholder input used for capture
-    static_input = torch.empty((5,), device="cuda")
+   # الإدخال الوهمي المستخدم للالتقاط
+   static_input = torch.empty ((5،)، device = "cuda")
 
-    # Warmup before capture
-    s = torch.cuda.Stream()
-    s.wait_stream(torch.cuda.current_stream())
-    with torch.cuda.stream(s):
-        for _ in range(3):
-            static_output = static_input * 2
-    torch.cuda.current_stream().wait_stream(s)
+   # التسخين قبل الالتقاط
+   s = torch.cuda.Stream ()
+   s.wait_stream (torch.cuda.current_stream ())
+   مع تورتش.كودا.ستريم (s):
+       ل _ في النطاق (3):
+           static_output = static_input * 2
+   torch.cuda.current_stream (). wait_stream (s)
 
-    # Captures the graph
-    # To allow capture, automatically sets a side stream as the current stream in the context
-    with torch.cuda.graph(g):
-        static_output = static_input * 2
+   # يلتقط الرسم البياني
+   # للسماح بالالتقاط، قم تلقائيًا بتعيين تيار جانبي كتيار حالي في السياق
+   مع تورتش.كودا.جراف (ز):
+       static_output = static_input * 2
 
-    # Fills the graph's input memory with new data to compute on
-    static_input.copy_(torch.full((5,), 3, device="cuda"))
-    g.replay()
-    # static_output holds the results
-    print(static_output)  # full of 3 * 2 = 6
+   # تملأ ذاكرة الرسم البياني ببيانات جديدة لحسابها
+   static_input.copy_ (torch.full ((5،)، 3، device = "cuda"))
+   ز.إعادة التشغيل ()
+   # يحتوي static_output على النتائج
+   طباعة (static_output) # مليئة 3 * 2 = 6
 
-    # Fills the graph's input memory with more data to compute on
-    static_input.copy_(torch.full((5,), 4, device="cuda"))
-    g.replay()
-    print(static_output)  # full of 4 * 2 = 8
+   # تملأ ذاكرة الرسم البياني بالمزيد من البيانات لحسابها
+   static_input.copy_ (torch.full ((5،)، 4، device = "cuda"))
+   ز.إعادة التشغيل ()
+   طباعة (static_output) # مليئة 4 * 2 = 8
 
-See
-:ref:`Whole-network capture<whole-network-capture>`,
-:ref:`Usage with torch.cuda.amp<graphs-with-amp>`, and
-:ref:`Usage with multiple streams<multistream-capture>`
-for realistic and advanced patterns.
+راجع
+: ref: <whole-network-capture>`،
+: ref: <usage-with-amp>`، و
+: ref: <multistream-capture>`
+لأنماط واقعية ومتقدمة.
 
-:class:`~torch.cuda.make_graphed_callables` is more sophisticated.
-:class:`~torch.cuda.make_graphed_callables` accepts Python functions and
-:class:`torch.nn.Module`\s. For each passed function or Module,
-it creates separate graphs of the forward-pass and backward-pass work. See
-:ref:`Partial-network capture<partial-network-capture>`.
+:class: `torch.cuda.make_graphed_callables` أكثر تطوراً.
+يقبل :class: `torch.cuda.make_graphed_callables` الدوال Python و
+:class: `torch.nn.Module` \ s. لكل دالة أو وحدة نمطية يتم تمريرها،
+فهو يقوم بإنشاء رسوم بيانية منفصلة لعمل التمرير الأمامي وعمل التمرير الخلفي. راجع
+: ref: <partial-network-capture>`.
 
 .. _capture-constraints:
 
-Constraints
-~~~~~~~~~~~
+القيود
+~~~~~~~~
 
-A set of ops is *capturable* if it doesn't violate any of the following constraints.
+مجموعة من العمليات *قابلة للالتقاط* إذا لم تنتهك أيًا من القيود التالية.
 
-Constraints apply to all work in a
-:class:`torch.cuda.graph` context and all work in the forward and backward passes
-of any callable you pass to :func:`torch.cuda.make_graphed_callables`.
+تنطبق القيود على جميع الأعمال في
+:class: `torch.cuda.graph` السياق وجميع الأعمال في التمريرات الأمامية والخلفية
+من أي دالة قابلة للاستدعاء تقوم بتمريرها إلى :func: `torch.cuda.make_graphed_callables`.
 
-Violating any of these will likely cause a runtime error:
+من المحتمل أن يؤدي انتهاك أي من هذه القيود إلى حدوث خطأ في وقت التشغيل:
 
-* Capture must occur on a non-default stream. (This is only a concern if you use the raw
-  :meth:`CUDAGraph.capture_begin<torch.cuda.CUDAGraph.capture_begin>` and
-  :meth:`CUDAGraph.capture_end<torch.cuda.CUDAGraph.capture_end>` calls.
-  :class:`~torch.cuda.graph` and
-  :func:`~torch.cuda.make_graphed_callables` set a side stream for you.)
-* Ops that synchronize the CPU with the GPU (e.g., ``.item()`` calls) are prohibited.
-* CUDA RNG operations are permitted, and when using multiple :class:`torch.Generator` instances within a graph,
-  they must be registered using :meth:`CUDAGraph.register_generator_state<torch.cuda.CUDAGraph.register_generator_state>` before graph capture.
-  Avoid using :meth:`Generator.get_state<torch.get_state>` and :meth:`Generator.set_state<torch.set_state>` during capture;
-  instead, utilize :meth:`Generator.graphsafe_set_state<torch.Generator.graphsafe_set_state>` and :meth:`Generator.graphsafe_get_state<torch.Generator.graphsafe_get_state>`
-  for managing generator states safely within the graph context. This ensures proper RNG operation and generator management within CUDA graphs.
+* يجب أن يحدث الالتقاط في تيار غير افتراضي. (هذا مصدر قلق فقط إذا كنت تستخدم
+  :meth: `CUDAGraph.capture_begin <torch.cuda.CUDAGraph.capture_begin>` الخام و
+  :meth: `CUDAGraph.capture_end <torch.cuda.CUDAGraph.capture_end>` المكالمات.
+  :class: `torch.cuda.graph` و
+  :func: `torch.cuda.make_graphed_callables` قم بتعيين تيار جانبي لك.)
+* العمليات التي تزامن وحدة المعالجة المركزية (CPU) مع وحدة معالجة الرسومات (GPU) (مثل مكالمات `.item ()`) محظورة.
+* يُسمح بعمليات مولد الأرقام العشوائية (RNG) لـ CUDA، وعند استخدام عدة حالات :class: `torch.Generator` داخل رسم بياني،
+  يجب تسجيلها باستخدام :meth: `CUDAGraph.register_generator_state <torch.cuda.CUDAGraph.register_generator_state>` قبل التقاط الرسم البياني.
+  تجنب استخدام :meth: `Generator.get_state <torch.get_state>` و :meth: `Generator.set_state <torch.set_state>` أثناء الالتقاط؛
+  بدلاً من ذلك، استخدم :meth: `Generator.graphsafe_set_state <torch.Generator.graphsafe_set_state>` و :meth: `Generator.graphsafe_get_state <torch.Generator.graphsafe_get_state>`
+  لإدارة حالات المولد بأمان داخل سياق الرسم البياني. يضمن ذلك التشغيل الصحيح لمولد الأرقام العشوائية وإدارة المولدات داخل رسوم CUDA البيانية.
 
 
-Violating any of these will likely cause silent numerical errors or undefined behavior:
+من المحتمل أن يؤدي انتهاك أي من هذه القيود إلى حدوث أخطاء رقمية صامتة أو سلوك غير محدد:
 
-* Within a process, only one capture may be underway at a time.
-* No non-captured CUDA work may run in this process (on any thread) while capture is underway.
-* CPU work is not captured. If the captured ops include CPU work, that work will be elided during replay.
-* Every replay reads from and writes to the same (virtual) memory addresses.
-* Dynamic control flow (based on CPU or GPU data) is prohibited.
-* Dynamic shapes are prohibited. The graph assumes every tensor in the captured op sequence
-  has the same size and layout in every replay.
-* Using multiple streams in a capture is allowed, but there are :ref:`restrictions<multistream-capture>`.
+* داخل العملية، لا يمكن إلا لالتقاط واحد أن يكون جاريًا في أي وقت.
+* لا يجوز تشغيل أي عمل CUDA غير مُلتقط في هذه العملية (على أي مؤشر ترابط) أثناء الالتقاط.
+* لا يتم التقاط عمل وحدة المعالجة المركزية (CPU). إذا تضمنت العمليات المُلتقطة عمل وحدة المعالجة المركزية (CPU)،
+  فسيتم تجاهل هذا العمل أثناء إعادة التشغيل.
+* تقرأ كل إعادة تشغيل من عناوين الذاكرة (الافتراضية) نفسها وتكتب إليها.
+* يُحظر التدفق الديناميكي للتحكم (القائم على بيانات وحدة المعالجة المركزية (CPU) أو وحدة معالجة الرسومات (GPU)).
+* تُحظر الأشكال الديناميكية. يفترض الرسم البياني أن كل منسوج في تسلسل op المُلتقط
+  له نفس الحجم والتخطيط في كل إعادة تشغيل.
+* يُسمح باستخدام تيارات متعددة في عملية الالتقاط، ولكن هناك :ref: <multistream-capture>`.
 
-Non-constraints
-~~~~~~~~~~~~~~~
+غير قيود
+~~~~~~~~~~
 
-* Once captured, the graph may be replayed on any stream.
+* بمجرد التقاطه، يمكن إعادة تشغيل الرسم البياني على أي تيار.
 
 .. _whole-network-capture:
 
-Whole-network capture
-^^^^^^^^^^^^^^^^^^^^^^
+التقاط الشبكة بالكامل
+^^^^^^^^^^^^^^
 
-If your entire network is capturable, you can capture and replay an entire iteration::
+إذا كانت شبكتك بأكملها قابلة للالتقاط، فيمكنك التقاط وإعادة تشغيل تكرار كامل::
 
-    N, D_in, H, D_out = 640, 4096, 2048, 1024
-    model = torch.nn.Sequential(torch.nn.Linear(D_in, H),
-                                torch.nn.Dropout(p=0.2),
-                                torch.nn.Linear(H, D_out),
-                                torch.nn.Dropout(p=0.1)).cuda()
-    loss_fn = torch.nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+   ن، د_في، ح، د_خروج = 640، 4096، 2048، 1024
+   النموذج = تورتش.نن.سيكونتيال (تورتش.نن.لينير (د_في، ح)،
+                                     تورتش.نن.دروبووت (ص = 0.2)،
+                                     تورتش.نن.لينير (ح، د_خروج)،
+                                     تورتش.نن.دروبووت (ص = 0.1)). كودا ()
+   فقدان_دالة = تورتش.نن.مسيلوس ()
+   المُحَسِّن = تورتش.أوبتيم.سجد (نموذج.باراميتيرس ()، لر = 0.1)
 
-    # Placeholders used for capture
-    static_input = torch.randn(N, D_in, device='cuda')
-    static_target = torch.randn(N, D_out, device='cuda')
+   # الوهمية المستخدمة للالتقاط
+   static_input = torch.randn (N، D_in، device = 'cuda')
+   static_target = torch.randn (N، D_out، device = 'cuda')
 
-    # warmup
-    # Uses static_input and static_target here for convenience,
-    # but in a real setting, because the warmup includes optimizer.step()
-    # you must use a few batches of real data.
-    s = torch.cuda.Stream()
-    s.wait_stream(torch.cuda.current_stream())
-    with torch.cuda.stream(s):
-        for i in range(3):
-            optimizer.zero_grad(set_to_none=True)
-            y_pred = model(static_input)
-            loss = loss_fn(y_pred, static_target)
-            loss.backward()
-            optimizer.step()
-    torch.cuda.current_stream().wait_stream(s)
+   # التسخين
+   # يستخدم static_input و static_target هنا للراحة،
+   # ولكن في إعداد حقيقي، لأن التسخين يتضمن optimizer.step ()
+   # يجب عليك استخدام بضع دفعات من البيانات الحقيقية.
+   s = torch.cuda.Stream ()
+   s.wait_stream (torch.cuda.current_stream ())
+   مع تورتش.كودا.ستريم (s):
+       ل ط في النطاق (3):
+           المُحَسِّن.زيرو_غراد (مجموعة_إلى_لا شيء = صحيح)
+           y_pred = model (static_input)
+           فقدان = فقدان_دالة (y_pred، static_target)
+           فقدان.الخلفي ()
+           المُحَسِّن.خطوة ()
+   torch.cuda.current_stream (). wait_stream (s)
 
-    # capture
-    g = torch.cuda.CUDAGraph()
-    # Sets grads to None before capture, so backward() will create
-    # .grad attributes with allocations from the graph's private pool
-    optimizer.zero_grad(set_to_none=True)
-    with torch.cuda.graph(g):
-        static_y_pred = model(static_input)
-        static_loss = loss_fn(static_y_pred, static_target)
-        static_loss.backward()
-        optimizer.step()
+   # الالتقاط
+   ز = تورتش.كودا.كوداجراف ()
+   # يحدد grads إلى None قبل الالتقاط، لذا فإن backward () سيقوم بإنشاء
+   # سمات .grad من مخصصات من بركة خاصة بالرسم البياني
+   المُحَسِّن.زيرو_غراد (مجموعة_إلى_لا شيء = صحيح)
+   مع تورتش.كودا.جراف (ز):
+       static_y_pred = model (static_input)
+       static_loss = فقدان_دالة (static_y_pred، static_target)
+       static_loss.backward ()
+       المُحَسِّن.خطوة ()
 
-    real_inputs = [torch.rand_like(static_input) for _ in range(10)]
-    real_targets = [torch.rand_like(static_target) for _ in range(10)]
+   المدخلات الحقيقية = [تورتش.راندلايك (static_input) ل _ في النطاق (10)]
+   الأهداف الحقيقية = [تورتش.راندنو (N، D_out، device = "cuda") ل _ في النطاق (10)]
 
-    for data, target in zip(real_inputs, real_targets):
-        # Fills the graph's input memory with new data to compute on
-        static_input.copy_(data)
-        static_target.copy_(target)
-        # replay() includes forward, backward, and step.
-        # You don't even need to call optimizer.zero_grad() between iterations
-        # because the captured backward refills static .grad tensors in place.
-        g.replay()
-        # Params have been updated. static_y_pred, static_loss, and .grad
-        # attributes hold values from computing on this iteration's data.
+   لبيانات، الهدف في الرمز البريدي (المدخلات الحقيقية، الأهداف الحقيقية):
+       # تملأ ذاكرة الرسم البياني ببيانات جديدة لحسابها
+       static_input.copy_ (data)
+       static_target.copy_ (target)
+       # تتضمن إعادة التشغيل () التمرير الأمامي والخلفي والخطوة.
+       # لا تحتاج حتى إلى استدعاء optimizer.zero_grad () بين التكرارات
+       # لأن التمرير الخلفي المُلتقط يملأ المنسوجات .grad الثابتة في مكانها.
+       ز.إعادة التشغيل ()
+       # تم تحديث المعلمات. تحتوي static_y_pred و static_loss و .grad
+       # السمات القيم من الحساب على بيانات هذه الدورة.
 
 .. _partial-network-capture:
 
-Partial-network capture
+التقاط الشبكة الجزئي
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If some of your network is unsafe to capture (e.g., due to dynamic control flow,
-dynamic shapes, CPU syncs, or essential CPU-side logic), you can run the unsafe
-part(s) eagerly and use :func:`torch.cuda.make_graphed_callables` to graph only
-the capture-safe part(s).
+إذا كان جزء من شبكتك غير آمن للالتقاط (على سبيل المثال، بسبب تدفق التحكم الديناميكي،
+الأشكال الديناميكية، أو عمليات المزامنة بين وحدة المعالجة المركزية (CPU) أو منطق جانب وحدة المعالجة المركزية (CPU) الضروري)،
+يمكنك تشغيل الجزء غير الآمن (الأجزاء) بحماس واستخدام :func: `torch.cuda.make_graphed_callables`
+لإنشاء رسم بياني فقط للجزء (الأجزاء) الآمنة للالتقاط.
 
-By default, callables returned by :func:`~torch.cuda.make_graphed_callables`
-are autograd-aware, and can be used in the training loop as direct replacements
-for the functions or :class:`nn.Module<torch.nn.Module>`\ s you passed.
+بشكل افتراضي، تكون الدوال التي تم إرجاعها بواسطة :func: `torch.cuda.make_graphed_callables`
+مدركة لـ autograd، ويمكن استخدامها في حلقة التدريب كبدائل مباشرة
+للوظائف أو الوحدات النمطية :class: `nn.Module <torch.nn.Module>` التي قمت بتمريرها.
 
-:func:`~torch.cuda.make_graphed_callables` internally creates
-:class:`~torch.cuda.CUDAGraph` objects, runs warmup iterations, and maintains
-static inputs and outputs as needed.  Therefore (unlike with
-:class:`torch.cuda.graph`) you don't need to handle those manually.
+ينشئ :func: `torch.cuda.make_graphed_callables` داخليًا كائنات :class: `torch.cuda.CUDAGraph`،
+ويقوم بتشغيل تكرارات التسخين، ويحافظ على الإدخالات والإخراجات الثابتة حسب الحاجة.
+لذلك (على عكس :class: `torch.cuda.graph`) لا تحتاج إلى التعامل معها يدويًا.
 
-In the following example, data-dependent dynamic control flow means the
-network isn't capturable end-to-end, but
-:func:`~torch.cuda.make_graphed_callables`
-lets us capture and run graph-safe sections as graphs regardless::
+في المثال التالي، يعني تدفق التحكم المعتمد على البيانات أن
+الشبكة غير قابلة للالتقاط من البداية إلى النهاية، ولكن
+:func: `torch.cuda.make_graphed_callables`
+يتيح لنا التقاط وتشغيل الأقسام الآمنة للرسم البياني كرسوم بيانية بغض النظر::
 
-    N, D_in, H, D_out = 640, 4096, 2048, 1024
+   ن، د_في، ح، د_خروج = 640، 4096، 2048، 1024
 
-    module1 = torch.nn.Linear(D_in, H).cuda()
-    module2 = torch.nn.Linear(H, D_out).cuda()
-    module3 = torch.nn.Linear(H, D_out).cuda()
+   الوحدة النمطية 1 = تورتش.نن.لينير (د_في، ح). كودا ()
+   الوحدة النمطية 2 = تورتش.نن.لينير (ح، د_خروج). كودا ()
+   الوحدة النمطية 3 = تورتش.نن.لينير (ح، د_خروج). كودا ()
 
-    loss_fn = torch.nn.MSELoss()
-    optimizer = torch.optim.SGD(chain(module1.parameters(),
-                                      module2.parameters(),
-                                      module3.parameters()),
-                                lr=0.1)
+   فقدان_دالة = تورتش.نن.مسيلوس ()
+   المُحَسِّن = تورتش.أوبتيم.سجد (سلسلة (معلمات الوحدة النمطية 1،
+                                     معلمات الوحدة النمطية 2،
+                                     معلمات الوحدة النمطية 3)،
+                               لر = 0.1)
 
-    # Sample inputs used for capture
-    # requires_grad state of sample inputs must match
-    # requires_grad state of real inputs each callable will see.
-    x = torch.randn(N, D_in, device='cuda')
-    h = torch.randn(N, H, device='cuda', requires_grad=True)
+   # عينات الإدخال المستخدمة للالتقاط
+   # يجب أن تتطابق حالة requires_grad لعينات الإدخال
+   # تتطابق حالة requires_grad للإدخالات الفعلية التي سيشاهدها كل استدعاء قابل للاستدعاء.
+   x = torch.randn (N، D_in، device = 'cuda')
+   ح = تورتش.راندنو (ن، ح، الجهاز = "كودا"، يتطلب_غراد = صحيح)
 
-    module1 = torch.cuda.make_graphed_callables(module1, (x,))
-    module2 = torch.cuda.make_graphed_callables(module2, (h,))
-    module3 = torch.cuda.make_graphed_callables(module3, (h,))
+   الوحدة النمطية 1 = تورتش.كودا.ماكي_جرافيد_كالابلز (الوحدة النمطية 1، (س،))
+   الوحدة النمطية 2 = تورتش.كودا.
+هذا هو النص المترجم إلى اللغة العربية بتنسيق ReStructuredText:
 
-    real_inputs = [torch.rand_like(x) for _ in range(10)]
-    real_targets = [torch.randn(N, D_out, device="cuda") for _ in range(10)]
-
-    for data, target in zip(real_inputs, real_targets):
-        optimizer.zero_grad(set_to_none=True)
-
-        tmp = module1(data)  # forward ops run as a graph
-
-        if tmp.sum().item() > 0:
-            tmp = module2(tmp)  # forward ops run as a graph
-        else:
-            tmp = module3(tmp)  # forward ops run as a graph
-
-        loss = loss_fn(tmp, target)
-        # module2's or module3's (whichever was chosen) backward ops,
-        # as well as module1's backward ops, run as graphs
-        loss.backward()
-        optimizer.step()
-
-.. _graphs-with-amp:
-
-Usage with torch.cuda.amp
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For typical optimizers, :meth:`GradScaler.step<torch.cuda.amp.GradScaler.step>` syncs
-the CPU with the GPU, which is prohibited during capture. To avoid errors, either use
-:ref:`partial-network capture<partial-network-capture>`, or (if forward, loss,
-and backward are capture-safe) capture forward, loss, and backward but not the
-optimizer step::
+بالنسبة للمحسنات النموذجية، :meth:`GradScaler.step<torch.cuda.amp.GradScaler.step>` تزامن
+الوحدة المركزية مع وحدة معالجة الرسومات، وهو ما يُمنع أثناء الالتقاط. لتجنب الأخطاء، يمكنك إما استخدام
+:ref:`partial-network capture<partial-network-capture>`، أو (إذا كانت العمليات forward و loss
+و backward آمنة للالتقاط) قم بالتقاط العمليات forward و loss و backward ولكن ليس
+خطوة المحسن::
 
     # warmup
-    # In a real setting, use a few batches of real data.
+    # في إعداد حقيقي، استخدم عدة دفعات من البيانات الحقيقية.
     s = torch.cuda.Stream()
     s.wait_stream(torch.cuda.current_stream())
     with torch.cuda.stream(s):
@@ -1157,7 +901,7 @@ optimizer step::
             static_y_pred = model(static_input)
             static_loss = loss_fn(static_y_pred, static_target)
         scaler.scale(static_loss).backward()
-        # don't capture scaler.step(optimizer) or scaler.update()
+        # لا تلتقط scaler.step(optimizer) أو scaler.update()
 
     real_inputs = [torch.rand_like(static_input) for _ in range(10)]
     real_targets = [torch.rand_like(static_target) for _ in range(10)]
@@ -1166,120 +910,118 @@ optimizer step::
         static_input.copy_(data)
         static_target.copy_(target)
         g.replay()
-        # Runs scaler.step and scaler.update eagerly
+        # تشغيل scaler.step و scaler.update بشكل متلهف
         scaler.step(optimizer)
         scaler.update()
 
 .. _multistream-capture:
 
-Usage with multiple streams
+الاستخدام مع عدة دفقات
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Capture mode automatically propagates to any streams that sync with a capturing stream.
-Within capture, you may expose parallelism by issuing calls to different streams,
-but the overall stream dependency DAG must branch out from the
-initial capturing stream after capture begins and rejoin the initial stream
-before capture ends::
+ينتشر وضع الالتقاط تلقائيًا إلى أي دفقات تتزامن مع دفق التقاط.
+ضمن الالتقاط، يمكنك عرض الموازية من خلال إصدار مكالمات إلى دفقات مختلفة،
+ولكن يجب أن تتفرع شجرة الاعتماد الإجمالية للدفق من
+الدفق الأولي الذي يلتقط بعد بدء الالتقاط وينضم إلى الدفق الأولي
+قبل انتهاء الالتقاط::
 
     with torch.cuda.graph(g):
-        # at context manager entrance, torch.cuda.current_stream()
-        # is the initial capturing stream
+        # في مدخل سياق المدير، torch.cuda.current_stream()
+        # هو دفق الالتقاط الأولي
 
-        # INCORRECT (does not branch out from or rejoin initial stream)
+        # غير صحيح (لا يتفرع من الدفق الأولي أو ينضم إليه)
         with torch.cuda.stream(s):
             cuda_work()
 
-        # CORRECT:
-        # branches out from initial stream
+        # صحيح:
+        # يتفرع من الدفق الأولي
         s.wait_stream(torch.cuda.current_stream())
         with torch.cuda.stream(s):
             cuda_work()
-        # rejoins initial stream before capture ends
+        # ينضم إلى الدفق الأولي قبل انتهاء الالتقاط
         torch.cuda.current_stream().wait_stream(s)
 
 .. note::
 
-    To avoid confusion for power users looking at replays in nsight systems or nvprof:
-    Unlike eager execution, the graph interprets a nontrivial stream DAG in capture
-    as a hint, not a command. During replay, the graph may reorganize independent ops
-    onto different streams or enqueue them in a different order (while respecting your
-    original DAG's overall dependencies).
+    لتجنب الارتباك للمستخدمين المتقدمين الذين يبحثون عن عمليات إعادة التشغيل في nsight systems أو nvprof:
+    على عكس التنفيذ المتلهف، يفسر الرسم البياني شجرة DAG غير تافهة للدفق في الالتقاط
+    كإشارة، وليس أمرًا. أثناء إعادة التشغيل، قد يعيد الرسم البياني تنظيم العمليات المستقلة
+    إلى دفقات مختلفة أو وضعها في قائمة انتظار حسب ترتيب مختلف (مع احترام التبعيات الإجمالية لـ DAG الأصلي).
 
-Usage with DistributedDataParallel
+الاستخدام مع DistributedDataParallel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 NCCL < 2.9.6
 ~~~~~~~~~~~~
 
-NCCL versions earlier than 2.9.6 don't allow collectives to be captured.
-You must use :ref:`partial-network capture<partial-network-capture>`,
-which defers allreduces to happen outside graphed sections of backward.
+لا تسمح إصدارات NCCL الأقدم من 2.9.6 بالتقاط الجماعات.
+يجب عليك استخدام :ref:`partial-network capture<partial-network-capture>`،
+الذي يؤجل حدوث allreduces خارج الأقسام المخططة للخلف.
 
-Call :func:`~torch.cuda.make_graphed_callables` on graphable network sections
-*before* wrapping the network with DDP.
+اتصل بـ :func:`~torch.cuda.make_graphed_callables` على أقسام الشبكة القابلة للرسم
+*قبل* لف الشبكة في DDP.
 
 NCCL >= 2.9.6
 ~~~~~~~~~~~~~
 
-NCCL versions 2.9.6 or later allow collectives in the graph.
-Approaches that capture an :ref:`entire backward pass<whole-network-capture>`
-are a viable option, but need three setup steps.
+تسمح إصدارات NCCL 2.9.6 أو الأحدث بالجماعية في الرسم البياني.
+النهج التي تلتقط :ref:`pass backward بالكامل<whole-network-capture>`
+هي خيار قابل للتطبيق، ولكنها تحتاج إلى ثلاث خطوات إعداد.
 
-1. Disable DDP's internal async error handling::
+1. تعطيل التعامل مع الأخطاء غير المتزامن الداخلي لـ DDP::
 
     os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "0"
     torch.distributed.init_process_group(...)
 
-2. Before full-backward capture, DDP must be constructed in a side-stream context::
+2. قبل التقاط full-backward، يجب إنشاء DDP في سياق دفق جانبي::
 
     with torch.cuda.stream(s):
         model = DistributedDataParallel(model)
 
-3. Your warmup must run at least 11 DDP-enabled eager iterations before capture.
+3. يجب أن يعمل التسخين الخاص بك على تشغيل 11 دورة على الأقل من التكرارات المتلهفة لـ DDP قبل الالتقاط.
 
 .. _graph-memory-management:
 
-Graph memory management
+إدارة ذاكرة الرسم البياني
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-A captured graph acts on the same virtual addresses every time it replays.
-If PyTorch frees the memory, a later replay can hit an illegal memory access.
-If PyTorch reassigns the memory to new tensors, the replay can corrupt the values
-seen by those tensors.  Therefore, the virtual addresses used by the graph must be
-reserved for the graph across replays. The PyTorch caching allocator achieves this
-by detecting when capture is underway and satisfying the capture's allocations
-from a graph-private memory pool. The private pool stays alive until its
-:class:`~torch.cuda.CUDAGraph` object and all tensors created during capture
-go out of scope.
+يعمل الرسم البياني الملتقط على نفس العناوين الافتراضية في كل مرة يتم فيها إعادة تشغيله.
+إذا حررت PyTorch الذاكرة، فقد يؤدي إعادة التشغيل اللاحق إلى حدوث خطأ في الوصول إلى الذاكرة غير القانونية.
+إذا قامت PyTorch بإعادة تعيين الذاكرة لمصفوفات جديدة، فقد يؤدي إعادة التشغيل إلى إتلاف القيم
+التي تشاهدها تلك المصفوفات. لذلك، يجب حجز عناوين افتراضية يستخدمها الرسم البياني للرسم البياني عبر عمليات إعادة التشغيل. يحقق مخصص التخزين المؤقت لـ PyTorch ذلك
+من خلال اكتشاف ما إذا كان الالتقاط جاريًا وتلبية تخصيصات الالتقاط
+من بركة ذاكرة خاصة بالرسم البياني. تظل البركة الخاصة نشطة حتى
+يتم إخراج كائن :class:`~torch.cuda.CUDAGraph` الخاص به وجميع المصفوفات التي تم إنشاؤها أثناء الالتقاط
+عن النطاق.
 
-Private pools are maintained automatically. By default, the allocator creates a
-separate private pool for each capture. If you capture multiple graphs,
-this conservative approach ensures graph replays never corrupt each other's values,
-but sometimes needlessly wastes memory.
+يتم الحفاظ على البرك الخاصة تلقائيًا. بشكل افتراضي، يقوم المخصص بإنشاء
+بركة خاصة منفصلة لكل عملية التقاط. إذا قمت بالتقاط عدة رسوم بيانية،
+تضمن هذه الطريقة المحافظة عدم إتلاف عمليات إعادة تشغيل الرسم البياني لقيم بعضها البعض مطلقًا،
+ولكنه أحيانًا يهدر الذاكرة بلا داع.
 
-Sharing memory across captures
+مشاركة الذاكرة عبر عمليات الالتقاط
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To economize the memory stashed in private pools, :class:`torch.cuda.graph`
-and :func:`torch.cuda.make_graphed_callables` optionally allow different
-captures to share the same private pool.
-It's safe for a set of graphs to share a private pool if you know they'll always
-be replayed in the same order they were captured,
-and never be replayed concurrently.
+لتوفير الذاكرة المخزنة في البرك الخاصة، :class:`torch.cuda.graph`
+و :func:`torch.cuda.make_graphed_callables` تسمح بشكل اختياري لعمليات الالتقاط المختلفة
+لمشاركة نفس البركة الخاصة.
+من الآمن لمجموعة من الرسوم البيانية مشاركة بركة خاصة إذا كنت تعلم أنها ستتم دائمًا
+يتم إعادة تشغيلها بنفس الترتيب الذي تم التقاطها به،
+ولن يتم إعادة تشغيلها أبدًا في نفس الوقت.
 
-:class:`torch.cuda.graph`'s ``pool`` argument is a hint to use a particular private pool,
-and can be used to share memory across graphs as shown::
+حجة "المسبح" :class:`torch.cuda.graph` هي تلميح لاستخدام بركة خاصة معينة،
+ويمكن استخدامه لمشاركة الذاكرة عبر الرسوم البيانية على النحو الموضح::
 
     g1 = torch.cuda.CUDAGraph()
     g2 = torch.cuda.CUDAGraph()
 
-    # (create static inputs for g1 and g2, run warmups of their workloads...)
+    # (إنشاء إدخالات ثابتة لـ g1 و g2، تشغيل عمليات الإحماء لأحمال العمل الخاصة بها...)
 
-    # Captures g1
+    # يلتقط g1
     with torch.cuda.graph(g1):
         static_out_1 = g1_workload(static_in_1)
 
-    # Captures g2, hinting that g2 may share a memory pool with g1
+    # يلتقط g2، مما يوحي بأن g2 قد تشارك بركة ذاكرة مع g1
     with torch.cuda.graph(g2, pool=g1.pool()):
         static_out_2 = g2_workload(static_in_2)
 
@@ -1288,13 +1030,12 @@ and can be used to share memory across graphs as shown::
     g1.replay()
     g2.replay()
 
-With :func:`torch.cuda.make_graphed_callables`, if you want to graph several
-callables and you know they'll always run in the same order (and never concurrently)
-pass them as a tuple in the same order they'll run in the live workload, and
-:func:`~torch.cuda.make_graphed_callables` will capture their graphs using a shared
-private pool.
+مع :func:`torch.cuda.make_graphed_callables`، إذا كنت تريد رسم عدة
+دالات قابلة للاستدعاء وتعرف أنها ستعمل دائمًا بنفس الترتيب (ولن تعمل أبدًا في نفس الوقت)
+مررها كزوج بنفس الترتيب الذي ستعمل به في عبء العمل المباشر، و
+:func:`~torch.cuda.make_graphed_callables` سيتم التقاط رسوماتها باستخدام بركة خاصة مشتركة.
 
-If, in the live workload, your callables will run in an order that occasionally changes,
-or if they'll run concurrently, passing them as a tuple to a single invocation of
-:func:`~torch.cuda.make_graphed_callables` is not allowed. Instead, you must call
-:func:`~torch.cuda.make_graphed_callables` separately for each one.
+إذا كان سيتم تشغيل الدالات القابلة للاستدعاء في عبء العمل المباشر بترتيب يتغير أحيانًا،
+أو إذا كانوا يعملون في نفس الوقت، فلا يُسمح بتمريرها كزوج إلى استدعاء واحد لـ
+:func:`~torch.cuda.make_graphed_callables`. بدلاً من ذلك، يجب عليك استدعاء
+:func:`~torch.cuda.make_graphed_callables` بشكل منفصل لكل منها.
