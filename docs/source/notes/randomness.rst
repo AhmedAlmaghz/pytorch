@@ -1,109 +1,82 @@
-.. _reproducibility:
+.. _random_ness:
 
-Reproducibility
+قابلية الإعادة
 ===============
 
-Completely reproducible results are not guaranteed across PyTorch releases,
-individual commits, or different platforms. Furthermore, results may not be
-reproducible between CPU and GPU executions, even when using identical seeds.
+لا تضمن النتائج القابلة للإعادة تمامًا عبر إصدارات PyTorch أو الالتزامات الفردية أو المنصات المختلفة. علاوة على ذلك، قد لا تكون النتائج قابلة للإعادة بين التنفيذ على وحدة المعالجة المركزية ووحدات معالجة الرسوميات، حتى عند استخدام البذور المحددة.
 
-However, there are some steps you can take to limit the number of sources of
-nondeterministic behavior for a specific platform, device, and PyTorch release.
-First, you can control sources of randomness that can cause multiple executions
-of your application to behave differently. Second, you can configure PyTorch
-to avoid using nondeterministic algorithms for some operations, so that multiple
-calls to those operations, given the same inputs, will produce the same result.
+ومع ذلك، هناك بعض الخطوات التي يمكنك اتخاذها للحد من عدد مصادر السلوك غير الحتمي لمنصة وجهاز وإصدار PyTorch محدد. أولاً، يمكنك التحكم في مصادر العشوائية التي يمكن أن تتسبب في سلوك مختلف لتنفيذات متعددة لتطبيقك. ثانيًا، يمكنك تكوين PyTorch لتجنب استخدام الخوارزميات غير الحتمية لبعض العمليات، بحيث تنتج الاستدعاءات المتعددة لتلك العمليات، مع إعطاء نفس المدخلات، نفس النتيجة.
 
 .. warning::
 
-    Deterministic operations are often slower than nondeterministic operations, so
-    single-run performance may decrease for your model. However, determinism may
-    save time in development by facilitating experimentation, debugging, and
-    regression testing.
+    العمليات الحتمية تكون غالبًا أبطأ من العمليات غير الحتمية، لذا فقد ينخفض الأداء الفردي لنموذجك. ومع ذلك، قد توفر الحتمية الوقت أثناء التطوير من خلال تسهيل التجريب والتصحيح واختبار الانحدار.
 
-Controlling sources of randomness
-.................................
+التحكم في مصادر العشوائية
+....................
 
-PyTorch random number generator
--------------------------------
-You can use :meth:`torch.manual_seed()` to seed the RNG for all devices (both
-CPU and CUDA)::
+مولد الأرقام العشوائية في PyTorch
+--------------------------
+يمكنك استخدام :meth:`torch.manual_seed()` لبذر مولد الأرقام العشوائية لجميع الأجهزة (وحدة المعالجة المركزية وCUDA)::
 
     import torch
     torch.manual_seed(0)
 
-Some PyTorch operations may use random numbers internally.
-:meth:`torch.svd_lowrank()` does this, for instance. Consequently, calling it
-multiple times back-to-back with the same input arguments may give different
-results. However, as long as :meth:`torch.manual_seed()` is set to a constant
-at the beginning of an application and all other sources of nondeterminism have
-been eliminated, the same series of random numbers will be generated each time
-the application is run in the same environment.
+قد تستخدم بعض عمليات PyTorch الأرقام العشوائية داخليًا.
+:meth:`torch.svd_lowrank()` يفعل ذلك، على سبيل المثال. وبالتالي، فإن استدعاءه عدة مرات على التوالي بنفس وسائط الإدخال قد يعطي نتائج مختلفة. ومع ذلك، طالما تم تعيين :meth:`torch.manual_seed()` إلى ثابت في بداية التطبيق وتم القضاء على جميع مصادر اللاحتمية الأخرى، فسيتم إنشاء نفس سلسلة الأرقام العشوائية في كل مرة يتم فيها تشغيل التطبيق في نفس البيئة.
 
-It is also possible to obtain identical results from an operation that uses
-random numbers by setting :meth:`torch.manual_seed()` to the same value between
-subsequent calls.
+ومن الممكن أيضًا الحصول على نتائج متطابقة من عملية تستخدم الأرقام العشوائية عن طريق تعيين :meth:`torch.manual_seed()` إلى نفس القيمة بين الاستدعاءات اللاحقة.
 
-Python
+بايثون
 ------
 
-For custom operators, you might need to set python seed as well::
+بالنسبة للمشغلين المخصصين، قد تحتاج إلى تعيين البذور بايثون أيضًا::
 
     import random
     random.seed(0)
 
-Random number generators in other libraries
--------------------------------------------
-If you or any of the libraries you are using rely on NumPy, you can seed the global
-NumPy RNG with::
+مولدات الأرقام العشوائية في المكتبات الأخرى
+--------------------------------
+إذا كنت أنت أو أي من المكتبات التي تستخدمها تعتمد على NumPy، فيمكنك بذر مولد الأرقام العشوائية العالمي لـ NumPy باستخدام::
 
     import numpy as np
     np.random.seed(0)
 
-However, some applications and libraries may use NumPy Random Generator objects,
-not the global RNG
-(`<https://numpy.org/doc/stable/reference/random/generator.html>`_), and those will
-need to be seeded consistently as well.
+ومع ذلك، قد تستخدم بعض التطبيقات والمكتبات كائنات مولد الأرقام العشوائية لـ NumPy، وليس مولد الأرقام العشوائية العالمي
+(`<https://numpy.org/doc/stable/reference/random/generator.html>`_)، والتي ستحتاج إلى بذرها بشكل متسق أيضًا.
 
-If you are using any other libraries that use random number generators, refer to
-the documentation for those libraries to see how to set consistent seeds for them.
+إذا كنت تستخدم أي مكتبات أخرى تستخدم مولدات الأرقام العشوائية، فراجع وثائق تلك المكتبات لمعرفة كيفية تعيين البذور المتسقة لها.
 
-CUDA convolution benchmarking
------------------------------
-The cuDNN library, used by CUDA convolution operations, can be a source of nondeterminism
-across multiple executions of an application. When a cuDNN convolution is called with a
-new set of size parameters, an optional feature can run multiple convolution algorithms,
-benchmarking them to find the fastest one. Then, the fastest algorithm will be used
-consistently during the rest of the process for the corresponding set of size parameters.
-Due to benchmarking noise and different hardware, the benchmark may select different
-algorithms on subsequent runs, even on the same machine.
+اختبار أداء التجزئة في التحويل
+------------------------
+يمكن أن تكون مكتبة cuDNN، التي تستخدمها عمليات التجزئة CUDA، مصدرًا لعدم الحتمية
+عبر عمليات التنفيذ المتعددة لتطبيق ما. عندما يتم استدعاء تجزئة cuDNN باستخدام
+مجموعة جديدة من معلمات الحجم، يمكن لميزة اختيارية تشغيل خوارزميات تجزئة متعددة،
+واختبارها لمعرفة أسرعها. ثم يتم استخدام أسرع خوارزمية باستمرار خلال بقية العملية
+لمجموعة معلمات الحجم المقابلة. بسبب ضجيج الاختبار والاختلافات في الأجهزة،
+قد يختار الاختبار خوارزميات مختلفة في عمليات التشغيل اللاحقة، حتى على نفس الجهاز.
 
-Disabling the benchmarking feature with :code:`torch.backends.cudnn.benchmark = False`
-causes cuDNN to deterministically select an algorithm, possibly at the cost of reduced
-performance.
+يؤدي تعطيل ميزة الاختبار عن طريق تعيين :code:`torch.backends.cudnn.benchmark = False`
+إلى جعل cuDNN يحدد خوارزمية حتمية، ربما على حساب الأداء المنخفض.
 
-However, if you do not need reproducibility across multiple executions of your application,
-then performance might improve if the benchmarking feature is enabled with
-:code:`torch.backends.cudnn.benchmark = True`.
+ومع ذلك، إذا لم تكن بحاجة إلى قابلية إعادة التطبيق عبر عمليات التنفيذ المتعددة لتطبيقك،
+فقد يتحسن الأداء إذا تم تمكين ميزة الاختبار عن طريق تعيين :code:`torch.backends.cudnn.benchmark = True`.
 
-Note that this setting is different from the :code:`torch.backends.cudnn.deterministic`
-setting discussed below.
+لاحظ أن هذا الإعداد يختلف عن الإعداد :code:`torch.backends.cudnn.deterministic`
+الذي تمت مناقشته أدناه.
 
-Avoiding nondeterministic algorithms
-....................................
-:meth:`torch.use_deterministic_algorithms` lets you configure PyTorch to use
-deterministic algorithms instead of nondeterministic ones where available, and
-to throw an error if an operation is known to be nondeterministic (and without
-a deterministic alternative).
+تجنب الخوارزميات غير الحتمية
+......................
+:meth:`torch.use_deterministic_algorithms` يتيح لك تكوين PyTorch لاستخدام
+خوارزميات حتمية بدلاً من الخوارزميات غير الحتمية حيثما كان ذلك متاحًا،
+ولإلقاء خطأ إذا كانت العملية معروفة بأنها غير حتمية (وبدون بديل حتمي).
 
-Please check the documentation for :meth:`torch.use_deterministic_algorithms()`
-for a full list of affected operations. If an operation does not act correctly
-according to the documentation, or if you need a deterministic implementation
-of an operation that does not have one, please submit an issue:
+يرجى مراجعة وثائق :meth:`torch.use_deterministic_algorithms()` للحصول على قائمة كاملة
+بالعمليات المتأثرة. إذا لم تعمل عملية ما بشكل صحيح وفقًا للوثائق، أو إذا كنت بحاجة إلى
+تنفيذ حتمي لعملية لا تحتوي على واحدة، يرجى تقديم مشكلة:
 `<https://github.com/pytorch/pytorch/issues?q=label:%22module:%20determinism%22>`_
 
-For example, running the nondeterministic CUDA implementation of :meth:`torch.Tensor.index_add_`
-will throw an error::
+على سبيل المثال، يؤدي تشغيل التنفيذ غير الحتمي لـ CUDA لـ :meth:`torch.Tensor.index_add_`
+إلى إلقاء خطأ::
 
     >>> import torch
     >>> torch.use_deterministic_algorithms(True)
@@ -113,9 +86,8 @@ will throw an error::
     RuntimeError: index_add_cuda_ does not have a deterministic implementation, but you set
     'torch.use_deterministic_algorithms(True)'. ...
 
-When :meth:`torch.bmm` is called with sparse-dense CUDA tensors it typically uses a
-nondeterministic algorithm, but when the deterministic flag is turned on, its alternate
-deterministic implementation will be used::
+عندما يتم استدعاء :meth:`torch.bmm` مع تنسورات CUDA نادرة وكثيفة، فإنه يستخدم عادةً خوارزمية
+غير حتمية، ولكن عندما يتم تشغيل العلم الحتمي، سيتم استخدام تنفيذه الحتمي::
 
     >>> import torch
     >>> torch.use_deterministic_algorithms(True)
@@ -125,46 +97,43 @@ deterministic implementation will be used::
             [[ 0.1509,  1.8027],
              [ 0.0333, -1.1444]]], device='cuda:0')
 
-Furthermore, if you are using CUDA tensors, and your CUDA version is 10.2 or greater, you
-should set the environment variable `CUBLAS_WORKSPACE_CONFIG` according to CUDA documentation:
+علاوة على ذلك، إذا كنت تستخدم تنسورات CUDA، وإصدار CUDA الخاص بك هو 10.2 أو أعلى، فيجب عليك
+تعيين متغير البيئة `CUBLAS_WORKSPACE_CONFIG` وفقًا لوثائق CUDA:
 `<https://docs.nvidia.com/cuda/cublas/index.html#results-reproducibility>`_
 
-CUDA convolution determinism
-----------------------------
-While disabling CUDA convolution benchmarking (discussed above) ensures that
-CUDA selects the same algorithm each time an application is run, that algorithm
-itself may be nondeterministic, unless either
-:code:`torch.use_deterministic_algorithms(True)` or
-:code:`torch.backends.cudnn.deterministic = True` is set. The latter setting
-controls only this behavior, unlike :meth:`torch.use_deterministic_algorithms`
-which will make other PyTorch operations behave deterministically, too.
+حتمية التجزئة CUDA
+----------------
+في حين أن تعطيل اختبار تجزئة CUDA (كما هو موضح أعلاه) يضمن أن CUDA
+تختار نفس الخوارزمية في كل مرة يتم فيها تشغيل التطبيق، فقد تكون الخوارزمية نفسها
+غير حتمية، ما لم يتم تعيين :code:`torch.use_deterministic_algorithms(True)` أو
+:code:`torch.backends.cudnn.deterministic = True`. يتحكم الإعداد الأخير فقط في هذا السلوك،
+على عكس :meth:`torch.use_deterministic_algorithms` الذي سيجعل عمليات PyTorch الأخرى
+تتصرف بشكل حتمي أيضًا.
 
-CUDA RNN and LSTM
------------------
-In some versions of CUDA, RNNs and LSTM networks may have non-deterministic behavior.
-See :meth:`torch.nn.RNN` and :meth:`torch.nn.LSTM` for details and workarounds.
+التكرار والشبكات العصبية طويلة المدى في CUDA
+---------------------------------
+في بعض إصدارات CUDA، قد يكون لدى الشبكات العصبية التكرارية والشبكات العصبية طويلة المدى
+سلوك غير حتمي. راجع :meth:`torch.nn.RNN` و :meth:`torch.nn.LSTM` للحصول على التفاصيل والحلول البديلة.
 
-Filling uninitialized memory
-----------------------------
-Operations like :meth:`torch.empty` and :meth:`torch.Tensor.resize_` can return
-tensors with uninitialized memory that contain undefined values. Using such a
-tensor as an input to another operation is invalid if determinism is required,
-because the output will be nondeterministic. But there is nothing to actually
-prevent such invalid code from being run. So for safety,
-:attr:`torch.utils.deterministic.fill_uninitialized_memory` is set to ``True``
-by default, which will fill the uninitialized memory with a known value if
-:code:`torch.use_deterministic_algorithms(True)` is set. This will to prevent
-the possibility of this kind of nondeterministic behavior.
+ملء الذاكرة غير المبدئية
+------------------
+يمكن لعمليات مثل :meth:`torch.empty` و :meth:`torch.Tensor.resize_` أن تعيد
+تنسورات بذاكرة غير مبدئية تحتوي على قيم غير محددة. يعد استخدام مثل هذا
+التنسور كإدخال لعملية أخرى غير صالح إذا كانت الحتمية مطلوبة، لأن الإخراج
+سيكون غير حتمي. ولكن لا يوجد شيء يمنع فعليًا تشغيل مثل هذا الرمز غير الصالح.
+لذا، لأسباب تتعلق بالسلامة، يتم تعيين :attr:`torch.utils.deterministic.fill_uninitialized_memory`
+إلى ``True`` بشكل افتراضي، والذي سيملأ الذاكرة غير المبدئية بقيمة معروفة إذا
+تم تعيين :code:`torch.use_deterministic_algorithms(True)`. سيؤدي هذا إلى منع
+إمكانية حدوث هذا النوع من السلوك غير الحتمي.
 
-However, filling uninitialized memory is detrimental to performance. So if your
-program is valid and does not use uninitialized memory as the input to an
-operation, then this setting can be turned off for better performance.
+ومع ذلك، فإن ملء الذاكرة غير المبدئية يضر بالأداء. لذا، إذا كان برنامجك صالحًا ولا
+يستخدم الذاكرة غير المبدئية كإدخال لعملية ما، فيمكن إيقاف تشغيل هذا الإعداد لتحسين الأداء.
 
 DataLoader
 ..........
 
-DataLoader will reseed workers following :ref:`data-loading-randomness` algorithm.
-Use :meth:`worker_init_fn` and `generator` to preserve reproducibility::
+سيقوم DataLoader بإعادة بذر العمال وفقًا لخوارزمية :ref:`data-loading-randomness`.
+استخدم :meth:`worker_init_fn` و `generator` للحفاظ على قابلية إعادة الإنتاج::
 
     def seed_worker(worker_id):
         worker_seed = torch.initial_seed() % 2**32
