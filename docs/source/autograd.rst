@@ -1,8 +1,685 @@
-.. role:: hidden
-    :class: hidden-section
+:hidden:`torch.autograd`
+========================
 
-Automatic differentiation package - torch.autograd
-==================================================
+حزمة التفاضل التلقائي في PyTorch. يوفر ``torch.autograd`` تفاضل تلقائي لجميع عمليات Tensor في PyTorch.
+
+يحتوي هذا القسم على الواجهات التالية:
+
+.. autosummary::
+    :nosignatures:
+
+    ~torch.Tensor.backward
+    ~torch.autograd.backward
+    ~torch.autograd.grad
+    ~torch.autograd.gradcheck
+    ~torch.autograd.gradgrad
+    ~torch.autograd.grad_sample
+    ~torch.autograd.grad_sample_with_flags
+    ~torch.autograd.grad_mode
+    ~torch.autograd.grad_enabled
+    ~torch.autograd.set_detect_anomaly
+    ~torch.autograd.detect_anomaly
+    ~torch.autograd.profiler.profile
+    ~torch.autograd.profiler.emit_nvtx
+    ~torch.autograd.profiler.record_function
+    ~torch.autograd.profiler.record_function_enter
+    ~torchMultiplier
+    ~torch.autograd.profiler.record_function_exit
+    ~torch.autograd.Function
+    ~torch.autograd.Function.apply
+    ~torch.autograd.Function.backward
+    ~torch.autograd.Function.buffer
+    ~torch.autograd.Function.get_device
+    ~torch.autograd.Function.get_grad_input
+    ~torch.autograd.Function.next_functions
+    ~torch.autograd.Function.register_hook
+    ~torch.autograd.Function.register_forward_hook
+    ~torch.autograd.Function.register_backward_hook
+    ~torch.autograd.Function.register_full_backward_hook
+    ~torch.autograd.anomaly_mode
+    ~torch.autograd.anomaly_detected
+    ~torch.autograd.grad_mode
+    ~torch.autograd.set_grad_enabled
+    ~torch.autograd.grad_enabled
+    ~torch.autograd.no_grad
+    ~torch.autograd.enable_grad
+    ~torch.autograd.gradref
+    ~torch.autograd.Variable
+    ~torch.autograd.OnesTensor
+    ~torch.autograd.ZerosTensor
+    ~torch.autograd.rand
+    ~torch.autograd.randn
+    ~torch.autograd.randperm
+    ~torch.autograd.Tensor
+    ~torch.autograd.ContextObject
+    ~torch.autograd.ContextAwareAutogradTensor
+    ~torch.autograd.ContextAwareObjectTensor
+    ~torch.autograd.ContextAwareTensor
+    ~torch.autograd.FunctionMeta
+    ~torch.autograd.FunctionState
+    ~torch.autograd.FunctionPreprocessContext
+    ~torch.autograd.FunctionPostprocessContext
+    ~torch.autograd.FunctionBackwardContext
+    ~torch.autograd.FunctionForwardContext
+    ~torch.autograd.FunctionContextManager
+    ~torch.autograd.FunctionContext
+    ~torch.autograd.FunctionContextStack
+    ~torch.autograd.FunctionContextStackFrame
+    ~torch.autograd.FunctionContextFrame
+    ~torch.autograd.FunctionFrame
+    ~torch.autograd.FunctionFrameInfo
+    ~torch.autograd.FunctionFrameAttribute
+    ~torch.autograd.FunctionFrameAttributes
+    ~torch.autograd.FunctionFrameObject
+    ~torch.autograd.FunctionFrameObjects
+    ~torch.autograd.FunctionFrameCode
+    ~torch.autograd.FunctionFrameCodes
+    ~torch.autograd.FunctionFrameLine
+    ~torch.autograd.FunctionFrameLines
+    ~torch.autograd.FunctionFrameVar
+    ~torch.autograd.FunctionFrameVars
+    ~torch.autograd.FunctionFrameLocal
+    ~torch.autograd.FunctionFrameLocals
+    ~torchMultiplier
+    ~torch.autograd.FunctionFrameGlobal
+    ~torch.autograd.FunctionFrameGlobals
+    ~torch.autograd.FunctionFrameExc
+    ~torch.autograd.FunctionFrameExcs
+    ~torch.autograd.FunctionFrameInfoTuple
+    ~torch.autograd.FunctionFrameInfoTuples
+    ~torch.autograd.FunctionFrameInfoDict
+    ~torch.autograd.FunctionFrameInfoDicts
+    ~torch.autograd.FunctionFrameInfoObject
+    ~torch.autograd.FunctionFrameInfoObjects
+    ~torch.autograd.FunctionFrameInfoCode
+    ~torch.autograd.FunctionFrameInfoCodes
+    ~torch.autograd.FunctionFrameInfoLine
+    ~torch.autograd.FunctionFrameInfoLines
+    ~torch.autograd.FunctionFrameInfoVar
+    ~torch.autograd.FunctionFrameInfoVars
+    ~torch.autograd.FunctionFrameInfoLocal
+    ~torch.autograd.FunctionFrameInfoLocals
+    ~torch.autograd.FunctionFrameInfoGlobal
+    ~torch.autograd.FunctionFrameInfoGlobals
+    ~torch.autograd.FunctionFrameInfoExc
+    ~torch.autograd.FunctionFrameInfoExcs
+
+.. currentmodule:: torch.autograd
+
+.. toctree::
+    :maxdepth: 1
+
+    autograd_cpp_extensions
+
+.. _torch-autograd-function-context-manager:
+
+سياق المدير
+~~~~~~~
+
+.. autoclass:: FunctionContextManager
+
+.. _torch-autograd-function-context:
+
+سياق الدالة
+~~~~~~~
+
+.. autoclass:: FunctionContext
+
+.. _torch-autograd-function-context-stack:
+
+كومة سياق الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionContextStack
+
+.. _torch-autograd-function-context-stack-frame:
+
+إطار كومة سياق الدالة
+~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionContextStackFrame
+
+.. _torch-autograd-function-context-frame:
+
+إطار سياق الدالة
+~~~~~~~~~~
+
+.. autoclass:: FunctionContextFrame
+
+.. _torch-autograd-function-frame-info:
+
+معلومات إطار الدالة
+~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfo
+
+.. _torch-autograd-function-frame-attribute:
+
+سمة إطار الدالة
+~~~~~~~~~~
+
+.. autoclass:: FunctionFrameAttribute
+
+.. _torch-autograd-function-frame-attributes:
+
+سمات إطار الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameAttributes
+
+.. _torch-autograd-function-frame-object:
+
+كائن إطار الدالة
+~~~~~~~~~~
+
+.. autoclass:: FunctionFrameObject
+
+.. _torch-autograd-function-frame-objects:
+
+كائنات إطار الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameObjects
+
+.. _torch-autograd-function-frame-code:
+
+رمز إطار الدالة
+~~~~~~~~~~
+
+.. autoclass:: FunctionFrameCode
+
+.. _torch-autograd-function-frame-codes:
+
+رموز إطار الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameCodes
+
+.. _torch-autograd-function-frame-line:
+
+سطر إطار الدالة
+~~~~~~~~~~
+
+.. autoclass:: FunctionFrameLine
+
+.. _torch-autograd-function-frame-lines:
+
+أسطر إطار الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameLines
+
+.. _torch-autograd-function-frame-var:
+
+متغير إطار الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameVar
+
+.. _torch-autograd-function-frame-vars:
+
+متغيرات إطار الدالة
+~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameVars
+
+.. _torch-autograd-function-frame-local:
+
+متغير محلي لإطار الدالة
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameLocal
+
+.. _torch-autograd-function-frame-locals:
+
+متغيرات محلية لإطار الدالة
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameLocals
+
+.. _torch-autograd-function-frame-global:
+
+متغير عالمي لإطار الدالة
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameGlobal
+
+.. _torch-autograd-function-frame-globals:
+
+متغيرات عالمية لإطار الدالة
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameGlobals
+
+.. _torch-autograd-function-frame-exc:
+
+استثناء إطار الدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameExc
+
+.. _torch-autograd-function-frame-excs:
+
+استثناءات إطار الدالة
+~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameExcs
+
+.. _torch-autograd-function-frame-info-tuple:
+
+معلومات إطار الدالة كمجموعة
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoTuple
+
+.. _torch-autograd-function-frame-info-tuples:
+
+معلومات إطار الدالة كمجموعات
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoTuples
+
+.. _torch-autograd-function-frame-info-dict:
+
+معلومات إطار الدالة كقاموس
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoDict
+
+.. _torch-autograd-function-frame-info-dicts:
+
+معلومات إطار الدالة كقاموس
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoDicts
+
+.. _torch-autograd-function-frame-info-object:
+
+معلومات إطار الدالة ككائن
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoObject
+
+.. _torch-autograd-function-frame-info-objects:
+
+معلومات إطار الدالة ككائنات
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoObjects
+
+.. _torch-autograd-function-frame-info-code:
+
+معلومات إطار الدالة كرموز
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoCode
+
+.. _torch-autograd-function-frame-info-codes:
+
+معلومات إطار الدالة كرموز
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoCodes
+
+.. _torch-autograd-function-frame-info-line:
+
+معلومات إطار الدالة كسطور
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoLine
+
+.. _torch-autograd-function-frame-info-lines:
+
+معلومات إطار الدالة كسطور
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoLines
+
+.. _torch-autograd-function-frame-info-var:
+
+معلومات إطار الدالة كمتغيرات
+~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoVar
+
+.. _torch-autograd-function-frame-info-vars:
+
+معلومات إطار الدالة كمتغيرات
+~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoVars
+
+.. _torch-autograd-function-frame-info-local:
+
+معلومات إطار الدالة كمتغيرات محلية
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoLocal
+
+.. _torch-autograd-function-frame-info-locals:
+
+معلومات إطار الدالة كمتغيرات محلية
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoLocals
+
+.. _torch-autograd-function-frame-info-global:
+
+معلومات إطار الدالة كمتغيرات عالمية
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoGlobal
+
+.. _torch-autograd-function-frame-info-globals:
+
+معلومات إطار الدالة كمتغيرات عالمية
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoGlobals
+
+.. _torch-autograd-function-frame-info-exc:
+
+معلومات إطار الدالة كاستثناءات
+~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoExc
+
+.. _torch-autograd-function-frame-info-excs:
+
+معلومات إطار الدالة كاستثناءات
+~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionFrameInfoExcs
+
+.. _torch-autograd-function-preprocess-context:
+
+سياق ما قبل معالجة الدالة
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionPreprocessContext
+
+.. _torch-autograd-function-postprocess-context:
+
+سياق ما بعد معالجة الدالة
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionPostprocessContext
+
+.. _torch-autograd-function-backward-context:
+
+سياق الخلفي للدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionBackwardContext
+
+.. _torch-autograd-function-forward-context:
+
+سياق الأمامي للدالة
+~~~~~~~~~~~~
+
+.. autoclass:: FunctionForwardContext
+
+.. _torch-autograd-function:
+
+دالة
+~~~
+
+.. autoclass:: Function
+
+.. _torch-autograd-function-apply:
+
+تطبيق الدالة
+~~~~~~~
+
+.. automethod:: Function.apply
+
+.. _torch-autograd-function-backward:
+
+خلفي الدالة
+~~~~~~~~
+
+.. automethod:: Function.backward
+
+.. _torch-autograd-function-buffer:
+
+مخزن مؤقت للدالة
+~~~~~~~~~~~
+
+.. automethod:: Function.buffer
+
+.. _torch-autograd-function-get-device:
+
+حصول على جهاز الدالة
+~~~~~~~~~~~~~~~
+
+.. automethod:: Function.get_device
+
+.. _torch-autograd-function-get-grad-input:
+
+حصول على متغير الدخل الخلفي للدالة
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: Function.get_grad_input
+
+.. _torch-autograd-function-next-functions:
+
+الدالة التالية
+~~~~~~~
+
+.. automethod:: Function.next_functions
+
+.. _torch-autograd-function-register-hook:
+
+تسجيل خطاف للدالة
+~~~~~~~~~~~~
+
+.. automethod:: Function.register_hook
+
+.. _torch-autograd-function-register-forward-hook:
+
+تسجيل خطاف أمامي للدالة
+~~~~~~~~~~~~~~~~
+
+.. automethod:: Function.register_forward_hook
+
+.. _torch-autograd-function-register-backward-hook:
+
+تسجيل خطاف خلفي للدالة
+~~~~~~~~~~~~~~~~
+
+.. automethod:: Function.register_backward_hook
+
+.. _torch-autograd-function-register-full-backward-hook:
+
+تسجيل خطاف خلفي كامل للدالة
+~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: Function.register_full_backward_hook
+
+.. _torch-autograd-anomaly-mode:
+
+وضع الشذوذ
+~~~~~~~~
+
+.. autofunction:: anomaly_mode
+
+.. _torch-autograd-anomaly-detected:
+
+شذوذ تم اكتشافه
+~~~~~~~~~~
+
+.. autofunction:: anomaly_detected
+
+.. _torch-autograd-grad-mode:
+
+وضع التدرج
+~~~~~~~~
+
+.. autofunction:: grad_mode
+
+.. _torch-autograd-set-grad-enabled:
+
+تعيين التدرج المُفعل
+~~~~~~~~~~~~
+
+.. autofunction:: set_grad_enabled
+
+.. _torch-autograd-grad-enabled:
+
+التدرج المُفعل
+~~~~~~~~
+
+.. autofunction:: grad_enabled
+
+.. _torch-autograd-no-grad:
+
+بدون تدرج
+~~~~~~~~
+
+.. autofunction:: no_grad
+
+.. _torch-autograd-enable-grad:
+
+تفعيل التدرج
+~~~~~~~~
+
+.. autofunction:: enable_grad
+
+.. _torch-autograd-gradref:
+
+مرجع التدرج
+~~~~~~~~~
+
+.. autofunction:: gradref
+
+.. _torch-autograd-variable:
+
+متغير
+~~~~
+
+.. autoclass:: Variable
+
+.. _torch-autograd-ones-tensor:
+
+Tensor ذو أحاديات
+~~~~~~~~~~~~~~
+
+.. autoclass:: OnesTensor
+
+.. _torch-autograd-zeros-tensor:
+
+Tensor ذو أصفار
+~~~~~~~~~~~~~~
+
+.. autoclass:: ZerosTensor
+
+.. _torch-autograd-rand:
+
+rand
+~~~~
+
+.. autofunction:: rand
+
+.. _torch-autograd-randn:
+
+randn
+~~~~~~
+
+.. autofunction:: randn
+
+.. _torch-autograd-randperm:
+
+randperm
+~~~~~~~~
+
+.. autofunction:: randperm
+
+.. _torch-autograd-tensor:
+
+Tensor
+~~~~~~~
+
+.. autoclass:: Tensor
+
+.. _torch-autograd-context-object:
+
+كائن السياق
+~~~~~~~~
+
+.. autoclass:: ContextObject
+
+.. _torch-autograd-context-aware-autograd-tensor:
+
+Tensor السياق المُدرك للسياق
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ContextAwareAutogradTensor
+
+.. _torch-autograd-context-aware-object-tensor:
+
+Tensor الكائن المُدرك للسياق
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ContextAwareObjectTensor
+
+.. _torch-autograd-context-aware-tensor:
+
+Tensor المُدرك للسياق
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: ContextAwareTensor
+
+.. _torch-autograd-function-meta:
+
+ميتا الدالة
+~~~~~~~
+
+.. autoclass:: FunctionMeta
+
+.. _torch-autograd-function-state:
+
+حالة الدالة
+~~~~~~~
+
+.. autoclass:: FunctionState
+
+.. _torch-autograd-function-preprocess-context:
+
+سياق ما قبل معالجة الدالة
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionPreprocessContext
+
+.. _torch-autograd-function-postprocess-context:
+
+سياق ما بعد معالجة الدالة
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionPostprocessContext
+
+.. _torch-autograd-function-backward-context:
+
+سياق الخلفي للدالة
+~~~~~~~~~~~
+
+.. autoclass:: FunctionBackwardContext
+
+.. _torch-autograd-function-forward-context:
+
+سياق الأمامي للدالة
+~~~~~~~~~~~~~~
+
+.. autoclass:: FunctionForwardContext
+
+.. _torch-autograd-function-context-manager:
+
+سياق المدير
+~~~~~~~~
+
+.. autoclass:: FunctionContextManager
+
+.. _torch-aut
+======================================
 
 .. automodule:: torch.autograd
 .. currentmodule:: torch.autograd
@@ -14,17 +691,16 @@ Automatic differentiation package - torch.autograd
     backward
     grad
 
-.. _forward-mode-ad:
+.. _autograd-forward:
 
-Forward-mode Automatic Differentiation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التفاضل التلقائي للأمام
+^^^^^^^^^^^^^^^
 
 .. warning::
-    This API is in beta. Even though the function signatures are very unlikely to change, improved
-    operator coverage is planned before we consider this stable.
+    هذا الـ API في مرحلة البيتا. على الرغم من أن توقيعات الدوال من غير المرجح أن تتغير، إلا أنه من المخطط تحسين تغطية المشغل قبل أن نعتبره مستقرًا.
 
-Please see the `forward-mode AD tutorial <https://pytorch.org/tutorials/intermediate/forward_ad_usage.html>`__
-for detailed steps on how to use this API.
+يرجى الاطلاع على `التفاضل التلقائي للأمام <https://pytorch.org/tutorials/intermediate/forward_ad_usage.html>`__
+للحصول على الخطوات التفصيلية حول كيفية استخدام هذا الـ API.
 
 .. autosummary::
     :toctree: generated
@@ -37,25 +713,24 @@ for detailed steps on how to use this API.
     forward_ad.exit_dual_level
     forward_ad.UnpackedDualTensor
 
-.. _functional-api:
+.. _واجهة برمجة التطبيقات الوظيفية عالية المستوى:
 
-Functional higher level API
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+واجهة برمجة التطبيقات الوظيفية عالية المستوى
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. warning::
-    This API is in beta. Even though the function signatures are very unlikely to change, major
-    improvements to performances are planned before we consider this stable.
+    هذا الـ API في مرحلة البيتا. على الرغم من أن توقيعات الدوال من غير المرجح أن تتغير، إلا أنه من المخطط إجراء تحسينات رئيسية على الأداء قبل أن نعتبرها مستقرة.
 
-This section contains the higher level API for the autograd that builds on the basic API above
-and allows you to compute jacobians, hessians, etc.
+يحتوي هذا القسم على واجهة برمجة التطبيقات عالية المستوى لـ autograd والتي تستند إلى واجهة برمجة التطبيقات الأساسية أعلاه
+وتسمح لك بحساب المصفوفات الجاكوبية، والمصفوفات الهيسية، وما إلى ذلك.
 
-This API works with user-provided functions that take only Tensors as input and return
-only Tensors.
-If your function takes other arguments that are not Tensors or Tensors that don't have requires_grad set,
-you can use a lambda to capture them.
-For example, for a function ``f`` that takes three inputs, a Tensor for which we want the jacobian, another
-tensor that should be considered constant and a boolean flag as ``f(input, constant, flag=flag)``
-you can use it as ``functional.jacobian(lambda x: f(x, constant, flag=flag), input)``.
+تعمل واجهة برمجة التطبيقات هذه مع الدوال التي يوفرها المستخدم والتي تأخذ فقط الـ Tensors كمدخلات وتعيد
+فقط الـ Tensors.
+إذا كانت دالتك تأخذ وسائط أخرى غير الـ Tensors أو الـ Tensors التي لا تحتوي على "requires_grad" المحددة،
+يمكنك استخدام تعبير لامدا (lambda) لالتقاطها.
+على سبيل المثال، بالنسبة للدالة "f" التي تأخذ ثلاث مدخلات، Tensor الذي نريد حساب المشتق الجزئي له، وآخر
+Tensor يجب اعتباره ثابتًا، وعلمًا منطقيًا كـ "f(input, constant, flag=flag)"
+يمكنك استخدامها كـ "functional.jacobian(lambda x: f(x, constant, flag=flag), input)".
 
 .. autosummary::
     :toctree: generated
@@ -68,48 +743,45 @@ you can use it as ``functional.jacobian(lambda x: f(x, constant, flag=flag), inp
     functional.vhp
     functional.hvp
 
-.. _locally-disable-grad:
+.. _locally-disable-grad-doc:
 
-Locally disabling gradient computation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تعطيل حساب المشتق محليًا
+^^^^^^^^^^^^^^^^^
 
-See :ref:`locally-disable-grad-doc` for more information on the differences
-between no-grad and inference mode as well as other related mechanisms that
-may be confused with the two. Also see :ref:`torch-rst-local-disable-grad`
-for a list of functions that can be used to locally disable gradients.
+راجع :ref:`locally-disable-grad-doc` للحصول على مزيد من المعلومات حول الاختلافات
+بين no-grad وinference mode بالإضافة إلى الآليات الأخرى ذات الصلة التي
+قد يتم الخلط بينها وبين الاثنين. راجع أيضًا :ref:`torch-rst-local-disable-grad`
+للحصول على قائمة بالدوال التي يمكن استخدامها لتعطيل المشتقات محليًا.
 
-.. _default-grad-layouts:
+.. _تخطيطات المشتق الافتراضية:
 
-Default gradient layouts
-^^^^^^^^^^^^^^^^^^^^^^^^
+تخطيطات المشتق الافتراضية
+^^^^^^^^^^^^^^^^^
 
-When a non-sparse ``param`` receives a non-sparse gradient during
-:func:`torch.autograd.backward` or :func:`torch.Tensor.backward`
-``param.grad`` is accumulated as follows.
+عندما تتلقى "param" غير المتناثرة تدرجًا غير متناثر أثناء
+:func:`torch.autograd.backward` أو :func:`torch.Tensor.backward`
+يتم تراكم "param.grad" على النحو التالي.
 
-If ``param.grad`` is initially ``None``:
+إذا كان "param.grad" في البداية "None":
 
-1. If ``param``'s memory is non-overlapping and dense, ``.grad`` is
-   created with strides matching ``param`` (thus matching ``param``'s
-   layout).
-2. Otherwise, ``.grad`` is created with rowmajor-contiguous strides.
+1. إذا كانت ذاكرة "param" غير متداخلة وكثيفة، يتم إنشاء "grad"
+   باستخدام خطوات مطابقة لـ "param" (مما يؤدي إلى مطابقة تخطيط "param").
+2. وإلا، يتم إنشاء "grad" باستخدام خطوات متجاورة للصف الرئيسي.
 
-If ``param`` already has a non-sparse ``.grad`` attribute:
+إذا كان لدى "param" بالفعل تدرج "grad" غير متناثر:
 
-3. If ``create_graph=False``, ``backward()`` accumulates into ``.grad``
-   in-place, which preserves its strides.
-4. If ``create_graph=True``, ``backward()`` replaces ``.grad`` with a
-   new tensor ``.grad + new grad``, which attempts (but does not guarantee)
-   matching the preexisting ``.grad``'s strides.
+3. إذا كانت "create_graph=False"، فإن "backward()" تتراكم في مكانها في "grad"
+   مما يحافظ على خطواتها.
+4. إذا كانت "create_graph=True"، فإن "backward()" تستبدل "grad" بـ "tensor" جديد "grad + new grad"
+   والذي يحاول (ولكن لا يضمن) مطابقة خطوات "grad" الموجودة مسبقًا.
 
-The default behavior (letting ``.grad``\ s be ``None`` before the first
-``backward()``, such that their layout is created according to 1 or 2,
-and retained over time according to 3 or 4) is recommended for best performance.
-Calls to ``model.zero_grad()`` or ``optimizer.zero_grad()`` will not affect ``.grad``
-layouts.
+السلوك الافتراضي (ترك "grad" كـ "None" قبل أول
+"backward()"، بحيث يتم إنشاؤها وفقًا لـ 1 أو 2،
+ويتم الاحتفاظ بها بمرور الوقت وفقًا لـ 3 أو 4) يوصى به لتحقيق أفضل أداء.
+لن تؤثر المكالمات إلى "model.zero_grad()" أو "optimizer.zero_grad()" على تخطيطات "grad".
 
-In fact, resetting all ``.grad``\ s to ``None`` before each
-accumulation phase, e.g.::
+في الواقع، إعادة تعيين جميع "grad" إلى "None" قبل كل
+مرحلة تراكم، على سبيل المثال::
 
     for iterations...
         ...
@@ -117,61 +789,58 @@ accumulation phase, e.g.::
             param.grad = None
         loss.backward()
 
-such that they're recreated according to 1 or 2 every time,
-is a valid alternative to ``model.zero_grad()`` or ``optimizer.zero_grad()``
-that may improve performance for some networks.
+بحيث يتم إعادة إنشائها وفقًا لـ 1 أو 2 في كل مرة،
+هو بديل صالح لـ "model.zero_grad()" أو "optimizer.zero_grad()"
+الذي قد يحسن الأداء لبعض الشبكات.
 
-Manual gradient layouts
+تخطيطات المشتق اليدوية
+----------------
+
+إذا كنت بحاجة إلى التحكم اليدوي في خطوات "grad"،
+قم بتعيين "param.grad =" tensor صفري مع الخطوات المرغوبة
+قبل أول "backward()"، ولا تقم مطلقًا بإعادة تعيينه إلى "None".
+تضمن 3 أن تخطيطك محفوظ طالما أن "create_graph=False".
+تشير 4 إلى أن تخطيطك *من المحتمل* أن يتم الاحتفاظ به حتى إذا كانت "create_graph=True".
+
+العمليات في المكان على الـ Tensors
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+إن دعم العمليات في المكان في autograd أمر صعب، ونحن لا نشجع
+استخدامها في معظم الحالات. إن إعادة استخدام الـ autograd العدوانية وتحرير الـ buffer تجعلها
+فعالة للغاية، وهناك مناسبات قليلة جدًا عندما تقلل العمليات في المكان
+من استخدام الذاكرة بالفعل بأي كمية كبيرة. ما لم تكن تعمل تحت ضغط ذاكرة شديد، فقد لا تحتاج أبدًا إلى استخدامها.
+
+التحقق من صحة العمليات في المكان
 -----------------------
 
-If you need manual control over ``.grad``'s strides,
-assign ``param.grad =`` a zeroed tensor with desired strides
-before the first ``backward()``, and never reset it to ``None``.
-3 guarantees your layout is preserved as long as ``create_graph=False``.
-4 indicates your layout is *likely* preserved even if ``create_graph=True``.
+تحتفظ جميع الـ :class:`Tensor` s بتتبع للعمليات في المكان المطبقة عليها، وإذا
+اكتشف التنفيذ أنه تم تطبيق عملية في المكان على tensor بعد حفظه للخلف في إحدى
+الدوال، فسيتم رفع خطأ بمجرد بدء عملية الخلف. يضمن هذا أنه إذا كنت تستخدم دوال في المكان
+ولا ترى أي أخطاء، فيمكنك التأكد من صحة المشتقات المحسوبة.
 
-In-place operations on Tensors
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Supporting in-place operations in autograd is a hard matter, and we discourage
-their use in most cases. Autograd's aggressive buffer freeing and reuse makes
-it very efficient and there are very few occasions when in-place operations
-actually lower memory usage by any significant amount. Unless you're operating
-under heavy memory pressure, you might never need to use them.
-
-In-place correctness checks
----------------------------
-
-All :class:`Tensor` s keep track of in-place operations applied to them, and
-if the implementation detects that a tensor was saved for backward in one of
-the functions, but it was modified in-place afterwards, an error will be raised
-once backward pass is started. This ensures that if you're using in-place
-functions and not seeing any errors, you can be sure that the computed
-gradients are correct.
-
-Variable (deprecated)
-^^^^^^^^^^^^^^^^^^^^^
+متغير (تم إهماله)
+^^^^^^^^^^^^
 
 .. warning::
-    The Variable API has been deprecated: Variables are no longer necessary to
-    use autograd with tensors. Autograd automatically supports Tensors with
-    ``requires_grad`` set to ``True``. Below please find a quick guide on what
-    has changed:
+    تم إهمال واجهة برمجة تطبيقات الـ Variable: لم تعد الـ Variables ضرورية
+    لاستخدام autograd مع الـ tensors. يدعم autograd تلقائيًا الـ Tensors مع
+    "requires_grad" المحدد إلى "True". فيما يلي دليل سريع لما
 
-    - ``Variable(tensor)`` and ``Variable(tensor, requires_grad)`` still work as expected,
-      but they return Tensors instead of Variables.
-    - ``var.data`` is the same thing as ``tensor.data``.
-    - Methods such as ``var.backward(), var.detach(), var.register_hook()`` now work on tensors
-      with the same method names.
+تغير:
 
-    In addition, one can now create tensors with ``requires_grad=True`` using factory
-    methods such as :func:`torch.randn`, :func:`torch.zeros`, :func:`torch.ones`, and others
-    like the following:
+    - "Variable(tensor)" و"Variable(tensor, requires_grad)" لا تزال تعمل كما هو متوقع،
+      ولكنها تعيد الـ Tensors بدلاً من الـ Variables.
+    - "var.data" هي نفس الشيء مثل "tensor.data".
+    - تعمل الطرق مثل "var.backward()"، و"var.detach()"، و"var.register_hook()" الآن على الـ tensors
+      بنفس أسماء الطرق.
+
+    بالإضافة إلى ذلك، يمكن الآن إنشاء الـ tensors باستخدام "requires_grad=True" باستخدام طرق المصنع مثل :func:`torch.randn`، و:func:`torch.zeros`، و:func:`torch.ones`، وغيرها
+    مثل ما يلي:
 
     ``autograd_tensor = torch.randn((2, 3, 4), requires_grad=True)``
 
-Tensor autograd functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+دوال الـ Tensor في autograd
+^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autosummary::
     :nosignatures:
 
@@ -186,7 +855,7 @@ Tensor autograd functions
    torch.Tensor.retain_grad
 
 :hidden:`Function`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: Function
 
@@ -199,11 +868,11 @@ Tensor autograd functions
     Function.jvp
     Function.vmap
 
-.. _context_method_mixins:
+.. _طرق سياق الخلط:
 
-Context method mixins
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When creating a new :class:`Function`, the following methods are available to `ctx`.
+طرق سياق الخلط
+^^^^^^^^^^^^
+عند إنشاء :class:`Function` جديد، تكون الطرق التالية متاحة لـ "ctx".
 
 .. autosummary::
     :toctree: generated
@@ -214,9 +883,9 @@ When creating a new :class:`Function`, the following methods are available to `c
     function.FunctionCtx.save_for_backward
     function.FunctionCtx.set_materialize_grads
 
-Custom Function utilities
-^^^^^^^^^^^^^^^^^^^^^^^^^
-Decorator for backward method.
+أدوات الـ Function المخصصة
+^^^^^^^^^^^^^^^^^^^^^^
+ديكور لطريقة الخلف.
 
 .. autosummary::
     :toctree: generated
@@ -224,7 +893,7 @@ Decorator for backward method.
 
     function.once_differentiable
 
-Base custom :class:`Function` used to build PyTorch utilities
+قاعدة الـ Function المخصصة المستخدمة لبناء أدوات PyTorch
 
 .. autosummary::
     :toctree: generated
@@ -235,10 +904,10 @@ Base custom :class:`Function` used to build PyTorch utilities
     function.NestedIOFunction
 
 
-.. _grad-check:
+.. _التحقق من المشتق العددي:
 
-Numerical gradient checking
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التحقق من المشتق العددي
+^^^^^^^^^^^^^^^^
 
 
 .. automodule:: torch.autograd.gradcheck
@@ -252,18 +921,18 @@ Numerical gradient checking
     gradgradcheck
     GradcheckError
 
-.. Just to reset the base path for the rest of this file
+.. فقط لإعادة تعيين مسار الأساس لبقية هذا الملف
 .. currentmodule:: torch.autograd
 
-Profiler
-^^^^^^^^
+مُوصِّف
+^^^^^
 
-Autograd includes a profiler that lets you inspect the cost of different
-operators inside your model - both on the CPU and GPU. There are three modes
-implemented at the moment - CPU-only using :class:`~torch.autograd.profiler.profile`.
-nvprof based (registers both CPU and GPU activity) using
+يتضمن autograd مُوصِّفًا يسمح لك بفحص تكلفة المشغلين المختلفين داخل نموذجك -
+على كل من وحدة المعالجة المركزية (CPU) ووحدة معالجة الرسوميات (GPU). هناك ثلاث طرائق
+مطبقة في الوقت الحالي - CPU-only باستخدام :class:`~torch.autograd.profiler.profile`.
+nvprof based (تسجل نشاط كل من وحدة المعالجة المركزية ووحدة معالجة الرسوميات) باستخدام
 :class:`~torch.autograd.profiler.emit_nvtx`.
-and vtune profiler based using
+وvtune profiler based باستخدام
 :class:`~torch.autograd.profiler.emit_itt`.
 
 .. autoclass:: torch.autograd.profiler.profile
@@ -295,8 +964,8 @@ and vtune profiler based using
 
     profiler.load_nvprof
 
-Debugging and anomaly detection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تصحيح الأخطاء والكشف عن الشذوذ
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: detect_anomaly
 
@@ -310,14 +979,14 @@ Debugging and anomaly detection
 
 
 
-Autograd graph
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Autograd exposes methods that allow one to inspect the graph and interpose behavior during
-the backward pass.
+مخطط autograd
+^^^^^^^^^^^^^^
+يكشف autograd الطرق التي تسمح بفحص المخطط والتدخل في السلوك أثناء
+مرور الخلف.
 
-The ``grad_fn`` attribute of a :class:`torch.Tensor` holds a  :class:`torch.autograd.graph.Node`
-if the tensor is the output of a operation that was recorded by autograd (i.e., grad_mode is
-enabled and at least one of the inputs required gradients), or ``None`` otherwise.
+يحتوي "grad_fn" الخاص بـ :class:`torch.Tensor` على :class:`torch.autograd.graph.Node`
+إذا كان الـ tensor هو ناتج عملية تم تسجيلها بواسطة autograd (أي تم تمكين grad_mode
+وكان واحدًا على الأقل من المدخلات يتطلب المشتقات)، أو "None" في حالة أخرى.
 
 .. autosummary::
     :toctree: generated
@@ -330,10 +999,10 @@ enabled and at least one of the inputs required gradients), or ``None`` otherwis
     graph.Node.register_prehook
     graph.increment_version
 
-Some operations need intermediary results to be saved during the forward pass
-in order to execute the backward pass.
-These intermediary results are saved as attributes on the ``grad_fn`` and can be accessed.
-For example::
+تحتاج بعض العمليات إلى نتائج وسيطة ليتم حفظها أثناء المرور للأمام
+من أجل تنفيذ مرور الخلف.
+يتم حفظ هذه النتائج الوسيطة كسمات على "grad_fn" ويمكن الوصول إليها.
+على سبيل المثال::
 
     >>> a = torch.tensor([0., 0., 0.], requires_grad=True)
     >>> b = a.exp()
@@ -344,11 +1013,10 @@ For example::
     >>> print(torch.allclose(b.grad_fn._saved_result, b))
     True
 
-You can also define how these saved tensors should be packed / unpacked using hooks.
-A common application is to trade compute for memory by saving those intermediary results
-to disk or to CPU instead of leaving them on the GPU. This is especially useful if you
-notice your model fits on GPU during evaluation, but not training.
-Also see :ref:`saved-tensors-hooks-doc`.
+يمكنك أيضًا تحديد كيفية تعبئة / فك تعبئة هذه الـ tensors المحفوظة باستخدام الـ hooks.
+تتمثل إحدى التطبيقات الشائعة في التداول بين الحوسبة والذاكرة عن طريق حفظ هذه النتائج الوسيطة
+على القرص أو على وحدة المعالجة المركزية بدلاً من تركها على وحدة معالجة الرسوميات. هذا مفيد بشكل خاص إذا لاحظت أن نموذجك يناسب وحدة معالجة الرسوميات أثناء التقييم، ولكن ليس أثناء التدريب.
+راجع أيضًا :ref:`saved-tensors-hooks-doc`.
 
 .. autoclass:: torch.autograd.graph.saved_tensors_hooks
 
@@ -366,8 +1034,8 @@ Also see :ref:`saved-tensors-hooks-doc`.
 
 
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. إضافتها هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.autograd.anomaly_mode
 .. py:module:: torch.autograd.forward_ad
 .. py:module:: torch.autograd.function
