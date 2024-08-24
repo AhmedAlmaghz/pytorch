@@ -8,13 +8,13 @@ torch.cuda
     :nosignatures:
 
     StreamContext
-    can_device_access_peer
+    يمكن_جهاز_الوصول_إلى_نظيره
     current_blas_handle
     current_device
     current_stream
     cudart
     default_stream
-    device
+    الجهاز
     device_count
     device_of
     get_arch_list
@@ -39,7 +39,7 @@ torch.cuda
     clock_rate
     OutOfMemoryError
 
-Random Number Generator
+مولد الأرقام العشوائية
 -------------------------
 .. autosummary::
     :toctree: generated
@@ -56,8 +56,8 @@ Random Number Generator
     initial_seed
 
 
-Communication collectives
--------------------------
+التجمعات التواصلية
+-------------
 
 .. autosummary::
     :toctree: generated
@@ -69,8 +69,8 @@ Communication collectives
     comm.scatter
     comm.gather
 
-Streams and events
-------------------
+التدفقات والأحداث
+---------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -79,7 +79,7 @@ Streams and events
     ExternalStream
     Event
 
-Graphs (beta)
+الرسوم البيانية (تجريبي)
 -------------
 .. autosummary::
     :toctree: generated
@@ -93,7 +93,7 @@ Graphs (beta)
 
 .. _cuda-memory-management-api:
 
-Memory management
+إدارة الذاكرة
 -----------------
 .. autosummary::
     :toctree: generated
@@ -122,7 +122,7 @@ Memory management
      change_current_allocator
      MemPool
      MemPoolContext
-.. FIXME The following doesn't seem to exist. Is it supposed to?
+.. FIXME لا يبدو أن ما يلي موجود. هل من المفترض أن يكون موجوداً؟
    https://github.com/pytorch/pytorch/issues/27785
    .. autofunction:: reset_max_memory_reserved
 
@@ -138,7 +138,7 @@ NVIDIA Tools Extension (NVTX)
     nvtx.range_pop
     nvtx.range
 
-Jiterator (beta)
+Jiterator (تجريبي)
 -----------------------------
 .. autosummary::
     :toctree: generated
@@ -150,16 +150,15 @@ Jiterator (beta)
 TunableOp
 ---------
 
-Some operations could be implemented using more than one library or more than
-one technique. For example, a GEMM could be implemented for CUDA or ROCm using
-either the cublas/cublasLt libraries or hipblas/hipblasLt libraries,
-respectively. How does one know which implementation is the fastest and should
-be chosen? That's what TunableOp provides. Certain operators have been
-implemented using multiple strategies as Tunable Operators. At runtime, all
-strategies are profiled and the fastest is selected for all subsequent
-operations.
+يمكن تنفيذ بعض العمليات باستخدام أكثر من مكتبة أو أكثر من تقنية. على
+سبيل المثال، يمكن تنفيذ GEMM لـ CUDA أو ROCm باستخدام مكتبات
+cublas/cublasLt أو hipblas/hipblasLt، على التوالي. كيف يمكن معرفة أي
+تنفيذ هو الأسرع ويجب اختياره؟ هذا ما يوفره TunableOp. تم تنفيذ بعض
+المشغلين باستخدام استراتيجيات متعددة كمشغلين قابلين للضبط. أثناء وقت
+التشغيل، يتم تحديد جميع الاستراتيجيات واختيار أسرعها لجميع العمليات
+اللاحقة.
 
-See the :doc:`documentation <cuda.tunable>` for information on how to use it.
+راجع :doc:`الوثائق <cuda.tunable>` للحصول على معلومات حول كيفية استخدامها.
 
 .. toctree::
     :hidden:
@@ -167,11 +166,12 @@ See the :doc:`documentation <cuda.tunable>` for information on how to use it.
     cuda.tunable
 
 
-Stream Sanitizer (prototype)
+Stream Sanitizer (نموذج أولي)
 ----------------------------
 
-CUDA Sanitizer is a prototype tool for detecting synchronization errors between streams in PyTorch.
-See the :doc:`documentation <cuda._sanitizer>` for information on how to use it.
+CUDA Sanitizer هي أداة نموذج أولي للكشف عن أخطاء المزامنة بين التدفقات في
+PyTorch. راجع :doc:`الوثائق <cuda._sanitizer>` للحصول على معلومات حول كيفية
+استخدامها.
 
 .. toctree::
     :hidden:
@@ -179,8 +179,8 @@ See the :doc:`documentation <cuda._sanitizer>` for information on how to use it.
     cuda._sanitizer
 
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. أضيفها هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.cuda.comm
 .. py:module:: torch.cuda.error
 .. py:module:: torch.cuda.gds
