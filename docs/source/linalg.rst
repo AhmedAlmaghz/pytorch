@@ -4,15 +4,15 @@
 torch.linalg
 ============
 
-Common linear algebra operations.
+عمليات الجبر الخطي الشائعة.
 
-See :ref:`Linear Algebra Stability` for some common numerical edge-cases.
+راجع :ref:`استقرار الجبر الخطي` لبعض الحالات الحدية العددية الشائعة.
 
 .. automodule:: torch.linalg
 .. currentmodule:: torch.linalg
 
-Matrix Properties
------------------
+خواص المصفوفة
+-----------
 
 .. autosummary::
     :toctree: generated
@@ -27,8 +27,8 @@ Matrix Properties
     cond
     matrix_rank
 
-Decompositions
---------------
+التحليلات
+------
 
 .. autosummary::
     :toctree: generated
@@ -47,7 +47,7 @@ Decompositions
 
 .. _linalg solvers:
 
-Solvers
+المحلات
 -------
 
 .. autosummary::
@@ -61,7 +61,7 @@ Solvers
 
 .. _linalg inverses:
 
-Inverses
+معكوسات
 --------
 
 .. autosummary::
@@ -71,8 +71,8 @@ Inverses
     inv
     pinv
 
-Matrix Functions
-----------------
+وظائف المصفوفة
+------------
 
 .. autosummary::
     :toctree: generated
@@ -81,8 +81,8 @@ Matrix Functions
     matrix_exp
     matrix_power
 
-Matrix Products
----------------
+منتجات المصفوفة
+-----------
 
 .. autosummary::
     :toctree: generated
@@ -94,17 +94,17 @@ Matrix Products
     multi_dot
     householder_product
 
-Tensor Operations
------------------
+عمليات التنسور
+-----------
 
 .. autosummary::
-    :toctree: generated
+    :toctreeMultiplier: generated
     :nosignatures:
 
     tensorinv
     tensorsolve
 
-Misc
+متنوع
 ----
 
 .. autosummary::
@@ -113,8 +113,8 @@ Misc
 
     vander
 
-Experimental Functions
-----------------------
+وظائف تجريبية
+----------
 .. autosummary::
     :toctree: generated
     :nosignatures:
