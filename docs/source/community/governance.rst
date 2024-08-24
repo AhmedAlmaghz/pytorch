@@ -1,331 +1,350 @@
-PyTorch Governance | Mechanics
-==============================
+.. | PyTorch Governance | آلية عمل حوكمة PyTorch
+==============================================
 
-Summary
--------
+.. ما هي حوكمة PyTorch؟
+--------------------
 
-PyTorch adopts a technical governance structure that is hierarchical.
+   حوكمة PyTorch هي العملية التي يتم من خلالها اتخاذ القرارات المتعلقة بتطوير وإدارة PyTorch. تهدف هذه العملية إلى ضمان أن PyTorch يتم تطويره وإدارته بطريقة مفتوحة وشفافة وشاملة.
 
-* A community of **contributors** who file issues, make pull requests,
-  and contribute to the project.
-* A small set of **module maintainers** drive each module of the PyTorch
-  project.
-* They are overseen by **core maintainers**, who drive the
-  overall project direction.
-* The core maintainers have a **lead core maintainer**
-  who is the catch-all decision maker.
-
-All maintainers are expected to have a strong bias towards
-PyTorch’s design philosophy.
-
-Beyond the maintainers, the community is encouraged to contribute,
-file issues, make proposals, review pull requests and be present
-in the community. Given contributions and willingness to invest,
-anyone can be accepted as a maintainer and provided write access
-or ownership of parts of the codebase.
-
-Technical governance is strictly separated from business governance.
-Separating technical from business governance ensures that there is
-no way for any person or company to “buy their way into” the
-technical guidance of the project. Additionally, membership in
-the technical governance process is for **individuals**, not companies.
-That is, there are no seats reserved for specific companies, and
-membership is associated with the person rather than the company
-employing that person.
-
-Module Maintainers
-------------------
-
-Modules are defined as GitHub repositories within the PyTorch org,
-or as directories within the core repository
-`pytorch/pytorch <https://github.com/pytorch/pytorch>`__.
-Each module will have its own maintainer group. Maintainer
-groups are responsible for reviewing and approving commits,
-improving design, and changing the scope of the module.
-Each maintainer group may adopt its own rules and procedures
-for making decisions (majority vote being default). Module
-maintainers have the right to dispute decisions made by other
-module maintainers -- especially if it affects them. When
-disputes are made, the module maintainer group should
-provide a reasonable and public explanation of the dispute,
-the relevant arguments, and the resolution. In the exceptional
-cases where module maintainers cannot come to a conclusion
-themselves, they will escalate to core maintainers for review.
-The escalations are resolved by the core maintainers in
-accordance with their rules and procedures.
-
-Each maintainer group should publish publicly available
-communication for their module (a vision, rough roadmap,
-design docs, any disputes and dispute resolutions) so that
-contributors and other interested parties understand the
-future direction of the project and can participate in discussion.
-
-Responsibilities of the maintainer includes:
-
-* Triaging high priority issues of the module
-* Triaging and reviewing and landing high priority pull requests of the module
-* Supporting public documentation related to the module
-* Running public developer meetings
-
-Core Maintainers
-----------------
-
-The core maintainers are expected to have a deep understanding
-of the PyTorch code base and design philosophies. Their responsibilities
-include:
-
-* Articulating a cohesive long-term vision for the project
-* Negotiating and resolving contentious issues in ways
-  acceptable to all parties involved
-* Receiving broad requests for changes from stakeholders of
-  PyTorch and evaluating / accepting them (small module-level
-  requests are handled by module maintainers)
-
-The core maintainers as a group have the power to veto any
-decision made at a Module maintainer level. The core
-maintainers have power to resolve disputes as they see fit.
-The core maintainers should publicly articulate their
-decision-making, and give a clear reasoning for their
-decisions, vetoes and dispute resolution.
-
-The core maintainers are admins of the PyTorch GitHub Org
-and are listed in `Maintainers <https://pytorch.org/docs/stable/community/persons_of_interest.html>`__.
-
-Lead Core Maintainer (BDFL)
+.. من يشارك في حوكمة PyTorch؟
 ---------------------------
 
-There may be decisions in which the core maintainers cannot
-come to a consensus. To make such difficult decisions, the
-core maintainers have an assigned and publicly declared Lead
-Core Maintainer amongst them, also commonly known in open-source
-governance models as a BDFL.
+   حوكمة PyTorch تشمل مجموعة متنوعة من أصحاب المصلحة، بما في ذلك المطورين والمستخدمين والشركات المهتمة بتطوير PyTorch ودعمه. يتم تشجيع جميع أفراد المجتمع على المشاركة في عملية الحوكمة والمساهمة في اتجاه مستقبل PyTorch.
 
-The Lead Core Maintainer should publicly articulate their
-decision-making, and give a clear reasoning for their
-decisions. The Lead Core Maintainer is also responsible for
-confirming or removing core maintainers.
+.. كيف تعمل حوكمة PyTorch؟
+---------------------------
 
-Nominating, Confirming and Removing Maintainers
------------------------------------------------
+   - `مجلس PyTorch التقني <https://pytorch.org/governance#technical-steering-committee>`__: يتكون مجلس PyTorch التقني (TSC) من خبراء تقنيين يتم انتخابهم من قبل المجتمع. دور TSC هو توفير القيادة التقنية والإشراف على تطوير PyTorch.
 
-The Principles
-~~~~~~~~~~~~~~
+   - `فرق العمل <https://pytorch.org/governance#working-groups>`__: فرق العمل هي مجموعات مخصصة تركز على موضوعات أو مهام محددة تتعلق بـ PyTorch. يمكن لأي شخص من المجتمع المشاركة في فرق العمل والمساهمة في عملها.
 
-* Membership in module maintainer groups is given to **individuals**
-  on **merit basis** after they demonstrated strong expertise of the
-  component through contributions, reviews and discussions and are
-  aligned with how the component fits in overall PyTorch direction.
-* For membership in the maintainer group the individual has to
-  demonstrate strong and continued alignment with the overall
-  PyTorch principles.
-* No term limits for module maintainers or core maintainers
-* Light criteria of moving module maintenance to ‘emeritus’
-  status if they don’t actively participate over long periods
-  of time. Each module maintainer group may define the inactive
-  period that’s appropriate for that module.
-* The membership is for an individual, not a company.
+   - `اجتماعات المجتمع <https://pytorch.org/community/community-meetings>`__: تعقد اجتماعات المجتمع بانتظام لمناقشة التطورات الأخيرة في PyTorch وجمع التعليقات من المجتمع. هذه الاجتماعات مفتوحة للجميع وتوفر فرصة للمشاركة المباشرة في مناقشات الحوكمة.
 
-The Process for Nomination
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+   - `طلبات السحب (Pull Requests) <https://github.com/pytorch/pytorch/pulls>`__ و `قضايا GitHub <https://github.com/pytorch/pytorch/issues>`__: يتم التعامل مع المساهمات الفعلية في رمز PyTorch من خلال طلبات السحب وقضايا GitHub. يتم مراجعة هذه المساهمات ومناقشتها بشكل مفتوح من قبل المجتمع قبل دمجها.
 
-* Each module has its own process. Please contact module maintainers for more information.
-  However, if there is no process identified, you can file a request to the core
-  maintainers by submitting `this form <https://share.hsforms.com/1fh3SpHFMR2ihEBQ2orgN8A4tvhy>`__.
-  Core maintainers are meeting every three months.
-* If you are submitting a request to the core maintainers, the information in your request
-  must include the following items:
+.. كيف يمكنني المشاركة في حوكمة PyTorch؟
+--------------------------------------
 
-  * The nominees depth and breadth of code, review and design
-    contributions on the module
-  * Testimonials (positive and negative) of the nominee’s interactions
-    with the maintainers, users, and the community
-  * General testimonials of support from the maintainers
+   هناك العديد من الطرق للمشاركة في حوكمة PyTorch:
 
-* The core maintainers then evaluate all information and make
-  a final decision to Confirm or Decline the nomination. The
-  decision of the core maintainers has to be articulated well
-  and would be public.
+   - الانضمام إلى فرق العمل والمشاركة بنشاط في مناقشاتها ومهامها.
 
-The Process for Removal
-~~~~~~~~~~~~~~~~~~~~~~~
+   - حضور اجتماعات المجتمع والمشاركة في المناقشات.
 
-* Similar to the process for nomination, anyone in the community
-  can nominate a person to be removed from a Module maintainer
-  position or a Core maintainer position.
-* A person can also self-nominate to be removed
-* The core maintainers (excluding persons with conflict of
-  interest) will request or put together more information around
-  the following:
+   - تقديم طلبات السحب والمساهمة في تطوير رمز PyTorch.
 
-  * Their activity (or lack of) on the project
-  * Their changing thinking of the space, which results in
-    conflict with the overall direction of the project
-  * Other information that makes them unfit to be a maintainer,
-    such as Code of Conduct issues, their activity outside the
-    scope of the project that conflicts with the project’s values
-  * **Conflicts of interest**: filial or romantic relationships
+   - المشاركة في مناقشات قضايا GitHub وتقديم أفكار واقتراحات.
 
-* The core maintainers then evaluate all information and make
-  a final decision to Confirm or Decline the removal. The decision
-  of the core maintainers has to be articulated well and would be
-  public.
+   - التصويت في انتخابات TSC وانتخاب القادة التقنيين الذين يمثلون رؤيتك.
 
-Nominating Core Maintainers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. الموارد
+--------
 
-* Any core or module maintainer can nominate someone to become a
-  core maintainer
-* The lead maintainer (BDFL) is responsible for evaluating the
-  nomination.
-* The lead maintainer requests or puts together more information
-  around the strength of the candidate to be a core maintainer:
+   - `صفحة حوكمة PyTorch <https://pytorch.org/governance>`__: توفر صفحة الحوكمة الرسمية على موقع PyTorch الإلكتروني نظرة عامة مفصلة على بنية الحوكمة وعملية المشاركة.
 
-  * Letters of support from other core and module maintainers
-  * General letters of support from stakeholders within the PyTorch
-    community
-  * Any new relevant information that is befitting for the candidacy
+   - `مدونة حوكمة PyTorch <https://medium.com/pytorch/introducing-the-pytorch-governance-forum-4f4f26444593>`__: تقدم مدونة الحوكمة معلومات حول التطورات الأخيرة في بنية حوكمة PyTorch وعملية صنع القرار.
 
-* The lead maintainer evaluates all information and makes a final
-  decision to Confirm or Decline the nomination, with a clear public
-  articulation of their reasoning behind the decision.
+   - `منتدى حوكمة PyTorch <https://discuss.pytorch.org/c/governance>`__: يوفر المنتدى مساحة للمناقشات المفتوحة حول حوكمة PyTorch، حيث يمكن لأفراد المجتمع طرح الأسئلة وتقديم الاقتراحات.
+= = = = = = = = = = = = = = = = = = = = = = = = = =
+ملخص
+---------
 
-Removing the Lead Core Maintainer and Nominating a New Lead Core Maintainer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+يتبنى PyTorch هيكل حوكمة تقنية هرمي.
 
-* A super-majority of core maintainers (75%) can choose to
-  remove the Lead Core Maintainer
-* After a removal of the Lead Core Maintainer or in unforeseen
-  circumstances (such as permanent unavailability of the Lead Core
-  Maintainer), the core maintainers follow a Ranked-Choice voting
-  method to elect a new Lead Core Maintainer.
+* مجموعة من **المساهمين** الذين يرسلون المشكلات، ويطلبون سحب الطلبات،
+  ويساهمون في المشروع.
+* مجموعة صغيرة من **مشرفي الوحدات النمطية** تقود كل وحدة نمطية من مشروع PyTorch.
+* يشرف عليهم **مشرفو النواة** ، الذين يقودون
+  اتجاه المشروع بشكل عام.
+* لدى مشرفي النواة **مشرف رئيسي للنواة**
+  الذي هو صانع القرار النهائي.
 
-Add, Remove, and Re-Scope Modules and Projects
-----------------------------------------------
+من المتوقع أن يكون لدى جميع المشرفين تحيز قوي
+فلسفة التصميم PyTorch.
 
-The core maintainers together are responsible for taking
-decisions on adding, removing and re-scoping new modules
-in the PyTorch org, either as new repositories in the
-PyTorch GitHub org, or as folders in the
+وبصرف النظر عن المشرفين، يتم تشجيع المجتمع على المساهمة،
+قم بإنشاء مشكلات، تقديم مقترحات، ومراجعة طلبات السحب والحضور
+في المجتمع. نظرًا للمساهمات والرغبة في الاستثمار،
+يمكن قبول أي شخص كمشرف ويتم منحه حق الوصول للكتابة
+أو ملكية أجزاء من قاعدة التعليمات البرمجية.
+
+الحوكمة التقنية منفصلة تمامًا عن الحوكمة التجارية.
+يضمن الفصل بين الحوكمة التقنية والتجارية عدم وجود
+طريقة لأي شخص أو شركة "لشراء طريقها"
+إرشادات المشروع التقنية. بالإضافة إلى ذلك، العضوية في
+تقتصر عملية الحوكمة التقنية على **الأفراد**، وليس الشركات.
+أي أنه لا توجد مقاعد مخصصة لشركات محددة،
+ترتبط العضوية بالشخص وليس بالشركة
+توظيف هذا الشخص.
+
+مشرفو الوحدات النمطية
+----------------
+
+تُعرَّف الوحدات النمطية على أنها مستودعات GitHub داخل منظمة PyTorch،
+أو كدلائل داخل المستودع الأساسي
+`pytorch/pytorch <https://github.com/pytorch/pytorch>`__.
+ستكون لكل وحدة نمطية مجموعة المشرفين الخاصة بها. المشرف
+المجموعات مسؤولة عن مراجعة والموافقة على الالتزامات،
+تحسين التصميم، وتغيير نطاق الوحدة النمطية.
+يمكن لكل مجموعة مشرفين اعتماد قواعدها وإجراءاتها الخاصة
+لعمل القرارات (التصويت بالأغلبية هو الافتراضي). يحق لمشرفي الوحدات النمطية
+الاعتراض على القرارات التي يتخذها مشرفو الوحدات النمطية الأخرى -
+خاصة إذا كان ذلك يؤثر عليهم. عند
+يتم تقديم النزاعات، يجب على مجموعة مشرفي الوحدة النمطية
+تقديم تفسير معقول وعلني للنزاع،
+الحجج ذات الصلة، والقرار. في الحالات الاستثنائية حيث لا يمكن لمشرفي الوحدات النمطية
+التوصل إلى استنتاج بأنفسهم، فإنهم سيصعدون إلى المشرفين الأساسيين للمراجعة.
+يتم حل التصعيدات من قبل المشرفين الأساسيين وفقًا
+قواعدهم وإجراءاتهم.
+
+يجب على كل مجموعة مشرفين نشر اتصالات متاحة للجمهور
+لوحدتهم النمطية (رؤية، خارطة طريق تقريبية،
+وثائق التصميم، أي نزاعات وحلول النزاعات) بحيث
+المساهمون والأطراف المهتمة الأخرى يفهمون
+اتجاه المشروع في المستقبل ويمكنهم المشاركة في المناقشة.
+
+تشمل مسؤوليات المشرف ما يلي:
+
+* فرز قضايا الأولوية القصوى للوحدة النمطية
+* فرز ومراجعة ودمج طلبات السحب ذات الأولوية القصوى للوحدة النمطية
+* دعم الوثائق العامة المتعلقة بالوحدة النمطية
+* إدارة اجتماعات المطورين العامة
+
+مشرفو النواة
+----------
+
+من المتوقع أن يكون لدى المشرفين الأساسيين فهم عميق
+قاعدة كود PyTorch وفلسفات التصميم. تشمل مسؤولياتهم:
+
+* التعبير عن رؤية متماسكة طويلة الأجل للمشروع
+* التفاوض بشأن القضايا المثيرة للجدل وحلها بطرق
+  مقبولة لجميع الأطراف المعنية
+* تلقي طلبات التغيير واسعة النطاق من أصحاب المصلحة في
+  PyTorch وتقييمها / قبولها (يتولى مشرفو الوحدات النمطية طلبات صغيرة على مستوى الوحدة النمطية)
+
+لدى المشرفين الأساسيين كمجموعة سلطة نقض أي
+قرار يتم اتخاذه على مستوى مشرف الوحدة النمطية. لدى المشرفين الأساسيين سلطة
+لحل النزاعات كما يرون ذلك مناسبًا. يجب على المشرفين الأساسيين التعبير علنًا عن
+صنع القرار الخاص بهم، وتقديم مبررات واضحة لقراراتهم،
+حقوق النقض وحل النزاعات.
+
+المشرفون الأساسيون هم مسؤولو منظمة PyTorch GitHub
+مدرجة في `المشرفون <https://pytorch.org/docs/stable/community/persons_of_interest.html>`__.
+
+مشرف النواة الرائد (BDFL)
+---------------------
+
+قد تكون هناك قرارات لا يمكن للمشرفين الأساسيين
+التوصل إلى توافق في الآراء. لاتخاذ مثل هذه القرارات الصعبة،
+لدى المشرفين الأساسيين مشرف أساسي رئيسي معين ومعلن عنه
+بينهم، والمعروف أيضًا باسم BDFL في نماذج حوكمة المصادر المفتوحة.
+
+يجب على مشرف النواة الرائد التعبير علنًا عن
+صنع القرار الخاص به، وتقديم مبررات واضحة لقراراته. مشرف النواة الرائد
+هو أيضًا مسؤول عن تأكيد أو إزالة المشرفين الأساسيين.
+
+ترشيح وتأكيد وإزالة المشرفين
+----------------------
+
+المبادئ
+~~~~
+
+* تُمنح العضوية في مجموعات مشرفي الوحدات النمطية إلى **الأفراد**
+  على أساس **الجدارة** بعد أن أظهروا خبرة قوية في المكون من خلال المساهمات والمراجعات والمناقشات
+  تتماشى مع كيفية ملاءمة المكون لاتجاه PyTorch العام.
+* للحصول على عضوية في مجموعة المشرفين، يجب على الفرد
+  إثبات التزام قوي ومستمر بمبادئ PyTorch العامة.
+* لا توجد حدود زمنية لمشرفي الوحدات النمطية أو المشرفين الأساسيين
+* معايير خفيفة لنقل صيانة الوحدة النمطية إلى حالة "فخري"
+  إذا لم يشاركوا بنشاط لفترات طويلة
+  من الوقت. يمكن لكل مجموعة مشرفي الوحدات النمطية تحديد فترة الخمول
+  المناسبة لتلك الوحدة النمطية.
+* العضوية للأفراد، وليس للشركة.
+
+عملية الترشيح
+~~~~~~~~~~
+
+* لكل وحدة نمطية عملية خاصة بها. يرجى الاتصال بمشرفي الوحدات النمطية للحصول على مزيد من المعلومات.
+  ومع ذلك، إذا لم يتم تحديد أي عملية، فيمكنك إرسال طلب إلى المشرفين الأساسيين من خلال تقديم `هذا النموذج <https://share.hsforms.com/1fh3SpHFMR2ihEBQ2orgN8A4tvhy>`__.
+  يجتمع المشرفون الأساسيون كل ثلاثة أشهر.
+* إذا كنت تقدم طلبًا إلى المشرفين الأساسيين، يجب أن تتضمن المعلومات الموجودة في طلبك
+  العناصر التالية:
+
+  * عمق المرشح وعرضه من التعليمات البرمجية والمراجعات والمساهمات التصميمية
+    على الوحدة النمطية
+  * الشهادات (الإيجابية والسلبية) لتفاعلات المرشح
+    مع المشرفين والمستخدمين والمجتمع
+  * شهادات الدعم العامة من المشرفين
+
+* ثم يقوم المشرفون الأساسيون بتقييم جميع المعلومات واتخاذ قرار
+  لتأكيد أو رفض الترشيح. يجب أن يكون قرار المشرفين الأساسيين
+  مبررة جيدًا وستكون عامة.
+
+عملية الإزالة
+~~~~~~~~~
+
+* على غرار عملية الترشيح، يمكن لأي شخص في المجتمع
+  ترشيح شخص لإزالته من منصب مشرف الوحدة النمطية
+  أو موقف المشرف الأساسي.
+* يمكن للشخص أيضًا ترشيح نفسه للإزالة
+* سيطلب المشرفون الأساسيون (باستثناء الأشخاص ذوي تضارب المصالح) أو سيجمعون المزيد من المعلومات
+  حول ما يلي:
+
+  * نشاطهم (أو عدم نشاطهم) في المشروع
+  * تفكيرهم المتغير في هذا المجال، مما يؤدي إلى
+    صراع مع الاتجاه العام للمشروع
+  * معلومات أخرى تجعلهم غير لائقين ليكونوا مشرفًا،
+    مثل قضايا مدونة قواعد السلوك، نشاطهم خارج
+    نطاق المشروع الذي يتعارض مع قيم المشروع
+  * **تضارب المصالح**: العلاقات الأسرية أو الرومانسية
+
+* ثم يقوم المشرفون الأساسيون بتقييم جميع المعلومات واتخاذ قرار
+  لتأكيد أو رفض الإزالة. يجب أن يكون قرار المشرفين الأساسيين
+  مبررة جيدًا وستكون عامة.
+
+ترشيح المشرفين الأساسيين
+~~~~~~~~~~~~~~~~~
+
+* يمكن لأي مشرف أساسي أو مشرف وحدة نمطية ترشيح شخص ما ليصبح مشرفًا أساسيًا
+* المشرف الرئيسي (BDFL) مسؤول عن تقييم الترشيح.
+* يطلب المشرف الرئيسي أو يجمع المزيد من المعلومات
+  حول قوة المرشح ليكون مشرفًا أساسيًا:
+
+  * خطابات الدعم من المشرفين الأساسيين الآخرين ومشرفي الوحدات النمطية
+  * خطابات الدعم العامة من أصحاب المصلحة داخل مجتمع PyTorch
+  * أي معلومات جديدة ذات صلة بصحة الترشيح
+
+* يقيم المشرف الرئيسي جميع المعلومات ويتخذ قرارًا نهائيًا
+  لتأكيد أو رفض الترشيح، مع التعبير العام الواضح
+التبرير المنطقي وراء القرار.
+
+إزالة مشرف النواة الرائد وترشيح مشرف نواة رائد جديد
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* يمكن لأغلبية كبيرة من المشرفين الأساسيين (75%)
+  اختيار إزالة مشرف النواة الرائد
+* بعد إزالة مشرف النواة الرائد أو في ظروف غير متوقعة
+  (مثل عدم توفر مشرف النواة الرائد بشكل دائم)، يتبع المشرفون الأساسيون
+  طريقة التصويت بالاختيار المرتب لانتخاب مشرف نواة رائد جديد.
+
+إضافة وإزالة وإعادة تحديد نطاق الوحدات النمطية والمشاريع
+--------------------------------------
+
+المشرفون الأساسيون مسؤولون معًا عن اتخاذ القرارات
+حول إضافة وإزالة وإعادة تحديد نطاق الوحدات النمطية الجديدة
+في منظمة PyTorch، إما كمستودعات جديدة في
+منظمة PyTorch GitHub، أو كمجلدات في
 `pytorch/pytorch <https://github.com/pytorch/pytorch>`__
-repository.
+المستودع.
 
-They invite proposals from members in the community
-(including themselves) for such changes.
-The proposals are open-ended, but should have some basic
-ground-work to make a convincing case to make change. The
-following is an example approach to this process:
+إنهم يدعون إلى تقديم مقترحات من أعضاء المجتمع
+(بما في ذلك أنفسهم) لمثل هذه التغييرات.
+المقترحات مفتوحة، ولكن يجب أن يكون لها بعض الأساسيات
+العمل لإقناع القضية لإجراء تغيير. فيما يلي مثال على النهج
+تتمثل هذه العملية فيما يلي:
 
-#. Interview researchers / stakeholders, talk to community, gather issues;
-#. Read papers, attend conferences, build example pipelines based on experience;
-#. Create a state of the world - make sure this change is necessary,
-   for example adding a new project or module is worth the maintenance
-   cost; or removing a project or module will not remove too much value
-   from PyTorch;
-#. Create a proposal; the proposal covers the maintainership, development
-   and community plan once the proposal is approved.
+#. مقابلة الباحثين / أصحاب المصلحة، والتحدث إلى المجتمع، وجمع القضايا؛
+#. قراءة الأوراق، وحضور المؤتمرات، وبناء خطوط الأنابيب النموذجية بناءً على الخبرة؛
+#. إنشاء حالة العالم - تأكد من أن هذا التغيير ضروري،
+   على سبيل المثال، إضافة مشروع أو وحدة نمطية جديدة تستحق تكلفة الصيانة؛ أو إزالة مشروع أو وحدة نمطية
+   لن يزيل الكثير من القيمة من PyTorch؛
+#. إنشاء اقتراح؛ يغطي الاقتراح الصيانة والتنمية
+   وخطة المجتمع بمجرد الموافقة على الاقتراح.
 
-The core maintainers take final decisions on the proposal, articulating
-the reasoning behind the decision publicly.
+يتخذ المشرفون الأساسيون القرارات النهائية بشأن الاقتراح، مع التعبير عن
+التبرير المنطقي للقرار علنًا.
 
+صنع القرار
+---------
 
-Decision Making
----------------
+التغييرات غير المثيرة للجدل
+~~~~~~~~~~~~~~~~~~
 
-Uncontroversial Changes
-~~~~~~~~~~~~~~~~~~~~~~~
+يحدث العمل الأساسي من خلال القضايا وطلبات السحب على
+GitHub. يجب على المشرفين تجنب دفع تغييراتهم مباشرة إلى
+مخزن PyTorch، والاعتماد بدلاً من ذلك على طلبات السحب. تسمح الموافقة على طلب السحب من قبل
+مشرف أساسي أو مشرف وحدة نمطية بالدمج
+دون مزيد من الإجراءات. يوافق المشرفون الأساسيون ومشرفو الوحدات النمطية، كما هو مدرج في
+`المشرفون <https://pytorch.org/docs/stable/community/persons_of_interest.html>`__
+الصفحة وضمن `CODEOWNERS <https://github.com/pytorch/pytorch/blob/master/CODEOWNERS>`__
+توافق هذه التغييرات في النهاية.
 
-Primary work happens through issues and pull requests on
-GitHub. Maintainers should avoid pushing their changes directly to
-the PyTorch repository, instead relying on pull requests. Approving a
-pull request by a core or module maintainer allows it to be merged
-without further process. Core and module maintainers, as listed on
-the `Maintainers <https://pytorch.org/docs/stable/community/persons_of_interest.html>`__
-page and within `CODEOWNERS <https://github.com/pytorch/pytorch/blob/master/CODEOWNERS>`__
-ultimately approve these changes.
+من المهم إخطار الخبراء ذوي الصلة بمشكلة أو طلب سحب.
+تفضل المراجعات من الخبراء في مجال الاهتمام المعين،
+خاصة على الموافقات على طلبات السحب. قد يؤدي الفشل في القيام بذلك
+قد ينتهي الأمر بالتغيير الذي تم التراجع عنه بواسطة الخبير ذي الصلة.
 
-Notifying relevant experts about an issue or a pull request
-is important. Reviews from experts in the given interest area are
-strongly preferred, especially on pull request approvals. Failure to do
-so might end up with the change being reverted by the relevant expert.
+عملية اتخاذ القرار المثير للجدل
+~~~~~~~~~~~~~~~~~~~~
 
-Controversial Decision Process
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+تتطلب التغييرات الجوهرية في مجال اهتمام معين فتح قضية GitHub
+للمناقشة. ويشمل ذلك ما يلي:
 
-Substantial changes in a given interest area require a GitHub issue to
-be opened for discussion. This includes:
+-  أي تغيير دلالي أو نحوي لإطار عمل PyTorch أو المكتبة.
+-  التغييرات غير المتوافقة مع الإصدارات السابقة في واجهة برمجة التطبيقات Python أو C++.
+-  الإضافات إلى إطار العمل الأساسي أو المكتبة، بما في ذلك وظائف جديدة كبيرة
+   داخل مكتبة موجودة.
+-  إزالة ميزات أساسية أو دعم المنصة
 
--  Any semantic or syntactic change to the PyTorch framework or library.
--  Backwards-incompatible changes to the Python or C++ API.
--  Additions to the core framework or library, including substantial new
-   functionality within an existing library.
--  Removal of core features or platform support
+يوافق المشرفون الأساسيون ومشرفو الوحدات النمطية على هذه التغييرات في النهاية.
 
-Core and module maintainers ultimately approve these changes.
+سياسات المشروع العامة
+~~~~~~~~~~~~~~~
 
-General Project Policies
-~~~~~~~~~~~~~~~~~~~~~~~~
+تم تأسيس PyTorch كمشروع سلسلة PyTorch من مشاريع LF، LLC.
+السياسات التي تنطبق على PyTorch والمشاركين في PyTorch، بما في ذلك
+الإرشادات المتعلقة باستخدام العلامات التجارية، متوفرة في https://www.lfprojects.org/policies/.
 
-PyTorch has been established as PyTorch a Series of LF Projects, LLC.
-Policies applicable to PyTorch and participants in PyTorch, including
-guidelines on the usage of trademarks, are located at https://www.lfprojects.org/policies/.
+يقر المشاركون في PyTorch بأن حقوق الطبع والنشر في جميع المساهمات الجديدة
+سيتم الاحتفاظ بها من قبل صاحب حقوق الطبع والنشر كأعمال مستقلة
+ولن يُطلب من أي مساهم أو صاحب حقوق نشر تعيين حقوق الطبع والنشر
+إلى المشروع. باستثناء ما هو موصوف أدناه، يجب إجراء جميع مساهمات التعليمات البرمجية في المشروع
+باستخدام ترخيص BSD ثلاثي الفقرات متاح هنا:
+https://opensource.org/licenses/BSD-3-Clause (ترخيص "المشروع").
+سيتم إتاحة جميع التعليمات البرمجية الصادرة بموجب ترخيص المشروع.
+قد يوافق المشرفون على استخدام ترخيص مفتوح بديل أو
+تراخيص للمساهمات الواردة أو الصادرة على أساس استثنائي.
 
-PyTorch participants acknowledge that the copyright in all new contributions
-will be retained by the copyright holder as independent works of authorship
-and that no contributor or copyright holder will be required to assign copyrights
-to the project. Except as described below, all code contributions to the project
-must be made using the 3-Clause-BSD License available here:
-https://opensource.org/licenses/BSD-3-Clause (the “Project License”).
-All outbound code will be made available under the Project License.
-The Maintainers may approve the use of an alternative open license or
-licenses for inbound or outbound contributions on an exception basis.
+الأسئلة الشائعة
 
-FAQ
----
+.. _أسئلة متكررة:
 
-**Q: What if I would like to own (or partly own) a part of the project
-such as a feature area or domain library, for example** `Linear Algebra <https://github.com/pytorch/pytorch/tree/master/torch/linalg>`__
-**or** `Torch Vision <https://github.com/pytorch/vision>`__ **?**
-This is absolutely possible.
-The first step is to start contributing to the existing project area and
-supporting its health and success. In addition to this, you can
-make a proposal through a GitHub issue for new functionality or changes
-to improve the project area.
+أسئلة متكررة
+===========
 
-**Q: What if I am a company looking to use PyTorch internally for
-development, can I be granted or purchase a board seat to drive the
-project direction?** No, the PyTorch project is strictly driven by the
-a maintainer project philosophy and clearly separates technical
-governance from business governance. However, if you want to be
-involved in sponsorship and support, you can become involved in the
-PyTorch Foundation (PTF) and sponsorship through this. You can also
-have individual engineers look to become maintainers, but this is
-not guaranteed and is merit-based.
+**س: ماذا لو أردت أن أمتلك (أو أمتلك جزئيًا) جزءًا من المشروع، مثل مجال الميزة أو مكتبة المجال، على سبيل المثال** `الجبر الخطي <https://github.com/pytorch/pytorch/tree/master/torch/linalg>`__ **أو** `رؤية الشعلة <https://github.com/pytorch/vision>`__ **؟**
+هذا ممكن بالتأكيد.
+الخطوة الأولى هي البدء في المساهمة في منطقة المشروع الحالية ودعم صحتها ونجاحها. بالإضافة إلى ذلك، يمكنك
+تقديم اقتراح من خلال مشكلة GitHub لوظيفة جديدة أو تغييرات
+لتحسين منطقة المشروع.
 
-**Q: Does the PyTorch project support grants or ways to support
-independent developers using or contributing to the project?** No, not
-at this point. We are however looking at ways to better support the
-community of independent developers around PyTorch. If you have
-suggestions or inputs, please reach out on the PyTorch forums to
-discuss.
+**س: ماذا لو كنت شركة تبحث عن استخدام PyTorch داخليًا للتطوير، هل يمكنني الحصول على مقعد في مجلس الإدارة أو شرائه لقيادة
+اتجاه المشروع؟** لا، مشروع PyTorch مدفوع بشكل صارم من قبل
+فلسفة مشروع الصيانة ويفرق بوضوح بين الحوكمة الفنية
+من حوكمة الأعمال. ومع ذلك، إذا كنت تريد أن تكون
+مشاركًا في الرعاية والدعم، فيمكنك المشاركة في
+مؤسسة PyTorch (PTF) والرعاية من خلال ذلك. يمكنك أيضًا
+امتلاك مهندسين فرديين للبحث عن أن يصبحوا مسؤولين عن الصيانة، ولكن هذا
+غير مضمون ويستند إلى الجدارة.
 
-**Q: How do I contribute code to the project?** If the change is
-relatively minor, a pull request on GitHub can be opened up immediately
-for review and merge by the project committers. For larger changes,
-please open an issue to make a proposal to discuss prior. Please also
-see the `PyTorch Contributor
-Wiki <https://github.com/pytorch/pytorch/wiki/The-Ultimate-Guide-to-PyTorch-Contributions>`__ for contribution
-for a walkthrough.
+**س: هل يدعم مشروع PyTorch المنح أو طرق دعم
+المطورون المستقلون الذين يستخدمون أو يساهمون في المشروع؟** لا، ليس
+في هذه المرحلة. ومع ذلك، فإننا نبحث عن طرق لتحسين دعم
+مجتمع المطورين المستقلين حول PyTorch. إذا كان لديك
+اقتراحات أو مدخلات، يرجى التواصل على منتديات PyTorch للمناقشة.
 
-**Q: Can I become a committer on the project?** Unfortunately, the
-current commit process to PyTorch involves an interaction with Facebook
-infrastructure that can only be triggered by Facebook employees. We are
-however looking at ways to expand the committer base to individuals
-outside of Facebook and will provide an update when the tooling exists
-to allow this.
+**س: كيف أساهم بالرمز في المشروع؟** إذا كان التغيير
+بسيط نسبيًا، فيمكن فتح طلب سحب على GitHub على الفور
+للمراجعة والدمج من قبل ملتزمي المشروع. للتغييرات الأكبر،
+يرجى فتح مشكلة لتقديم اقتراح للمناقشة مسبقًا. يرجى أيضًا
+راجع `ويكي مساهم PyTorch <https://github.com/pytorch/pytorch/wiki/The-Ultimate-Guide-to-PyTorch-Contributions>`__ للحصول على دليل تفصيلي للمساهمة.
 
-**Q: What if I would like to deliver a PyTorch tutorial at a conference
-or otherwise? Do I need to be 'officially' a committer to do this?** No,
-we encourage community members to showcase their work wherever and
-whenever they can. Please reach out to
+**س: هل يمكنني أن أصبح ملتزمًا بالمشروع؟** للأسف، تتضمن عملية الالتزام الحالية بـ PyTorch تفاعلًا مع البنية التحتية لشركة Facebook والتي لا يمكن تشغيلها إلا بواسطة موظفي Facebook. ومع ذلك، فإننا نبحث عن طرق لتوسيع قاعدة الملتزمين للأفراد
+خارج Facebook وسنقدم تحديثًا عندما تتوفر الأدوات للسماح بذلك.
+
+**س: ماذا لو أردت تقديم تعليمات PyTorch في مؤتمر
+أو خلاف ذلك؟ هل أحتاج إلى أن أكون "رسميًا" ملتزمًا للقيام بذلك؟** لا،
+نشجع أعضاء المجتمع على عرض عملهم أينما و
+متى استطاعوا. يرجى التواصل مع
 `marketing@pytorch.org <mailto:marketing@pytorch.org>`__
-for marketing support.
+لدعم التسويق.
