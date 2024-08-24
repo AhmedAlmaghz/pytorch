@@ -1,3 +1,4 @@
+
 torch.utils.cpp_extension
 =========================
 
@@ -5,7 +6,7 @@ torch.utils.cpp_extension
 .. autofunction:: CppExtension
 .. autofunction:: CUDAExtension
 .. autofunction:: BuildExtension
-.. autofunction:: load
+.. autofunction:: loading
 .. autofunction:: load_inline
 .. autofunction:: include_paths
 .. autofunction:: get_compiler_abi_compatibility_and_version
