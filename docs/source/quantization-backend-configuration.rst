@@ -1,20 +1,16 @@
-Quantization Backend Configuration
-----------------------------------
 
-FX Graph Mode Quantization allows the user to configure various
-quantization behaviors of an op in order to match the expectation
-of their backend.
+إعداد خلفية التكميم
+--------------
 
-In the future, this document will contain a detailed spec of
-these configurations.
+يتيح وضع FX Graph Mode Quantization للمستخدم تكوين سلوكيات تكميم مختلفة لمعامل العملية (op) من أجل مطابقة توقعات خلفية التنفيذ (backend) الخاصة به.
 
+في المستقبل، ستتضمن هذه الوثيقة مواصفات مفصلة لهذه الإعدادات.
 
-Default values for native configurations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+القيم الافتراضية للإعدادات الأصلية
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Below is the output of the configuration for quantization of ops
-in x86 and qnnpack (PyTorch's default quantized backends).
+فيما يلي إخراج إعداد التكميم للمعاملات في x86 و qnnpack (خلفيات التكميم الافتراضية في PyTorch).
 
-Results:
+النتائج:
 
 .. literalinclude:: scripts/quantization_backend_configs/default_backend_config.txt
