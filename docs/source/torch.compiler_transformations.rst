@@ -1,20 +1,58 @@
-Writing Graph Transformations on ATen IR
+.. _graph-writing-transformations-aten-ir:
+
+كتابة تحويلات المخطط البياني على ATen IR
+==================================
+
+تعد القدرة على كتابة تحويلات المخطط البياني ميزة قوية في ATen IR. تتيح هذه الميزة للمستخدمين تخصيص وتعديل مخططاتهم البيانية بطرق متنوعة وقوية. في هذا القسم، سنستكشف أساسيات كتابة تحويلات المخطط البياني على ATen IR، بما في ذلك كيفية تحديد أنماط المخططات البيانية، وتطبيق التحويلات، وإنشاء تحويلات مخصصة.
+
+تحديد أنماط المخطط البياني
+---------------------
+
+تعد الخطوة الأولى في كتابة تحويلات المخطط البياني هي القدرة على تحديد أنماط المخططات البيانية التي تريد استهدافها. في ATen IR، يمكنك استخدام التعبيرات المنتظمة للمخططات البيانية (Graph Regular Expressions) أو واجهة نمط المخطط البياني (Graph Pattern Interface) لتحديد أنماط المخططات البيانية.
+
+- التعبيرات المنتظمة للمخططات البيانية: توفر طريقة مرنة وقوية لوصف أنماط المخططات البيانية باستخدام بناء جملة مشابه للتعبيرات المنتظمة. يمكنك تحديد أنماط بناءً على بنية المخطط البياني، وأنواع العقد والحواف، وحتى القيم المرتبطة بها.
+
+- واجهة نمط المخطط البياني: تقدم طريقة أكثر تنظيماً وموجهة نحو الكائنات لتحديد أنماء المخططات البيانية. يمكنك إنشاء كائنات نمط المخطط البياني التي تصف البنية والخصائص المطلوبة، مما يجعل عملية تحديد الأنماط أكثر قابلية للقراءة والتنظيم.
+
+تطبيق التحويلات
+------------
+
+بمجرد تحديد نمط المخطط البياني الذي تريد استهدافه، يمكنك تطبيق تحويلات لتعديل المخطط. يمكن أن تشمل هذه التحويلات إضافة أو إزالة العقد والحواف، أو تعديل خصائصها، أو حتى إعادة ترتيب بنية المخطط البياني. يوفر ATen IR مجموعة من الوظائف والواجهات لتطبيق هذه التحويلات بسهولة.
+
+على سبيل المثال، يمكنك استخدام وظيفة ``aten::erase`` لإزالة عقد أو حواف محددة من المخطط البياني. وبالمثل، يمكنك استخدام ``aten::insert`` لإضافة عقد أو حواف جديدة. يمكنك أيضًا استخدام وظائف أكثر تخصصًا مثل ``aten::split`` لتقسيم عقدة إلى عدة عقد أو ``aten::fuse`` لدمج عدة عقد في واحدة.
+
+إنشاء تحويلات مخصصة
+---------------------
+
+بالإضافة إلى التحويلات المضمنة التي يوفرها ATen IR، يمكنك أيضًا إنشاء تحويلات مخصصة خاصة بك. يمكن أن يكون هذا مفيدًا عندما يكون لديك متطلبات محددة لا يمكن تلبيتها باستخدام التحويلات القياسية.
+
+لإنشاء تحويل مخصص، يمكنك تعريف وظيفة خاصة بك والتي تأخذ مخططًا بيانيًا كمدخل وتطبق التحويل المطلوب. يمكنك بعد ذلك تسجيل هذه الوظيفة كتحويل في ATen IR واستدعائها مثل أي تحويل آخر.
+
+يوفر ATen IR واجهة مرنة تسمح لك بدمج تحويلاتك المخصصة بسلاسة مع النظام الأساسي، مما يتيح لك توسيع قدرات تحويل المخطط البياني وفقًا لاحتياجاتك المحددة.
+
+أمثلة وتطبيقات
+----------------
+
+يمكن أن يكون لكتابة تحويلات المخطط البياني على ATen IR مجموعة واسعة من التطبيقات. فيما يلي بعض الأمثلة على كيفية استخدام هذه الميزة:
+
+- **تحسين الأداء**: يمكنك تحليل مخطط بياني لشبكة عصبية وتحديد أنماط يمكن تحسينها. على سبيل المثال، يمكنك دمج عدة عمليات متتالية في عملية واحدة، أو إزالة العمليات غير الضرورية، مما يؤدي إلى تقليل وقت الحساب واستهلاك الذاكرة.
+
+- **تعديل الشبكات العصبية**: يمكنك تعديل بنية شبكة عصبية موجودة عن طريق إضافة أو إزالة طبقات، أو تعديل اتصالاتها، أو تغيير خصائصها. يمكن أن يكون هذا مفيدًا في نقل التعلم، أو تكييف شبكة عصبية لمهام جديدة، أو حتى تصحيح الأخطاء.
+
+- **إنشاء شبكات عصبية جديدة**: يمكنك أيضًا استخدام تحويلات المخطط البياني لإنشاء شبكات عصبية جديدة تمامًا. يمكنك البدء بمخطط بياني بسيط وتطبيق سلسلة من التحويلات لإنشاء بنية معقدة. يمكن أن يكون هذا مفيدًا في البحث عن بنى جديدة للشبكات العصبية وتصميمها.
+
+في الختام، تعد القدرة على كتابة تحويلات المخطط البياني في ATen IR أداة قوية ومرنة يمكن أن تمكن المستخدمين من تخصيص وتعديل مخططاتهم البيانية بطرق متنوعة. سواء كان الأمر يتعلق بتحسين الأداء أو إنشاء تصاميم جديدة، فإن كتابة تحويلات المخطط البياني تفتح مجموعة واسعة من الإمكانيات للمطورين والباحثين في مجال التعلم العميق.
+
 ========================================
 
-Passes
+تمريرات
 ------
 
-Since the ATen IR sits at the FX Graph/GraphModule level, any
-transformations written for FX Graphs can be easily applied onto the
-ATen IR. If you’re familiar with writing FX graph transformations, then
-this will be the same.
+نظرًا لأن تمثيل ATen IR يقع على مستوى FX Graph/GraphModule، يمكن تطبيق التحويلات المكتوبة لـ FX Graphs بسهولة على تمثيل ATen IR. إذا كنت معتادًا على كتابة تحويلات مخطط FX، فسيكون الأمر نفسه.
 
-The most direct way of writing transformations is by looping through the
-given graph and directly manipulating the nodes within the graph.
+أبسط طريقة لكتابة التحويلات هي عن طريق الحلقة عبر المخطط المعطى والتلاعب المباشر بالعقد داخل المخطط.
 
-For example, let’s say we want to replace
-``torch.ops.aten.add.Tensor()`` calls with
-``torch.ops.aten.mul.Tensor()`` calls:
+على سبيل المثال، لنقل أننا نريد استبدال استدعاءات "torch.ops.aten.add.Tensor()" باستدعاءات "torch.ops.aten.mul.Tensor()":
 
 .. code:: python
 
@@ -25,11 +63,7 @@ For example, let’s say we want to replace
            if node.op == "call_function" and node.target == torch.ops.aten.add.Tensor:
                node.target = torch.ops.aten.mul.Tensor
 
-We can also delete and append new nodes through FX utility functions
-that can be found in the
-`Graph <https://pytorch.org/docs/stable/fx.html#torch.fx.Graph>`__
-documentation. For example, if we want to insert a
-``torch.ops.aten.relu.default()`` after the ``add`` call:
+يمكننا أيضًا حذف العقد وإلحاق عقد جديدة من خلال وظائف FX المساعدة التي يمكن العثور عليها في وثائق "Graph". على سبيل المثال، إذا أردنا إدراج "torch.ops.aten.relu.default()" بعد استدعاء "add":
 
 .. code:: python
 
@@ -39,51 +73,37 @@ documentation. For example, if we want to insert a
        for node in gm.graph.nodes:
            if node.op == "call_function" and node.target == torch.ops.aten.add.Tensor:
 
-               # Specifies the insertion point. Any nodes added to the graph within
-               # this scope will be inserted after `node`
+               # تحديد نقطة الإدراج. سيتم إدراج أي عقد مضافة إلى المخطط ضمن
+               # هذا النطاق بعد العقدة `node`
                with gm.graph.inserting_after(node):
-                   # Insert a new `call_function` node with op `torch.ops.aten.relu.default`
+                   # أضف عقدة `call_function` جديدة مع عملية `torch.ops.aten.relu.default`
                    new_relu_node = gm.graph.call_function(torch.ops.aten.relu.default, args=(node,))
-                   # Replace all the places that use `node` to now use the `new_relu_node`
+                   # استبدل جميع الأماكن التي تستخدم `node` لاستخدام `new_relu_node`
                    node.replace_all_uses_with(new_relu_node)
 
-In general, transformations can be roughly categorized into a couple of
-axis:
+بشكل عام، يمكن تصنيف التحويلات تقريبًا إلى بضع مجموعات:
 
-Axis A: 1. Creating one-to-X mapping (eg. decomposition) 2. Creating
-many-to-one mapping (eg. fusion)
+المحور أ: 1. إنشاء رسم خريطة واحد إلى X (مثل التفكيك) 2. إنشاء رسم خريطة للكثير إلى واحد (مثل الانصهار)
 
-Axis B: 1. Doing forwards iteration (eg. shape propagation) 2. Doing
-backwards iteration (eg. dead code elimination)
+المحور ب: 1. إجراء تكرار للأمام (مثل انتشار الشكل) 2. إجراء تكرار للخلف (مثل إزالة التعليمات البرمجية غير المستخدمة)
 
-Axis C: 1. Dependent on local node information (eg. out-variant
-conversion) 2. Dependent on global graph information (eg. memory
-planning)
+المحور ج: 1. يعتمد على معلومات العقدة المحلية (مثل التحويل الخارجي) 2. يعتمد على معلومات المخطط العالمي (مثل تخطيط الذاكرة)
 
-Our projection on the frequency of these use cases are: 1. A.1, B.1, C.1
-2. A.2 3. B.2, C.2
+توقعاتنا لوتيرة هذه الحالات الاستخدامية هي: 1. أ.1، ب.1، ج.1 2. أ.2 3. ب.2، ج.2
 
-Although we can make all graph transformations through directly
-manipulating the graph, we also provide some helper utilities for some
-ease of use for the level 1 and 2 use-cases.
+على الرغم من أنه يمكننا إجراء جميع تحويلات المخطط من خلال التلاعب المباشر بالمخطط، إلا أننا نوفر أيضًا بعض وظائف المساعدة لتسهيل الاستخدام لحالات الاستخدام من المستوى 1 و2.
 
-Transformer
+المحول
 ~~~~~~~~~~~
 
-For level 1 uses cases (creating one-to-X mappings, doing forwards
-iterations, and looking at local node information), we can utilize the
-`Transformer <https://pytorch.org/docs/stable/fx.html#torch.fx.Transformer>`__
-class to execute each node and recreate a graph, except with the
-transformations specified.
+لحالات الاستخدام من المستوى 1 (إنشاء رسم خريطة واحد إلى X، وإجراء تكرارات للأمام، والنظر في معلومات العقدة المحلية)، يمكننا استخدام فئة "المحول" لتنفيذ كل عقدة وإعادة إنشاء مخطط، باستثناء التحويلات المحددة.
 
-One-to-One Pass
+تمريرة واحد إلى واحد
 ^^^^^^^^^^^^^^^
 
-An example for one-to-one mappings, if we wanted to replace an op A with
-another op B, we can run the GraphModule, and very time we see op A,
-return op B.
+كمثال على رسم الخرائط واحد إلى واحد، إذا أردنا استبدال العملية أ بعملية أخرى ب، فيمكننا تشغيل GraphModule، وفي كل مرة نرى فيها العملية أ، نعيد العملية ب.
 
-An example is:
+مثال على ذلك:
 
 .. code:: python
 
@@ -95,19 +115,14 @@ An example is:
 
    transformed_graph_module = ReplaceAddWithMul(graph_module).transform()
 
-The ``super().call_function(target, args, kwargs, meta)`` call creates a
-``call_function`` FX node, and returns the result of running the
-operator with the given arguments.
+تؤدي مكالمة "super().call_function(target، args، kwargs، meta)" إلى إنشاء عقدة "call_function" FX، وإعادة نتيجة تشغيل المشغل باستخدام الحجج المعطاة.
 
-One-to-X Pass
+تمريرة واحد إلى X
 ^^^^^^^^^^^^^
 
-If we wanted to do one-to-X mappings, like replacing op A with 2 other
-ops B and C, we would then make 2 calls to ``super().call_function`` to
-create 2 FX nodes, one with op B and another with op C, and return the
-result of running op C.
+إذا أردنا إجراء رسم خرائط واحد إلى X، مثل استبدال العملية أ بعمليتين أخريين ب وج، فسنقوم بعد ذلك بإجراء مكالمتين إلى "super().call_function" لإنشاء عقدتين FX، واحدة مع العملية ب والأخرى مع العملية ج، وإعادة نتيجة تشغيل العملية ج.
 
-For example:
+على سبيل المثال:
 
 .. code:: python
 
@@ -133,11 +148,10 @@ For example:
 
    transformed_graph_module = ReplaceAddWithMulSub(graph_module).transform()
 
-One-to-None Pass
+تمريرة واحد إلى لا شيء
 ^^^^^^^^^^^^^^^^
 
-If we wanted to remove an op, we can just return the value passed into
-the function:
+إذا أردنا إزالة عملية، فيمكننا ببساطة إعادة القيمة التي تم تمريرها إلى الدالة:
 
 .. code:: python
 
@@ -152,15 +166,12 @@ the function:
            assert len(args) == 1
            return args[0]
 
-   transformed_graph_module = RemoveDetachPass(graph_module).transform()
+   transformed_graph_partum = RemoveDetachPass(graph_module).transform()
 
-Utilizing Local Information
+الاستفادة من المعلومات المحلية
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-An example of utilizing local node information is, if we wanted to
-convert all the scalars within the graph to tensors, we can run the
-given ``fx.GraphModule``, and for every argument that contains a scalar,
-we convert it to a tensor. It might look something like:
+مثال على الاستفادة من معلومات العقدة المحلية هو، إذا أردنا تحويل جميع القيم القياسية داخل المخطط إلى tens، فيمكننا تشغيل "fx.GraphModule" المعطى، ولكل حجة تحتوي على قيمة قياسية، نقوم بتحويلها إلى tensor. قد يبدو الأمر كما يلي:
 
 .. code:: python
 
@@ -170,11 +181,11 @@ we convert it to a tensor. It might look something like:
        args = list(args)
        kwargs = kwargs.copy()
 
-       # Update the argument based on the function passed
-       def update(key, args, schema):
-           args[key] = fn(args[key], schema)
+       # تحديث الحجة بناءً على الدالة التي تم تمريرها
+       def update(key، args، schema):
+           args[key] = fn(args[key]، schema)
 
-       # Update each argument in the schema
+       # تحديث كل حجة في المخطط
        for i, schema in enumerate(target._schema.arguments):
            if schema.name in kwargs:
                update(schema.name, kwargs, schema)
@@ -182,44 +193,37 @@ we convert it to a tensor. It might look something like:
                update(i, args, schema)
        return tuple(args), kwargs
 
-   class ScalarToTensorPass(torch.fx.Transformer):
-       def call_function(self, target, args, kwargs):
-           breakpoint()
-           def try_coerce(value, arg):
+   class ScalarToTensorPass (torch.fx.Transformer):
+       def call_function (self، target، args، kwargs):
+           breakpoint ()
+
+           def try_coerce (value، arg):
                return (
-                   torch.tensor(value)
-                   if isinstance(value, (float, int, bool))
-                   and type(arg.type) == torch.TensorType
+                   torch.tensor (value)
+                   if isinstance (value، (float، int، bool))
+                   and type (arg.type) == torch.TensorType
                    else value
                )
 
-           args, kwargs = args_map(target, try_coerce, args, kwargs)
-           return super().call_function(target, args, kwargs)
+           args، kwargs = args_map (target، try_coerce، args، kwargs)
+           return super().call_function (target، args، kwargs)
 
-   transformed_graph_module = ScalarToTensorPass(graph_module).transform()
+   transformed_graph_module = ScalarToTensorPass (graph_module).transform ()
 
-Subgraph Rewriter
-~~~~~~~~~~~~~~~~~
+معدل إعادة كتابة المخطط الفرعي
+~~~~~~~~~~~~~~~~~~~~~~
 
-For creating many-to-one mappings, we can utilize FX’s `subgraph
-rewriter <https://github.com/pytorch/pytorch/blob/main/torch/fx/subgraph_rewriter.py>`__.
-Given a ``pattern``, it creates a subgraph of operators matching to the
-pattern, and then replaces each matched subgraph with the
-``replacement``.
+لإنشاء رسم خرائط للكثير إلى واحد، يمكننا الاستفادة من "معدل إعادة كتابة المخطط الفرعي" في FX. بالنظر إلى "نمط"، فإنه يقوم بإنشاء مخطط فرعي من المشغلين المطابقين للنمط، ثم يستبدل كل مخطط فرعي متطابق بـ "الاستبدال".
 
-Note:
+ملاحظة:
 
 ::
 
-   This is an inplace operation.
+   هذه عملية في المكان.
 
-The ``pattern`` and ``replacement`` inputs must be callable functions or
-GraphModules containing the same operators that are used within the
-graph (ATen ops) so that the subgraph rewriter can find the correct
-pattern in the graph. Inputs to the pattern/replacement callables will
-be treated as wildcards when matching.
+يجب أن تكون إدخالات "النمط" و"الاستبدال" دالات أو GraphModules قابلة للاستدعاء تحتوي على نفس المشغلين المستخدمين داخل المخطط (عمليات ATen) حتى يتمكن معدل إعادة كتابة المخطط الفرعي من العثور على النمط الصحيح في المخطط. سيتم التعامل مع الإدخالات إلى الدالات القابلة للاستدعاء في النمط/الاستبدال كحرف بري عند المطابقة.
 
-An example:
+مثال:
 
 .. code:: python
 
@@ -238,41 +242,34 @@ An example:
        traced_module, pattern, replacement
    )
 
-The subgraph rewriter returns a list of ``ReplacedPatterns``:
+يعيد معدل إعادة كتابة المخطط الفرعي قائمة من "ReplacedPatterns":
 
 .. code:: python
 
    @dataclass
    class ReplacedPatterns:
-       # Node from which the match was found
+       # العقدة التي تم العثور على المطابقة منها
        anchor: Node
-       # Maps nodes in the pattern subgraph to nodes in the larger graph
+       # يقوم برسم خريطة للعقد في المخطط الفرعي للنمط إلى العقد في المخطط الأكبر
        nodes_map: Dict[Node, Node]
-       # List of nodes that were added into the graph
+       # قائمة العقد التي تمت إضافتها إلى المخطط
        replacements: List[Node]
 
-Note:
+ملاحظة:
 
 ::
 
-   The nodes created by the subgraph rewriter will not have the metadata that
-   is populated in the matched nodes, but you can use
-   `ReplacedPatterns.nodes_map` to find the nodes in the original graph that
-   were matched, and `ReplacedPatterns.replacements` to find the nodes that
-   were replaced in the transformed graph.
+   لن تحتوي العقد التي تم إنشاؤها بواسطة معدل إعادة كتابة المخطط الفرعي على البيانات الوصفية التي
+   يتم تعبئتها في العقد المتطابقة، ولكن يمكنك استخدام "ReplacedPatterns.nodes_map" للعثور على العقد في المخطط الأصلي
+   التي تم مطابقتها، و "ReplacedPatterns.replacements" للعثور على العقد التي
+   تم استبدالها في المخطط المحول.
 
-Pass Manager
+مدير التمرير
 ------------
 
-The
-```PassManager`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/infra/pass_manager.py>`__
-is a class used to run multiple passes on a given graph module. When
-initializing a ``PassManager`` instance, we pass in a list of passes
-that we want to run and set a couple of flags. To run the collection of
-passes on a graph module, we can pass the graph module directly to the
-``PassManager`` instance.
+"مدير التمرير" هو فئة تستخدم لتشغيل تمريرات متعددة على Graph Module معين. عند تهيئة مثيل "مدير التمرير"، نقوم بتمرير قائمة من التمريرات التي نريد تشغيلها وتعيين بعض العلامات. لتشغيل مجموعة التمريرات على Graph Module، يمكننا تمرير Graph Module مباشرة إلى مثيل "مدير التمرير".
 
-An example:
+مثال:
 
 .. code:: python
 
@@ -285,12 +282,9 @@ An example:
    )
    graph_module_out = pm(graph_module)
 
-To add a common set of checks that are run after each pass, we can call
-the function ``set_checks(check: Callable)`` which takes in a callable
-function as input. If the ``run_checks_after_each_pass`` flag is set,
-the ``check`` will be called after each pass is run on the graph module.
+لإضافة مجموعة شائعة من الفحوصات التي يتم تشغيلها بعد كل تمريرة، يمكننا استدعاء الدالة "set_checks(check: Callable)" التي تأخذ دالة قابلة للاستدعاء كإدخال. إذا تم تعيين العلامة "run_checks_after_each_pass"، فسيتم استدعاء "الفحص" بعد كل تمريرة يتم تشغيلها على Graph Module.
 
-An example:
+مثال:
 
 .. code:: python
 
@@ -305,35 +299,32 @@ An example:
 
    pm(graph_module)    # raises ValueError after replace_div_with_mul pass
 
-Partitioner
------------
+مُقسِّم
+هناك بعض الأدوات الشائعة المعتمدة على مخطط FX والتي يمكننا استخدامها لتقسيم المخطط.
 
-There are a couple of common FX graph based partitioners we can use to
-partition the graph.
+مطابقة المخطط الفرعي
+~~~~~~~~~~~~~~~
 
-Subgraph Matcher
-~~~~~~~~~~~~~~~~
+لإيجاد المخططات الفرعية داخل مخطط ما والتي تتطابق مع نمط محدد، يمكننا استخدام
+```SubgraphMatcher`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/utils/matcher_utils.py>`__
+من FX.
 
-For finding subgraphs within a graph that match a specific pattern, we
-can utilize FX’s
-```SubgraphMatcher`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/utils/matcher_utils.py>`__.
+خصائص الفئة:
 
-Class Attributes:
+-  ``pattern (Graph)``: نمط المطابقة المستهدف. ستُعامل العقد الاحتياطية
+   في المخطط كحروف برية عند المطابقة.
+-  ``match_output (bool)``: إذا كانت True، ستُعامل العقدة الإخراجية في
+   مخطط النمط كجزء من النمط المستهدف. إذا كانت False، ستتم تجاهل العقدة
+   الإخراجية أثناء المطابقة.
+-  ``match_placeholder (bool)``: إذا كانت True، ستُعامل العقدة الاحتياطية
+   في مخطط النمط كجزء من النمط المستهدف. إذا كانت False، ستُستخدم العقد
+   الاحتياطية كحروف برية.
+-  ``remove_overlapping_matches (bool)``: إذا كانت True، في حالة
+   التطابقات المتداخلة، ستتم إعادة أول تطابق فقط.
+-  ``ignore_literals (bool)``: إذا كانت True، لن يتم التحقق مما إذا كانت
+   القيم الحرفية متساوية وسيتم معاملتها بدلاً من ذلك كحروف برية.
 
--  ``pattern (Graph)``: The targeted matching pattern. Placeholder nodes
-   in the graph will be treated as wildcards when matching.
--  ``match_output (bool)``: If True, output node in the pattern graph
-   will be treated as a part of the targeted pattern. If False, output
-   node is ignored during match.
--  ``match_placeholder (bool)``: If True, placeholder node in the
-   pattern graph will be treated as a part of the targeted pattern. If
-   False, placeholder nodes will be used a wildcard.
--  ``remove_overlapping_matches (bool)``: If True, in the case of
-   overlapping matches, only the first match will be returned.
--  ``ignore_literals (bool)``: If True, will not check if literals are
-   equal and will instead treat them as wildcards.
-
-An example:
+مثال:
 
 .. code:: python
 
@@ -364,55 +355,55 @@ An example:
    subgraph_matcher = SubgraphMatcher(pattern_graph)
    match_result = subgraph_matcher.match(large_model_graph)
 
-The ``match`` function returns a list of ``InternalMatch``:
+تعيد دالة ``match`` قائمة من ``InternalMatch``:
 
 .. code:: python
 
    @dataclass
    class InternalMatch():
-       # Nodes from which the match was found
+       # العقد التي تم العثور على المطابقة منها
        anchors: List[Node]
-       # Maps nodes in the pattern subgraph to nodes in the larger graph
+       # يقوم برسم خريطة للعقد في المخطط الفرعي للنمط إلى العقد في المخطط الأكبر
        nodes_map: Dict[Node, Node] = field(default_factory=dict)
-       # Nodes in target graph that are matched placeholder in pattern
+       # العقد في المخطط المستهدف التي تتطابق مع العقدة الاحتياطية في النمط
        placeholder_nodes: List[Node] = field(default_factory=list)
-       # Nodes in matched subgraph returned by output
+       # العقد في المخطط الفرعي المتطابق التي تم إرجاعها بواسطة الإخراج
        returning_nodes: List[Node] = field(default_factory=list)
 
-Capability Based Partitioner
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+مُقسِّم قائم على القدرات
+~~~~~~~~~~~~~~~~
 
-To find the largest subgraphs of nodes that support a specific
-invariant, we can utilize FX’s
-```CapabilityBasedPartitioner`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/infra/partitioner.py#L34>`__.
+لإيجاد أكبر المخططات الفرعية من العقد التي تدعم خاصية محددة، يمكننا استخدام
+```CapabilityBasedPartitioner`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/infra/partitioner.py#L34>`__
+من FX.
 
-Class Attributes
+خصائص الفئة:
 
--  ``graph_module (torch.fx.GraphModule)``: The graph module we are
-   partitioning on.
--  ``operator_support (OperatorSupportBase)``: The object used to
-   determine if a node in the graph is supported in the partition.
--  ``allows_single_node_partition (bool)``: If True, allows single node
-   partitions to be formed.
--  ``non_compute_ops (Optional[Sequence[str]])``: A set of ops that are
-   considered to be “non-compute” (ex ``torch.ops.aten.view`` and
-   ``_operator.getitem``, so that the partitioner will not create graphs
-   that only contain these non-compute ops
--  ``allowed_single_node_partition_ops (Optional[Sequence[str]])``: A
-   set of ops that are allowed to be in a single node partition.
+-  ``graph_module (torch.fx.GraphModule)``: وحدة المخطط النمطي التي
+   نقوم بالتقسيم عليها.
+-  ``operator_support (OperatorSupportBase)``: الكائن المستخدم لتحديد ما
+   إذا كانت العقدة في المخطط مدعومة في التقسيم.
+-  ``allows_single_node_partition (bool)``: إذا كانت True، تسمح بتكوين
+   تقسيمات العقدة المفردة.
+-  ``non_compute_ops (Optional[Sequence[str]])``: مجموعة من العمليات التي
+   تعتبر "غير حاسوبية" (مثل ``torch.ops.aten.view`` و ``_operator.getitem``)،
+   بحيث لا يقوم المُقسِّم بإنشاء مخططات تحتوي فقط على هذه العمليات غير
+   الحاسوبية
+-  ``allowed_single_node_partition_ops (Optional[Sequence[str]])``: مجموعة
+   من العمليات المسموح بها في تقسيم العقدة المفردة.
 
-The
+تستخدم فئة
 ```OperatorSupportBase`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/operator_support.py#LL28C1-L28C1>`__
-class is used by the partitioner to determine if a specific node in the
-graph belongs in the partition. This is done by overriding the
-``is_node_supported`` function. You can chain multiple
-``OperatorSupportBase`` by using
-```chain`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/operator_support.py#L150>`__\ (which
-returns False if any of the OperatorSupportBase return False) and
+بواسطة المُقسِّم لتحديد ما إذا كانت عقدة محددة في المخطط تنتمي إلى التقسيم.
+ويتم ذلك عن طريق تجاوز دالة ``is_node_supported``. يمكنك توصيل عدة
+فئات ``OperatorSupportBase`` باستخدام
+```chain`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/operator_support.py#L150>`__
+(التي تعيد False إذا أعادت أي من فئات OperatorSupportBase القيمة False) و
 ```any_chain`` <https://github.com/pytorch/pytorch/blob/main/torch/fx/passes/operator_support.py#L164>`__
-(which returns True if any of the OperatorSupportBase returns True).
+(التي تعيد القيمة True إذا أعادت أي من فئات OperatorSupportBase القيمة
+True).
 
-An example:
+مثال:
 
 .. code:: python
 
@@ -430,7 +421,7 @@ An example:
        op_support,
    )
 
-   # Returns a list of partitions (list of nodes that belong in each partition)
+   # إرجاع قائمة من التقسيمات (قائمة بالعقد التي تنتمي إلى كل تقسيم)
    partition_list = capability_partitioner.propose_partitions()
-   # Fuses the partitions into graph modules and inserts `call_module` nodes in the graph
+   # دمج التقسيمات في وحدات مخطط نمطي وإدراج عقد `call_module` في المخطط
    fused_graph_module = capability_partitioner.fuse_partitions(partition_list)
