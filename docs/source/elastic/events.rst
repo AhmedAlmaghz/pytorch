@@ -1,12 +1,12 @@
 .. _events-api:
 
-Events
-============================
+الأحداث
+========
 
 .. automodule:: torch.distributed.elastic.events
 
-API Methods
-------------
+طرق واجهة برمجة التطبيقات
+-------------------
 
 .. autofunction:: torch.distributed.elastic.events.record
 
@@ -14,8 +14,8 @@ API Methods
 
 .. autofunction:: torch.distributed.elastic.events.get_logging_handler
 
-Event Objects
------------------
+كائنات الحدث
+-----------
 
 .. currentmodule:: torch.distributed.elastic.events.api
 
