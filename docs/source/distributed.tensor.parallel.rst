@@ -1,17 +1,17 @@
 .. role:: hidden
     :class: hidden-section
 
-Tensor Parallelism - torch.distributed.tensor.parallel
-======================================================
+توازي المنسوجات - torch.distributed.tensor.parallel
+===============================================
 
-Tensor Parallelism(TP) is built on top of the PyTorch DistributedTensor
+تم بناء توازي المنسوجات (TP) على PyTorch DistributedTensor
 (`DTensor <https://github.com/pytorch/pytorch/blob/main/torch/distributed/_tensor/README.md>`__)
-and provides different parallelism styles: Colwise, Rowwise, and Sequence Parallelism.
+ويوفر أساليب توازي مختلفة: التوازي العمودي والتوازي الصفّي، وتوازي التسلسل.
 
 .. warning ::
-    Tensor Parallelism APIs are experimental and subject to change.
+    واجهات برمجة التطبيقات الخاصة بتوازي المنسوجات تجريبية وقد تتغير.
 
-The entrypoint to parallelize your ``nn.Module`` using Tensor Parallelism is:
+نقطة الدخول لتوازي وحدتك ``nn.Module`` باستخدام توازي المنسوجات هي:
 
 .. automodule:: torch.distributed.tensor.parallel
 
@@ -19,7 +19,7 @@ The entrypoint to parallelize your ``nn.Module`` using Tensor Parallelism is:
 
 .. autofunction::  parallelize_module
 
-Tensor Parallelism supports the following parallel styles:
+يدعم توازي المنسوجات أساليب التوازي التالية:
 
 .. autoclass:: torch.distributed.tensor.parallel.ColwiseParallel
   :members:
@@ -33,10 +33,10 @@ Tensor Parallelism supports the following parallel styles:
   :members:
   :undoc-members:
 
-To simply configure the nn.Module's inputs and outputs with DTensor layouts
-and perform necessary layout redistributions, without distribute the module
-parameters to DTensors, the following ``ParallelStyle`` s can be used in
-the ``parallelize_plan`` when calling ``parallelize_module``:
+لإعداد مدخلات ومخرجات ``nn.Module`` ببساطة باستخدام تخطيطات DTensor
+وإجراء عمليات إعادة توزيع التخطيط الضرورية، دون توزيع معلمات الوحدة
+على DTensors، يمكن استخدام أنماط التوازي التالية (ParallelStyles) في
+خطة التوازي عند استدعاء ``parallelize_module``:
 
 .. autoclass:: torch.distributed.tensor.parallel.PrepareModuleInput
   :members:
@@ -46,22 +46,24 @@ the ``parallelize_plan`` when calling ``parallelize_module``:
   :members:
   :undoc-members:
 
-.. note:: when using the ``Shard(dim)`` as the input/output layouts for the above
-  ``ParallelStyle`` s, we assume the input/output activation tensors are evenly sharded on
-  the tensor dimension ``dim`` on the ``DeviceMesh`` that TP operates on. For instance,
-  since ``RowwiseParallel`` accepts input that is sharded on the last dimension, it assumes
-  the input tensor has already been evenly sharded on the last dimension. For the case of uneven
-  sharded activation tensors, one could pass in DTensor directly to the partitioned modules,
-  and use ``use_local_output=False`` to return DTensor after each ``ParallelStyle``, where
-  DTensor could track the uneven sharding information.
+.. note:: عند استخدام ``Shard(dim)`` كتخطيطات المدخلات/المخرجات لأنماط التوازي المذكورة أعلاه،
+  نفترض أن منسوجات تنشيط المدخلات/المخرجات مجزأة بالتساوي على
+  بعد المنسوجات ``dim`` على ``DeviceMesh`` التي تعمل عليها TP. على سبيل المثال،
+  نظرًا لأن ``RowwiseParallel`` يقبل المدخلات التي يتم تجزئتها على البعد الأخير، فإنه يفترض
+  أن منسوجة الإدخال قد تم تجزئتها بالتساوي بالفعل على البعد الأخير. في حالة منسوجات التنشيط غير المتساوية،
+  يمكن تمرير DTensor مباشرةً إلى الوحدات المجزأة،
+  واستخدام ``use_local_output=False`` لإرجاع DTensor بعد كل ``ParallelStyle``، حيث
+  يمكن لـ DTensor تتبع معلومات التجزئة غير المتساوية.
 
-For models like Transformer, we recommend users to use ``ColwiseParallel``
-and ``RowwiseParallel`` together in the parallelize_plan for achieve the desired
-sharding for the entire model (i.e. Attention and MLP).
+بالنسبة للنماذج مثل Transformer، نوصي المستخدمين باستخدام ``ColwiseParallel``
+و ``RowwiseParallel`` معًا في خطة التوازي لتحقيق التجزئة المرغوبة
+للنموذج بالكامل (أي Attention وMLP).
 
-Parallelized cross-entropy loss computation (loss parallelism), is supported via the following context manager:
+يتم دعم الحساب الموازي للخسارة المتقاطعة (loss parallelism) عبر مدير السياق التالي:
 
 .. autofunction:: torch.distributed.tensor.parallel.loss_parallel
 
 .. warning ::
-    The loss_parallel API is experimental and subject to change.
+    واجهة برمجة التطبيقات loss_parallel تجريبية وقد تتغير.
+
+هل هناك أي شيء آخر يمكنني المساعدة فيه؟
