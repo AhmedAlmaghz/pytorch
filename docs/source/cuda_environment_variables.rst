@@ -1,55 +1,55 @@
 .. _cuda_environment_variables:
 
-CUDA Environment Variables
-==========================
-For more information on CUDA runtime environment variables, see `CUDA Environment Variables <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#env-vars>`_.
+متغيرات بيئة CUDA
+================
+لمزيد من المعلومات حول متغيرات بيئة وقت تشغيل CUDA، راجع `متغيرات بيئة CUDA <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#env-vars>`_.
 
-**PyTorch Environment Variables**
+**متغيرات بيئة PyTorch**
 
 .. list-table::
   :header-rows: 1
 
-  * - Variable
-    - Description
+  * - المتغير
+    - الوصف
   * - ``PYTORCH_NO_CUDA_MEMORY_CACHING``
-    - If set to ``1``, disables caching of memory allocations in CUDA. This can be useful for debugging.
+    - إذا تم تعيينه على ``1``، فإنه يعطل ذاكرة التخزين المؤقت للتعيينات في CUDA. يمكن أن يكون هذا مفيدًا للتصحيح.
   * - ``PYTORCH_CUDA_ALLOC_CONF``
-    - For a more in depth explanation of this environment variable, see :ref:`cuda-memory-management`.
+    - للحصول على شرح أكثر تفصيلاً لهذا المتغير البيئي، راجع :ref:`cuda-memory-management`.
   * - ``PYTORCH_NVML_BASED_CUDA_CHECK``
-    - If set to ``1``, before importing PyTorch modules that check if CUDA is available, PyTorch will use NVML to check if the CUDA driver is functional instead of using the CUDA runtime. This can be helpful if forked processes fail with a CUDA initialization error.
+    - إذا تم تعيينه على ``1``، وقبل استيراد وحدات PyTorch التي تتحقق مما إذا كانت CUDA متاحة، ستستخدم PyTorch NVML للتحقق مما إذا كان برنامج تشغيل CUDA يعمل بدلاً من استخدام وقت تشغيل CUDA. قد يكون هذا مفيدًا إذا فشلت العمليات المتفرعة مع خطأ تهيئة CUDA.
   * - ``TORCH_CUDNN_V8_API_LRU_CACHE_LIMIT``
-    - The cache limit for the cuDNN v8 API. This is used to limit the memory used by the cuDNN v8 API. The default value is 10000, which roughly corresponds to 2GiB assuming 200KiB per ExecutionPlan. Set to ``0`` for no limit or a negative value for no caching.
+    - حد التخزين المؤقت لـ واجهة برمجة تطبيقات cuDNN v8. يستخدم هذا للحد من الذاكرة التي تستخدمها واجهة برمجة تطبيقات cuDNN v8. القيمة الافتراضية هي 10000، والتي تقابل تقريبًا 2 جيجابايت بافتراض 200 كيلوبايت لكل ExecutionPlan. قم بالتعيين إلى ``0`` لعدم وجود حد أو قيمة سالبة لعدم التخزين المؤقت.
   * - ``TORCH_CUDNN_V8_API_DISABLED``
-    - If set to ``1``, disables the cuDNN v8 API. And will fall back to the cuDNN v7 API.
+    - إذا تم تعيينه على ``1``، فإنه يعطل واجهة برمجة تطبيقات cuDNN v8. وسيتم الرجوع إلى واجهة برمجة تطبيقات cuDNN v7.
   * - ``TORCH_ALLOW_TF32_CUBLAS_OVERRIDE``
-    - If set to ``1``, forces TF32 enablement, overrides ``set_float32_matmul_precision`` setting.
+    - إذا تم تعيينه على ``1``، فإنه يجبر على تمكين TF32، متجاوزًا إعداد ``set_float32_matmul_precision``.
   * - ``TORCH_NCCL_USE_COMM_NONBLOCKING``
-    - If set to ``1``, enables non-blocking error handling in NCCL.
+    - إذا تم تعيينه على ``1``، فإنه يمكّن التعامل مع الأخطاء غير المتزامنة في NCCL.
   * - ``TORCH_NCCL_AVOID_RECORD_STREAMS``
-    - If set to ``0``, enables fallback to record streams-based synchronization behavior in NCCL.
+    - إذا تم تعيينه على ``0``، فإنه يمكّن التراجع إلى سلوك المزامنة القائم على تدفقات التسجيل في NCCL.
   * - ``TORCH_CUDNN_V8_API_DEBUG``
-    - If set to ``1``, sanity check whether cuDNN V8 is being used.
+    - إذا تم تعيينه على ``1``، فإنه يتحقق من سلامة ما إذا كانت cuDNN V8 قيد الاستخدام.
 
-**CUDA Runtime and Libraries Environment Variables**
+**متغيرات بيئة وقت تشغيل CUDA والمكتبات**
 
 .. list-table::
   :header-rows: 1
 
-  * - Variable
-    - Description
+  * - المتغير
+    - الوصف
   * - ``CUDA_VISIBLE_DEVICES``
-    - Comma-separated list of GPU device IDs that should be made available to CUDA runtime. If set to ``-1``, no GPUs are made available.
+    - قائمة مفصولة بفواصل لأجهزة GPU التي يجب أن تكون متاحة لوقت تشغيل CUDA. إذا تم تعيينه على ``-1``، فلن تكون أي من وحدات معالجة الرسوميات (GPU) متاحة.
   * - ``CUDA_LAUNCH_BLOCKING``
-    - If set to ``1``, makes CUDA calls synchronous. This can be useful for debugging.
+    - إذا تم تعيينه على ``1``، فإنه يجعل مكالمات CUDA متزامنة. يمكن أن يكون هذا مفيدًا للتصحيح.
   * - ``CUBLAS_WORKSPACE_CONFIG``
-    - This environment variable is used to set the workspace configuration for cuBLAS per allocation. The format is ``:[SIZE]:[COUNT]``.
-      As an example, the default workspace size per allocation is ``CUBLAS_WORKSPACE_CONFIG=:4096:2:16:8`` which specifies a total size of ``2 * 4096 + 8 * 16 KiB``.
-      To force cuBLAS to avoid using workspaces, set ``CUBLAS_WORKSPACE_CONFIG=:0:0``.
+    - يستخدم هذا المتغير البيئي لتعيين تكوين مساحة العمل لـ cuBLAS لكل تخصيص. التنسيق هو ``:[SIZE]:[COUNT]``.
+      على سبيل المثال، حجم مساحة العمل الافتراضي لكل تخصيص هو ``CUBLAS_WORKSPACE_CONFIG=:4096:2:16:8`` والذي يحدد حجمًا إجماليًا يبلغ ``2 * 4096 + 8 * 16 KiB``.
+      لإجبار cuBLAS على تجنب استخدام مساحات العمل، قم بتعيين ``CUBLAS_WORKSPACE_CONFIG=:0:0``.
   * - ``CUDNN_CONV_WSCAP_DBG``
-    - Similar to ``CUBLAS_WORKSPACE_CONFIG``, this environment variable is used to set the workspace configuration for cuDNN per allocation.
+    - مشابه لـ ``CUBLAS_WORKSPACE_CONFIG``، يستخدم هذا المتغير البيئي لتعيين تكوين مساحة العمل لـ cuDNN لكل تخصيص.
   * - ``CUBLASLT_WORKSPACE_SIZE``
-    - Similar to ``CUBLAS_WORKSPACE_CONFIG``, this environment variable is used to set the workspace size for cuBLASLT.
+    - مشابه لـ ``CUBLAS_WORKSPACE_CONFIG``، يستخدم هذا المتغير البيئي لتعيين حجم مساحة العمل لـ cuBLASLT.
   * - ``CUDNN_ERRATA_JSON_FILE``
-    - Can be set to a file path for an errata filter that can be passed to cuDNN to avoid specific engine configs, used primarily for debugging or to hardcode autotuning.
+    - يمكن تعيينه إلى مسار ملف لمرشح errata الذي يمكن تمريره إلى cuDNN لتجنب تكوينات المحرك المحددة، ويستخدم بشكل أساسي للتصحيح أو للترميز اليدوي لضبط الضبط التلقائي.
   * - ``NVIDIA_TF32_OVERRIDE``
-    - If set to ``0``, disables TF32 globally across all kernels, overriding all PyTorch settings.
+    - إذا تم تعيينه على ``0``، فإنه يعطل TF32 عالميًا عبر جميع النواة، متجاوزًا جميع إعدادات PyTorch.
