@@ -1,432 +1,423 @@
 .. _python-language-reference:
 
-Python Language Reference Coverage
-==================================
-
-This is a 1:1 mapping of the features listed in https://docs.python.org/3/reference/ and their
-support in TorchScript. The categorizations are as follows:
-
+مرجع لغة بايثون
+هذا جدول يوضح مطابقة 1:1 للميزات المدرجة في https://docs.python.org/3/reference/ ودعمها في TorchScript. التصنيفات هي كما يلي:
 
 .. list-table::
    :header-rows: 1
+بالتأكيد! فيما يلي النص المترجم إلى اللغة العربية مع الحفاظ على تنسيق ReStructuredText:
 
-   * - Section
-     - Status
-     - Note
-   * - `1. Introduction <https://docs.python.org/3/reference/introduction.html>`_
-     - Not Relevant
+* - قسم
+     - الحالة
+     - ملاحظة
+   * - `1. مقدمة <https://docs.python.org/3/reference/introduction.html>`_
+     - غير ذي صلة
      -
-   * - `1.1. Alternate Implementations <https://docs.python.org/3/reference/introduction.html#alternate-implementations>`_
-     - Not Relevant
+   * - `1.1. التنفيذ البديل <https://docs.python.org/3/reference/introduction.html#alternate-implementations>`_
+     - غير ذي صلة
      -
-   * - `1.2. Notation <https://docs.python.org/3/reference/introduction.html#notation>`_
-     - Not Relevant
+   * - `1.2. التدوين <https://docs.python.org/3/reference/introduction.html#notation>`_
+     - غير ذي صلة
      -
-   * - `2. Lexical analysis <https://docs.python.org/3/reference/lexical_analysis.html#>`_
-     - Not Relevant
+   * - `2. التحليل القاموسي <https://docs.python.org/3/reference/lexical_analysis.html#>`_
+     - غير ذي صلة
      -
-   * - `2.1. Line structure <https://docs.python.org/3/reference/lexical_analysis.html#line-structure>`_
-     - Not Relevant
+   * - `2.1. هيكل السطر <https://docs.python.org/3/reference/lexical_analysis.html#line-structure>`_
+     - غير ذي صلة
      -
-   * - `2.1.1. Logical lines <https://docs.python.org/3/reference/lexical_analysis.html#logical-lines>`_
-     - Not Relevant
+   * - `2.1.1. الأسطر المنطقية <https://docs.python.org/3/reference/lexical_analysis.html#logical-lines>`_
+     - غير ذي صلة
      -
-   * - `2.1.2. Physical lines <https://docs.python.org/3/reference/lexical_analysis.html#physical-lines>`_
-     - Supported
+   * - `2.1.2. الأسطر الفعلية <https://docs.python.org/3/reference/lexical_analysis.html#physical-lines>`_
+     - مدعوم
      -
-   * - `2.1.3. Comments <https://docs.python.org/3/reference/lexical_analysis.html#comments>`_
-     - Supported
+   * - `2.1.3. التعليقات <https://docs.python.org/3/reference/lexical_analysis.html#comments>`_
+     - مدعوم
      -
-   * - `2.1.4. Encoding declarations <https://docs.python.org/3/reference/lexical_analysis.html#encoding-declarations>`_
-     - Not Supported
-     - TorchScript explicitly don't support unicode
-   * - `2.1.5. Explicit line joining <https://docs.python.org/3/reference/lexical_analysis.html#explicit-line-joining>`_
-     - Supported
+   * - `2.1.4. إعلانات الترميز <https://docs.python.org/3/reference/lexical_analysis.html#encoding-declarations>`_
+     - غير مدعوم
+     - TorchScript لا يدعم unicode بشكل صريح
+   * - `2.1.5. الانضمام الصريح للأسطر <https://docs.python.org/3/reference/lexical_analysis.html#explicit-line-joining>`_
+     - مدعوم
      -
-   * - `2.1.6. Implicit line joining <https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining>`_
-     - Supported
+   * - `2.1.6. الانضمام الضمني للأسطر <https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining>`_
+     - مدعوم
      -
-   * - `2.1.7. Blank lines <https://docs.python.org/3/reference/lexical_analysis.html#blank-lines>`_
-     - Supported
+   * - `2.1.7. الأسطر الفارغة <https://docs.python.org/3/reference/lexical_analysis.html#blank-lines>`_
+     - مدعوم
      -
-   * - `2.1.8. Indentation <https://docs.python.org/3/reference/lexical_analysis.html#indentation>`_
-     - Supported
+   * - `2.1.8. الإزاحة <https://docs.python.org/3/reference/lexical_analysis.html#indentation>`_
+     - مدعوم
      -
-   * - `2.1.9. Whitespace between tokens <https://docs.python.org/3/reference/lexical_analysis.html#whitespace-between-tokens>`_
-     - Not Relevant
+   * - `2.1.9. المسافات البيضاء بين الرموز <https://docs.python.org/3/reference/lexical_analysis.html#whitespace-between-tokens>`_
+     - غير ذي صلة
      -
-   * - `2.2. Other tokens <https://docs.python.org/3/reference/lexical_analysis.html#other-tokens>`_
-     - Not Relevant
+   * - `2.2. الرموز الأخرى <https://docs.python.org/3/reference/lexical_analysis.html#other-tokens>`_
+     - غير ذي صلة
      -
-   * - `2.3. Identifiers and keywords <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
-     - Supported
+   * - `2.3. المعرفات والكلمات المحجوزة <https://docs.python.org/3/reference/lexical_analysis.html#identifiers>`_
+     - مدعوم
      -
-   * - `2.3.1. Keywords <https://docs.python.org/3/reference/lexical_analysis.html#keywords>`_
-     - Supported
+   * - `2.3.1. الكلمات المحجوزة <https://docs.python.org/3/reference/lexical_analysis.html#keywords>`_
+     - مدعوم
      -
-   * - `2.3.2. Reserved classes of identifiers <https://docs.python.org/3/reference/lexical_analysis.html#reserved-classes-of-identifiers>`_
-     - Supported
+   * - `2.3.2. الفئات المحجوزة من المعرفات <https://docs.python.org/3/reference/lexical_analysis.html#reserved-classes-of-identifiers>`_
+     - مدعوم
      -
-   * - `2.4. Literals <https://docs.python.org/3/reference/lexical_analysis.html#literals>`_
-     - Not Relevant
+   * - `2.4. الحرفي <https://docs.python.org/3/reference/lexical_analysis.html#literals>`_
+     - غير ذي صلة
      -
-   * - `2.4.1. String and Bytes literals <https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals>`_
-     - Supported
+   * - `2.4.1. الحرفي السلسلة والبايتات <https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals>`_
+     - مدعوم
      -
-   * - `2.4.2. String literal concatenation <https://docs.python.org/3/reference/lexical_analysis.html#string-literal-concatenation>`_
-     - Supported
+   * - `2.4.2. تجميع حروف السلسلة <https://docs.python.org/3/reference/lexical_analysis.html#string-literal-concatenation>`_
+     - مدعوم
      -
-   * - `2.4.3. Formatted string literals <https://docs.python.org/3/reference/lexical_analysis.html#formatted-string-literals>`_
-     - Partially Supported
+   * - `2.4.3. الحرفي السلسلة المنسقة <https://docs.python.org/3/reference/lexical_analysis.html#formatted-string-literals>`_
+     - مدعوم جزئيا
      -
-   * - `2.4.4. Numeric literals <https://docs.python.org/3/reference/lexical_analysis.html#numeric-literals>`_
-     - Supported
+   * - `2.4.4. الحرفي الرقمي <https://docs.python.org/3/reference/lexical_analysis.html#numeric-literals>`_
+     - مدعوم
      -
-   * - `2.4.5. Integer literals <https://docs.python.org/3/reference/lexical_analysis.html#integer-literals>`_
-     - Supported
+   * - `2.4.5. الحرفي الرقمي الصحيح <https://docs.python.org/3/reference/lexical_analysis.html#integer-literals>`_
+     - مدعوم
      -
-   * - `2.4.6. Floating point literals <https://docs.python.org/3/reference/lexical_analysis.html#floating-point-literals>`_
-     - Supported
+   * - `2.4.6. الحرفي الرقمي العشري <https://docs.python.org/3/reference/lexical_analysis.html#floating-point-literals>`_
+     - مدعوم
      -
-   * - `2.4.7. Imaginary literals <https://docs.python.org/3/reference/lexical_analysis.html#imaginary-literals>`_
-     - Not Supported
+   * - `2.4.7. الحرفي التخيلي <https://docs.python.org/3/reference/lexical_analysis.html#imaginary-literals>`_
+     - غير مدعوم
      -
-   * - `2.5. Operators <https://docs.python.org/3/reference/lexical_analysis.html#operators>`_
-     - Partially Supported
-     - Not supported: ``<<``, ``>>``, ``:=``
-   * - `2.6. Delimiters <https://docs.python.org/3/reference/lexical_analysis.html#delimiters>`_
-     - Partially Supported
-     - Not supported: ``**=``, ``<<=``, ``>>=``, ``%=``, ``^=``, ``@=``, ``&=``, ``//=``, ``%`` operator for some types (e.g. ``str``\ )
-   * - `3. Data model <https://docs.python.org/3/reference/datamodel.html#>`_
-     - Not Relevant
+   * - `2.5. المشغلون <https://docs.python.org/3/reference/lexical_analysis.html#operators>`_
+     - مدعوم جزئيا
+     - غير مدعوم: ``<<``، ``>>``، ``:=``
+   * - `2.6. الفواصل <https://docs.python.org/3/reference/lexical_analysis.html#delimiters>`_
+     - مدعوم جزئيا
+     - غير مدعوم: ``**=``، ``<<=``، ``>>=``، ``%=``، ``^=``، ``@=``، ``&=``، ``//=``، عامل التشغيل ``%`` لبعض الأنواع (على سبيل المثال ``str``)
+   * - `3. نموذج البيانات <https://docs.python.org/3/reference/datamodel.html#>`_
+     - غير ذي صلة
      -
-   * - `3.1. Objects, values and types <https://docs.python.org/3/reference/datamodel.html#objects-values-and-types>`_
-     - Not Relevant
+   * - `3.1. الكائنات والقيم والأنواع <https://docs.python.org/3/reference/datamodel.html#objects-values-and-types>`_
+     - غير ذي صلة
      -
-   * - `3.2. The standard type hierarchy <https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy>`_
-     - Partially Supported
-     - Not supported: NotImplemented, Ellipsis, numbers.Complex, bytes, byte arrays, sets, frozen sets, generators, coroutines, async generators, modules, I/O objects, internal objects, slice objects ( though slicing is supported), classmethod
-   * - `3.3. Special method names <https://docs.python.org/3/reference/datamodel.html#special-method-names>`_
-     - Supported
+   * - `3.2. التسلسل الهرمي القياسي للأنواع <https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy>`_
+     - مدعوم جزئيا
+     - غير مدعوم: NotImplemented، Ellipsis، numbers.Complex، bytes، مصفوفات البايت، المجموعات، المجموعات المجمدة، المولدات، الروتينات، المولدات غير المتزامنة، المولدات غير المتزامنة، الوحدات النمطية، كائنات الإدخال/الإخراج، الكائنات الداخلية، كائنات الشرائح (على الرغم من دعم الشرائح)، classmethod
+   * - `3.3. أسماء الطرق الخاصة <https://docs.python.org/3/reference/datamodel.html#special-method-names>`_
+     - مدعوم
      -
-   * - `3.3.1. Basic customization <https://docs.python.org/3/reference/datamodel.html#basic-customization>`_
-     - Partially Supported
-     - Not supported: ``__new__`` , ``__del__`` , ``__bytes__`` , ``__format__`` , ``__hash__`` ,
-   * - `3.3.2. Customizing attribute access <https://docs.python.org/3/reference/datamodel.html#customizing-attribute-access>`_
-     - Not Supported
+   * - `3.3.1. التخصيص الأساسي <https://docs.python.org/3/reference/datamodel.html#basic-customization>`_
+     - مدعوم جزئيا
+     - غير مدعوم: ``__new__``، ``__del__``، ``__bytes__``، ``__format__``، ``__hash__``
+   * - `3.3.2. تخصيص الوصول إلى المعرف <https://docs.python.org/3/reference/datamodel.html#customizing-attribute-access>`_
+     - غير مدعوم
      -
-   * - `3.3.2.1. Customizing module attribute access <https://docs.python.org/3/reference/datamodel.html#customizing-module-attribute-access>`_
-     - Not Supported
+   * - `3.3.2.1. تخصيص الوصول إلى معرف الوحدة النمطية <https://docs.python.org/3/reference/datamodel.html#customizing-module-attribute-access>`_
+     - غير مدعوم
      -
-   * - `3.3.2.2. Implementing Descriptors <https://docs.python.org/3/reference/datamodel.html#implementing-descriptors>`_
-     - Not Supported
+   * - `3.3.2.2. تنفيذ الواصفات <https://docs.python.org/3/reference/datamodel.html#implementing-descriptors>`_
+     - غير مدعوم
      -
-   * - `3.3.2.3. Invoking Descriptors <https://docs.python.org/3/reference/datamodel.html#invoking-descriptors>`_
-     - Not Supported
+   * - `3.3.2.3. استدعاء الواصفات <https://docs.python.org/3/reference/datamodel.html#invoking-descriptors>`_
+     - غير مدعوم
      -
    * - `3.3.2.4. __slots__ <https://docs.python.org/3/reference/datamodel.html#slots>`_
-     - Not Supported
-     -
-   * - `3.3.2.4.1. Notes on using __slots__ <https://docs.python.org/3/reference/datamodel.html#notes-on-using-slots>`_
-     - Not Supported
+     - غير مدعوم
+     -
+   * - `3.3.2.4.1. ملاحظات حول استخدام __slots__ <https://docs.python.org/3/reference/datamodel.html#notes-on-using-slots>`_
+     - غير مدعوم
      -
-   * - `3.3.3. Customizing class creation <https://docs.python.org/3/reference/datamodel.html#customizing-class-creation>`_
-     - Not Supported
-     -
-   * - `3.3.3.1. Metaclasses <https://docs.python.org/3/reference/datamodel.html#metaclasses>`_
-     - Not Supported
-     -
-   * - `3.3.3.2. Resolving MRO entries <https://docs.python.org/3/reference/datamodel.html#resolving-mro-entries>`_
-     - Not Supported
-     - ``super()`` is not supported
-   * - `3.3.3.3. Determining the appropriate metaclass <https://docs.python.org/3/reference/datamodel.html#determining-the-appropriate-metaclass>`_
-     - Not relevant
-     -
-   * - `3.3.3.4. Preparing the class namespace <https://docs.python.org/3/reference/datamodel.html#preparing-the-class-namespace>`_
-     - Not relevant
-     -
-   * - `3.3.3.5. Executing the class body <https://docs.python.org/3/reference/datamodel.html#executing-the-class-body>`_
-     - Not relevant
-     -
-   * - `3.3.3.6. Creating the class object <https://docs.python.org/3/reference/datamodel.html#creating-the-class-object>`_
-     - Not relevant
-     -
-   * - `3.3.3.7. Uses for metaclasses <https://docs.python.org/3/reference/datamodel.html#uses-for-metaclasses>`_
-     - Not relevant
-     -
-   * - `3.3.4. Customizing instance and subclass checks <https://docs.python.org/3/reference/datamodel.html#customizing-instance-and-subclass-checks>`_
-     - Not Supported
-     -
-   * - `3.3.5. Emulating generic types <https://docs.python.org/3/reference/datamodel.html#emulating-generic-types>`_
-     - Not Supported
-     -
-   * - `3.3.6. Emulating callable objects <https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects>`_
-     - Supported
-     -
-   * - `3.3.7. Emulating container types <https://docs.python.org/3/reference/datamodel.html#emulating-container-types>`_
-     - Partially Supported
-     - Some magic methods not supported (e.g. ``__iter__`` )
-   * - `3.3.8. Emulating numeric types <https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types>`_
-     - Partially Supported
-     - Magic methods with swapped operands not supported (``__r*__``)
-   * - `3.3.9. With Statement Context Managers <https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers>`_
-     - Not Supported
-     -
-   * - `3.3.10. Special method lookup <https://docs.python.org/3/reference/datamodel.html#special-method-lookup>`_
-     - Not relevant
-     -
-   * - `3.4. Coroutines <https://docs.python.org/3/reference/datamodel.html#coroutines>`_
-     - Not Supported
-     -
-   * - `3.4.1. Awaitable Objects <https://docs.python.org/3/reference/datamodel.html#awaitable-objects>`_
-     - Not Supported
-     -
-   * - `3.4.2. Coroutine Objects <https://docs.python.org/3/reference/datamodel.html#coroutine-objects>`_
-     - Not Supported
-     -
-   * - `3.4.3. Asynchronous Iterators <https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators>`_
-     - Not Supported
-     -
-   * - `3.4.4. Asynchronous Context Managers <https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers>`_
-     - Not Supported
-     -
-   * - `4. Execution model <https://docs.python.org/3/reference/executionmodel.html#>`_
-     - Not Relevant
-     -
-   * - `4.1. Structure of a program <https://docs.python.org/3/reference/executionmodel.html#structure-of-a-program>`_
-     - Not Relevant
-     -
-   * - `4.2. Naming and binding <https://docs.python.org/3/reference/executionmodel.html#naming-and-binding>`_
-     - Not Relevant
-     - Names are bound at compile time in TorchScript
-   * - `4.2.1. Binding of names <https://docs.python.org/3/reference/executionmodel.html#binding-of-names>`_
-     - Not Relevant
-     - See ``global`` and ``nonlocal`` statements section
-   * - `4.2.2. Resolution of names <https://docs.python.org/3/reference/executionmodel.html#resolution-of-names>`_
-     - Not Relevant
-     - See ``global`` and ``nonlocal`` statements section
-   * - `4.2.3. Builtins and restricted execution <https://docs.python.org/3/reference/executionmodel.html#builtins-and-restricted-execution>`_
-     - Not Relevant
-     -
-   * - `4.2.4. Interaction with dynamic features <https://docs.python.org/3/reference/executionmodel.html#interaction-with-dynamic-features>`_
-     - Not Supported
-     - Python values cannot be captured
-   * - `4.3. Exceptions <https://docs.python.org/3/reference/executionmodel.html#exceptions>`_
-     - Partially Supported
-     - See ``try`` and ``raise`` statement section
-   * - `5. The import system <https://docs.python.org/3/reference/import.html>`_
-     - Not Relevant
-     -
-   * - `6. Expressions <https://docs.python.org/3/reference/expressions.html#>`_
-     - Not Relevant
-     - See expressions section
-   * - `6.1. Arithmetic conversions <https://docs.python.org/3/reference/expressions.html#arithmetic-conversions>`_
-     - Supported
-     -
-   * - `6.2. Atoms <https://docs.python.org/3/reference/expressions.html#atoms>`_
-     - Not Relevant
-     -
-   * - `6.2.1. Identifiers (Names) <https://docs.python.org/3/reference/expressions.html#atom-identifiers>`_
-     - Supported
-     -
-   * - `6.2.2. Literals <https://docs.python.org/3/reference/expressions.html#literals>`_
-     - Partially Supported
-     - ``bytesliteral``\ , ``imagnumber`` not supported
-   * - `6.2.3. Parenthesized forms <https://docs.python.org/3/reference/expressions.html#parenthesized-forms>`_
-     - Supported
-     -
-   * - `6.2.4. Displays for lists, sets and dictionaries <https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries>`_
-     - Partially Supported
-     - Not supported: comprehension ifs, async iterators
-   * - `6.2.5. List displays <https://docs.python.org/3/reference/expressions.html#list-displays>`_
-     - Supported
-     -
-   * - `6.2.6. Set displays <https://docs.python.org/3/reference/expressions.html#set-displays>`_
-     - Not Supported
-     -
-   * - `6.2.7. Dictionary displays <https://docs.python.org/3/reference/expressions.html#dictionary-displays>`_
-     - Supported
-     - dict() constructor with kwargs doesn't work, dict comprehensions, dictionary unpacking
-   * - `6.2.8. Generator expressions <https://docs.python.org/3/reference/expressions.html#generator-expressions>`_
-     - Not Supported
-     -
-   * - `6.2.9. Yield expressions <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_
-     - Not Supported
-     -
-   * - `6.2.9.1. Generator-iterator methods <https://docs.python.org/3/reference/expressions.html#generator-iterator-methods>`_
-     - Not Supported
-     -
-   * - `6.2.9.2. Examples <https://docs.python.org/3/reference/expressions.html#examples>`_
-     - Not Supported
-     -
-   * - `6.2.9.3. Asynchronous generator functions <https://docs.python.org/3/reference/expressions.html#asynchronous-generator-functions>`_
-     - Not Supported
-     -
-   * - `6.2.9.4. Asynchronous generator-iterator methods <https://docs.python.org/3/reference/expressions.html#asynchronous-generator-iterator-methods>`_
-     - Not Supported
-     -
-   * - `6.3. Primaries <https://docs.python.org/3/reference/expressions.html#primaries>`_
-     - Supported
-     -
-   * - `6.3.1. Attribute references <https://docs.python.org/3/reference/expressions.html#attribute-references>`_
-     - Supported
-     -
-   * - `6.3.2. Subscriptions <https://docs.python.org/3/reference/expressions.html#subscriptions>`_
-     - Supported
-     -
-   * - `6.3.3. Slicings <https://docs.python.org/3/reference/expressions.html#slicings>`_
-     - Partially Supported
-     - Tuple slicing with stride is not supported
-   * - `6.3.4. Calls <https://docs.python.org/3/reference/expressions.html#calls>`_
-     - Partially Supported
-     - Args unpack / kwargs unpack is not supported
-   * - `6.4. Await expression <https://docs.python.org/3/reference/expressions.html#await-expression>`_
-     - Not Supported
-     -
-   * - `6.5. The power operator <https://docs.python.org/3/reference/expressions.html#the-power-operator>`_
-     - Supported
-     -
-   * - `6.6. Unary arithmetic and bitwise operations <https://docs.python.org/3/reference/expressions.html#unary-arithmetic-and-bitwise-operations>`_
-     - Partially Supported
-     - Some bitwise operators are not implemented for primitive types (e.g. ``~x`` where ``x`` is an ``int`` is not currently supported)
-   * - `6.7. Binary arithmetic operations <https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations>`_
-     - Partially Supported
-     - See delimiters section
-   * - `6.8. Shifting operations <https://docs.python.org/3/reference/expressions.html#shifting-operations>`_
-     - Not Supported
-     -
-   * - `6.9. Binary bitwise operations <https://docs.python.org/3/reference/expressions.html#binary-bitwise-operations>`_
-     - Supported
-     -
-   * - `6.10. Comparisons <https://docs.python.org/3/reference/expressions.html#comparisons>`_
-     - Supported
-     -
-   * - `6.10.1. Value comparisons <https://docs.python.org/3/reference/expressions.html#value-comparisons>`_
-     - Partially Supported
-     - Dictionary equality checks are not currently supported
-   * - `6.10.2. Membership test operations <https://docs.python.org/3/reference/expressions.html#membership-test-operations>`_
-     - Partially Supported
-     - Not supported for TorchScript classes
-   * - `6.10.3. Identity comparisons <https://docs.python.org/3/reference/expressions.html#is-not>`_
-     - Supported
-     -
-   * - `6.11. Boolean operations <https://docs.python.org/3/reference/expressions.html#boolean-operations>`_
-     - Supported
-     -
-   * - `6.12. Conditional expressions <https://docs.python.org/3/reference/expressions.html#conditional-expressions>`_
-     - Supported
-     -
-   * - `6.13. Lambdas <https://docs.python.org/3/reference/expressions.html#lambda>`_
-     - Not Supported
-     -
-   * - `6.14. Expression lists <https://docs.python.org/3/reference/expressions.html#expression-lists>`_
-     - Partially Supported
-     - Iterable unpacking not supported
-   * - `6.15. Evaluation order <https://docs.python.org/3/reference/expressions.html#evaluation-order>`_
-     - Supported
-     -
-   * - `6.16. Operator precedence <https://docs.python.org/3/reference/expressions.html#operator-precedence>`_
-     - Supported
-     -
-   * - `7. Simple statements <https://docs.python.org/3/reference/simple_stmts.html#>`_
-     - Supported
-     -
-   * - `7.1. Expression statements <https://docs.python.org/3/reference/simple_stmts.html#expression-statements>`_
-     - Supported
-     -
-   * - `7.2. Assignment statements <https://docs.python.org/3/reference/simple_stmts.html#assignment-statements>`_
-     - Supported
-     -
-   * - `7.2.1. Augmented assignment statements <https://docs.python.org/3/reference/simple_stmts.html#augmented-assignment-statements>`_
-     - Partially Supported
-     - See delimiters section
-   * - `7.2.2. Annotated assignment statements <https://docs.python.org/3/reference/simple_stmts.html#annotated-assignment-statements>`_
-     - Supported
-     -
-   * - `7.3. The assert statement <https://docs.python.org/3/reference/simple_stmts.html#the-assert-statement>`_
-     - Partially Supported
-     - Exception message is not customizable
-   * - `7.4. The pass statement <https://docs.python.org/3/reference/simple_stmts.html#the-pass-statement>`_
-     - Supported
-     -
-   * - `7.5. The del statement <https://docs.python.org/3/reference/simple_stmts.html#the-del-statement>`_
-     - Not Supported
-     -
-   * - `7.6. The return statement <https://docs.python.org/3/reference/simple_stmts.html#the-return-statement>`_
-     - Supported
-     - Some other features of returning (e.g. behavior with try..finally) are unsupported
-   * - `7.7. The yield statement <https://docs.python.org/3/reference/simple_stmts.html#the-yield-statement>`_
-     - Not Supported
-     -
-   * - `7.8. The raise statement <https://docs.python.org/3/reference/simple_stmts.html#the-raise-statement>`_
-     - Partially Supported
-     - Exception message is not customizable
-   * - `7.9. The break statement <https://docs.python.org/3/reference/simple_stmts.html#the-break-statement>`_
-     - Supported
-     - Some other features of returning (e.g. behavior with try..finally) are unsupported
-   * - `7.10. The continue statement <https://docs.python.org/3/reference/simple_stmts.html#the-continue-statement>`_
-     - Supported
-     - Some other features of returning (e.g. behavior with try..finally) are unsupported
-   * - `7.11. The import statement <https://docs.python.org/3/reference/simple_stmts.html#the-import-statement>`_
-     - Not Supported
-     -
-   * - `7.11.1. Future statements <https://docs.python.org/3/reference/simple_stmts.html#future-statements>`_
-     - Not Supported
-     -
-   * - `7.12. The global statement <https://docs.python.org/3/reference/simple_stmts.html#the-global-statement>`_
-     - Not Supported
-     -
-   * - `7.13. The nonlocal statement <https://docs.python.org/3/reference/simple_stmts.html#the-nonlocal-statement>`_
-     - Not Supported
-     -
-   * - `8. Compound statements <https://docs.python.org/3/reference/compound_stmts.html#>`_
-     - Irrelevant
-     -
-   * - `8.1. The if statement <https://docs.python.org/3/reference/compound_stmts.html#the-if-statement>`_
-     - Supported
-     -
-   * - `8.2. The while statement <https://docs.python.org/3/reference/compound_stmts.html#the-while-statement>`_
-     - Partially Supported
-     - while..else is not supported
-   * - `8.3. The for statement <https://docs.python.org/3/reference/compound_stmts.html#the-for-statement>`_
-     - Partially Supported
-     - for..else is not supported
-   * - `8.4. The try statement <https://docs.python.org/3/reference/compound_stmts.html#the-try-statement>`_
-     - Not Supported
-     -
-   * - `8.5. The with statement <https://docs.python.org/3/reference/compound_stmts.html#the-with-statement>`_
-     - Partially Supported
-     - ``__exit__`` is always called with ``exc_type``, ``exc_value``, and ``traceback`` set to None, even if an exception was raised, and ``__exit__``'s return value is ignored.
-   * - `8.6. Function definitions <https://docs.python.org/3/reference/compound_stmts.html#function-definitions>`_
-     - Not Supported
-     -
-   * - `8.7. Class definitions <https://docs.python.org/3/reference/compound_stmts.html#class-definitions>`_
-     - Not Supported
-     -
-   * - `8.8. Coroutines <https://docs.python.org/3/reference/compound_stmts.html#coroutines>`_
-     - Not Supported
-     -
-   * - `8.8.1. Coroutine function definition <https://docs.python.org/3/reference/compound_stmts.html#coroutine-function-definition>`_
-     - Not Supported
-     -
-   * - `8.8.2. The async for statement <https://docs.python.org/3/reference/compound_stmts.html#the-async-for-statement>`_
-     - Not Supported
-     -
-   * - `8.8.3. The async with statement <https://docs.python.org/3/reference/compound_stmts.html#the-async-with-statement>`_
-     - Not Supported
-     -
-   * - `9. Top-level components <https://docs.python.org/3/reference/toplevel_components.html#>`_
-     - Not Relevant
-     -
-   * - `9.1. Complete Python programs <https://docs.python.org/3/reference/toplevel_components.html#complete-python-programs>`_
-     - Not Relevant
-     -
-   * - `9.2. File input <https://docs.python.org/3/reference/toplevel_components.html#file-input>`_
-     - Not Relevant
-     -
-   * - `9.3. Interactive input <https://docs.python.org/3/reference/toplevel_components.html#interactive-input>`_
-     - Not Relevant
-     -
-   * - `9.4. Expression input <https://docs.python.org/3/reference/toplevel_components.html#expression-input>`_
-     - Not Relevant
+   * - `3.3.3. تخصيص إنشاء الفئات <https://docs.python.org/3/reference/datamodel.html#customizing-class-creation>`_
+     - غير مدعوم
+     -
+   * - `3.3.3.1. الفئات الفوقية <https://docs.python.org/3/reference/datamodel.html#metaclasses>`_
+     - غير مدعوم
+     -
+   * - `3.3.3.2. حل إدخالات MRO <https://docs.python.org/3/reference/datamodel.html#resolving-mro-entries>`_
+     - غير مدعوم
+     - ``super()`` غير مدعوم
+   * - `3.3.3.3. تحديد الفئة الفوقية المناسبة <https://docs.python.org/3/reference/datamodel.html#determining-the-appropriate-metaclass>`_
+     - غير ذي صلة
+     -
+   * - `3.3.3.4. إعداد مساحة اسم الفئة <https://docs.python.org/3/reference/datamodel.html#preparing-the-class-namespace>`_
+     - غير ذي صلة
+     -
+   * - `3.3.3.5. تنفيذ جسم الفئة <https://docs.python.org/3/reference/datamodel.html#executing-the-class-body>`_
+     - غير ذي صلة
+     -
+   * - `3.3.3.6. إنشاء كائن الفئة <https://docs.python.org/3/reference/datamodel.html#creating-the-class-object>`_
+     - غير ذي صلة
+     -
+   * - `3.3.3.7. استخدامات الفئات الفوقية <https://docs.python.org/3/reference/datamodel.html#uses-for-metaclasses>`_
+     - غير ذي صلة
+     -
+   * - `3.3.4. تخصيص التحقق من المثيل والصنف الفرعي <https://docs.python.org/3/reference/datamodel.html#customizing-instance-and-subclass-checks>`_
+     - غير مدعوم
+     -
+   * - `3.3.5. محاكاة الأنواع العامة <https://docs.python.org/3/reference/datamodel.html#emulating-generic-types>`_
+     - غير مدعوم
+     -
+   * - `3.3.6. محاكاة الكائنات القابلة للاستدعاء <https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects>`_
+     - مدعوم
+     -
+   * - `3.3.7. محاكاة أنواع الحاويات <https://docs.python.org/3/reference/datamodel.html#emulating-container-types>`_
+     - مدعوم جزئيا
+     - بعض الطرق السحرية غير مدعومة (على سبيل المثال ``__iter__``)
+   * - `3.3.8. محاكاة الأنواع الرقمية <https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types>`_
+     - مدعوم جزئيا
+     - الطرق السحرية مع معاملات التشغيل المبدلة غير مدعومة (``__r*__``)
+   * - `3.3.9. مدراء سياق عبارة with <https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers>`_
+     - غير مدعوم
+     -
+   * - `3.3.10. البحث عن الطريقة الخاصة <https://docs.python.org/3/reference/datamodel.html#special-method-lookup>`_
+     - غير ذي صلة
+     -
+   * - `3.4. الروتينات <https://docs.python.org/3/reference/datamodel.html#coroutines>`_
+     - غير مدعوم
+     -
+   * - `3.4.1. كائنات قابلة للانتظار <https://docs.python.org/3/reference/datamodel.html#awaitable-objects>`_
+     - غير مدعوم
+     -
+   * - `3.4.2. كائنات الروتين <https://docs.python.org/3/reference/datamodel.html#coroutine-objects>`_
+     - غير مدعوم
+     -
+   * - `3.4.3. المؤشرات المتكررة غير المتزامنة <https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators>`_
+     - غير مدعوم
+     -
+   * - `3.4.4. مدراء السياق غير المتزامن <https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers>`_
+     - غير مدعوم
+     -
+   * - `4. نموذج التنفيذ <https://docs.python.org/3/reference/executionmodel.html#>`_
+     - غير ذي صلة
+     -
+   * - `4.1. هيكل البرنامج <https://docs.python.org/3/reference/executionmodel.html#structure-of-a-program>`_
+     - غير ذي صلة
+     -
+   * - `4.2. التسمية والربط <https://docs.python.org/3/reference/executionmodel.html#naming-and-binding>`_
+     - غير ذي صلة
+     - ترتبط الأسماء في وقت الترجمة في TorchScript
+   * - `4.2.1. ربط الأسماء <https://docs.python.org/3/reference/executionmodel.html#binding-of-names>`_
+     - غير ذي صلة
+     - راجع قسم تعليمات ``global`` و ``nonlocal``
+   * - `4.2.2. حل الأسماء <https://docs.python.org/3/reference/executionmodel.html#resolution-of-names>`_
+     - غير ذي صلة
+     - راجع قسم تعليمات ``global`` و ``nonlocal``
+   * - `4.2.3. المضمنات والتنفيذ المقيد <https://docs.python.org/3/reference/executionmodel.html#builtins-and-restricted-execution>`_
+     - غير ذي صلة
+     -
+   * - `4.2.4. التفاعل مع الميزات الديناميكية <https://docs.python.org/3/reference/executionmodel.html#interaction-with-dynamic-features>`_
+     - غير مدعوم
+     - لا يمكن التقاط قيم Python
+   * - `4.3. الاستثناءات <https://docs.python.org/3/reference/executionmodel.html#exceptions>`_
+     - مدعوم جزئيا
+     - راجع قسم تعليمات ``try`` و ``raise``
+   * - `5. نظام الاستيراد <https://docs.python.org/3/reference/import.html>`_
+     - غير ذي صلة
+     -
+   * - `6. التعبيرات <https://docs.python.org/3/reference/expressions.html#>`_
+     - غير ذي صلة
+     - راجع قسم التعبيرات
+   * - `6.1. التحويلات الحسابية <https://docs.python.org/3/reference/expressions.html#arithmetic-conversions>`_
+     - مدعوم
+     -
+   * - `6.2. الذرات <https://docs.python.org/3/reference/expressions.html#atoms>`_
+     - غير ذي صلة
+     -
+   * - `6.2.1. المعرفات (الأسماء) <https://docs.python.org/3/reference/expressions.html#atom-identifiers>`_
+     - مدعوم
+     -
+   * - `6.2.2. الحرفي <https://docs.python.org/3/reference/expressions.html#literals>`_
+     - مدعوم جزئيا
+     - غير مدعوم: ``bytesliteral``، ``imagnumber``
+   * - `6.2.3. الأشكال الموضوعة بين قوسين <https://docs.python.org/3/reference/expressions.html#parenthesized-forms>`_
+     - مدعوم
+     -
+   * - `6.2.4. العروض الخاصة بالقوائم والمجموعات والقواميس <https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries>`_
+     - مدعوم جزئيا
+     - غير مدعوم: ifs الفهم، المؤشرات المتكررة غير المتزامنة
+   * - `6.2.5. عروض القوائم <https://docs.python.org/3/reference/expressions.html#list-displays>`_
+     - مدعوم
+     -
+   * - `6.2.6. عروض المجموعات <https://docs.python.org/
+بالتأكيد، إليك النص المترجم إلى اللغة العربية مع الحفاظ على تنسيق ReStructuredText:
+
+* - `6.2.9. تعابير العائد <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_
+     - غير مدعوم
+     -
+   * - `6.2.9.1. أساليب مولد المؤشر <https://docs.python.org/3/reference/expressions.html#generator-iterator-methods>`_
+     - غير مدعوم
+     -
+   * - `6.2.9.2. أمثلة <https://docs.python.org/3/reference/expressions.html#examples>`_
+     - غير مدعوم
+     -
+   * - `6.2.9.3. وظائف المولدات غير المتزامنة <https://docs.python.org/3/reference/expressions.html#asynchronous-generator-functions>`_
+     - غير مدعوم
+     -
+   * - `6.2.9.4. أساليب مولد المؤشر غير المتزامن <https://docs.python.org/3/reference/expressions.html#asynchronous-generator-iterator-methods>`_
+     - غير مدعوم
+     -
+   * - `6.3. الأساسيات <https://docs.python.org/3/reference/expressions.html#primaries>`_
+     - مدعوم
+     -
+   * - `6.3.1. مراجع السمات <https://docs.python.org/3/reference/expressions.html#attribute-references>`_
+     - مدعوم
+     -
+   * - `6.3.2. الاشتراكات <https://docs.python.org/3/reference/expressions.html#subscriptions>`_
+     - مدعوم
+     -
+   * - `6.3.3. الشرائح <https://docs.python.org/3/reference/expressions.html#slicings>`_
+     - مدعوم جزئياً
+     - شرائح المصفوفات مع الخطوة غير مدعومة
+   * - `6.3.4. المكالمات <https://docs.python.org/3/reference/expressions.html#calls>`_
+     - مدعوم جزئياً
+     - فك حزم الحجج وحزم الكلمات الرئيسية غير مدعوم
+   * - `6.4. تعبير الانتظار <https://docs.python.org/3/reference/expressions.html#await-expression>`_
+     - غير مدعوم
+     -
+   * - `6.5. عامل القوة <https://docs.python.org/3/reference/expressions.html#the-power-operator>`_
+     - مدعوم
+     -
+   * - `6.6. العمليات الحسابية والبتية الأحادية <https://docs.python.org/3/reference/expressions.html#unary-arithmetic-and-bitwise-operations>`_
+     - مدعوم جزئياً
+     - بعض عوامل البت غير منفذة للأنواع الأولية (على سبيل المثال، "~x" حيث "x" هو عدد صحيح غير مدعوم حالياً)
+   * - `6.7. العمليات الحسابية الثنائية <https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations>`_
+     - مدعوم جزئياً
+     - راجع قسم الفواصل
+   * - `6.8. عمليات التحول <https://docs.python.org/3/reference/expressions.html#shifting-operations>`_
+     - غير مدعوم
+     -
+   * - `6.9. العمليات الثنائية للبت <https://docs.python.org/3/reference/expressions.html#binary-bitwise-operations>`_
+     - مدعوم
+     -
+   * - `6.10. المقارنات <https://docs.python.org/3/reference/expressions.html#comparisons>`_
+     - مدعوم
+     -
+   * - `6.10.1. مقارنات القيمة <https://docs.python.org/3/reference/expressions.html#value-comparisons>`_
+     - مدعوم جزئياً
+     - فحوصات المساواة للقاموس غير مدعومة حالياً
+   * - `6.10.2. عمليات اختبار العضوية <https://docs.python.org/3/reference/expressions.html#membership-test-operations>`_
+     - مدعوم جزئياً
+     - غير مدعوم لفئات TorchScript
+   * - `6.10.3. مقارنات الهوية <https://docs.python.org/3/reference/expressions.html#is-not>`_
+     - مدعوم
+     -
+   * - `6.11. العمليات المنطقية <https://docs.python.org/3/reference/expressions.html#boolean-operations>`_
+     - مدعوم
+     -
+   * - `6.12. التعابير الشرطية <https://docs.python.org/3/reference/expressions.html#conditional-expressions>`_
+     - مدعوم
+     -
+   * - `6.13. لامبداس <https://docs.python.org/3/reference/expressions.html#lambda>`_
+     - غير مدعوم
+     -
+   * - `6.14. قوائم التعبير <https://docs.python.org/3/reference/expressions.html#expression-lists>`_
+     - مدعوم جزئياً
+     - فك حزم المصفوفات غير مدعوم
+   * - `6.15. ترتيب التقييم <https://docs.python.org/3/reference/expressions.html#evaluation-order>`_
+     - مدعوم
+     -
+   * - `6.16. أسبقية المشغل <https://docs.python.org/3/reference/expressions.html#operator-precedence>`_
+     - مدعوم
+     -
+   * - `7. العبارات البسيطة <https://docs.python.org/3/reference/simple_stmts.html#>`_
+     - مدعوم
+     -
+   * - `7.1. عبارات التعبير <https://docs.python.org/3/reference/simple_stmts.html#expression-statements>`_
+     - مدعوم
+     -
+   * - `7.2. عبارات التعيين <https://docs.python.org/3/reference/simple_stmts.html#assignment-statements>`_
+     - مدعوم
+     -
+   * - `7.2.1. عبارات التعيين المعززة <https://docs.python.org/3/reference/simple_stmts.html#augmented-assignment-statements>`_
+     - مدعوم جزئياً
+     - راجع قسم الفواصل
+   * - `7.2.2. عبارات التعيين المشروح <https://docs.python.org/3/reference/simple_stmts.html#annotated-assignment-statements>`_
+     - مدعوم
+     -
+   * - `7.3. عبارة التأكيد <https://docs.python.org/3/reference/simple_stmts.html#the-assert-statement>`_
+     - مدعوم جزئياً
+     - لا يمكن تخصيص رسالة الاستثناء
+   * - `7.4. عبارة المرور <https://docs.python.org/3/reference/simple_stmts.html#the-pass-statement>`_
+     - مدعوم
+     -
+   * - `7.5. عبارة الحذف <https://docs.python.org/3/reference/simple_stmts.html#the-del-statement>`_
+     - غير مدعوم
+     -
+   * - `7.6. عبارة الإرجاع <https://docs.python.org/3/reference/simple_stmts.html#the-return-statement>`_
+     - مدعوم
+     - بعض الميزات الأخرى للإرجاع (مثل السلوك مع try..finally) غير مدعومة
+   * - `7.7. عبارة العائد <https://docs.python.org/3/reference/simple_stmts.html#the-yield-statement>`_
+     - غير مدعوم
+     -
+   * - `7.8. عبارة إثارة الاستثناء <https://docs.python.org/3/reference/simple_stmts.html#the-raise-statement>`_
+     - مدعوم جزئياً
+     - لا يمكن تخصيص رسالة الاستثناء
+   * - `7.9. عبارة كسر <https://docs.python.org/3/reference/simple_stmts.html#the-break-statement>`_
+     - مدعوم
+     - بعض الميزات الأخرى للإرجاع (مثل السلوك مع try..finally) غير مدعومة
+   * - `7.10. عبارة الاستمرار <https://docs.python.org/3/reference/simple_stmts.html#the-continue-statement>`_
+     - مدعوم
+     - بعض الميزات الأخرى للإرجاع (مثل السلوك مع try..finally) غير مدعومة
+   * - `7.11. عبارة الاستيراد <https://docs.python.org/3/reference/simple_stmts.html#the-import-statement>`_
+     - غير مدعوم
+     -
+   * - `7.11.1. عبارات المستقبل <https://docs.python.org/3/reference/simple_stmts.html#future-statements>`_
+     - غير مدعوم
+     -
+   * - `7.12. عبارة العمومية <https://docs.python.org/3/reference/simple_stmts.html#the-global-statement>`_
+     - غير مدعوم
+     -
+   * - `7.13. عبارة المحلية غير المدعومة <https://docs.python.org/3/reference/simple_stmts.html#the-nonlocal-statement>`_
+     - غير مدعوم
+     -
+   * - `8. العبارات المركبة <https://docs.python.org/3/reference/compound_stmts.html#>`_
+     - غير ذي صلة
+     -
+   * - `8.1. عبارة إذا <https://docs.python.org/3/reference/compound_stmts.html#the-if-statement>`_
+     - مدعوم
+     -
+   * - `8.2. عبارة أثناء <https://docs.python.org/3/reference/compound_stmts.html#the-while-statement>`_
+     - مدعوم جزئياً
+     - while..else غير مدعوم
+   * - `8.3. عبارة بالنسبة <https://docs.python.org/3/reference/compound_stmts.html#the-for-statement>`_
+     - مدعوم جزئياً
+     - for..else غير مدعوم
+   * - `8.4. جرب عبارة <https://docs.python.org/3/reference/compound_stmts.html#the-try-statement>`_
+     - غير مدعوم
+     -
+   * - `8.5. عبارة مع <https://docs.python.org/3/reference/compound_stmts.html#the-with-statement>`_
+     - مدعوم جزئياً
+     - "__exit__" يتم استدعاؤه دائماً مع "exc_type" و "exc_value" و "traceback" يتم تعيينها إلى None، حتى إذا تم إثارة استثناء، وتتم تجاهل قيمة الإرجاع لـ "__exit__".
+   * - `8.6. تعريفات الدالة <https://docs.python.org/3/reference/compound_stmts.html#function-definitions>`_
+     - غير مدعوم
+     -
+   * - `8.7. تعريفات الفئة <https://docs.python.org/3/reference/compound_stmts.html#class-definitions>`_
+     - غير مدعوم
+     -
+   * - `8.8. الروتينات الفرعية <https://docs.python.org/3/reference/compound_stmts.html#coroutines>`_
+     - غير مدعوم
+     -
+   * - `8.8.1. تعريف روتين فرعي للدالة <https://docs.python.org/3/reference/compound_stmts.html#coroutine-function-definition>`_
+     - غير مدعوم
+     -
+   * - `8.8.2. عبارة for غير المتزامنة <https://docs.python.org/3/reference/compound_stmts.html#the-async-for-statement>`_
+     - غير مدعوم
+     -
+   * - `8.8.3. عبارة with غير المتزامنة <https://docs.python.org/3/reference/compound_stmts.html#the-async-with-statement>`_
+     - غير مدعوم
+     -
+   * - `9. المكونات على مستوى أعلى <https://docs.python.org/3/reference/toplevel_components.html#>`_
+     - غير ذي صلة
+     -
+   * - `9.1. برامج Python الكاملة <https://docs.python.org/3/reference/toplevel_components.html#complete-python-programs>`_
+     - غير ذي صلة
+     -
+   * - `9.2. إدخال الملف <https://docs.python.org/3/reference/toplevel_components.html#file-input>`_
+     - غير ذي صلة
+     -
+   * - `9.3. الإدخال التفاعلي <https://docs.python.org/3/reference/toplevel_components.html#interactive-input>`_
+     - غير ذي صلة
+     -
+   * - `9.4. إدخال التعبير <https://docs.python.org/3/reference/toplevel_components.html#expression-input>`_
+     - غير ذي صلة
      -
