@@ -1,231 +1,271 @@
+.. _torchscript:
+
 TorchScript
+===========
+
+TorchScript هو نموذج البرمجة في PyTorch الذي يسمح لك بتشغيل نماذجك في بيئة الإنتاج. TorchScript مبني على نفس محرك التنفيذ المستخدم أثناء التدريب، لذلك يمكنك الانتقال من النماذج النصية إلى النشر دون أي تغييرات.
+
+هناك طريقتان رئيسيتان للعمل مع TorchScript:
+
+1. تتبع النموذج: يمكنك ببساطة تتبع نموذج PyTorch الخاص بك باستخدام `` torch.jit.trace `` ، والذي يسجل عمليات النموذج ويبني تمثيلا قابلا للتنفيذ. هذا مفيد للنماذج البسيطة أو إذا كان لديك نموذج تم تدريبه بالفعل وتريد تشغيله في بيئة الإنتاج.
+
+2. النماذج النصية: يمكنك أيضًا كتابة نماذج PyTorch الخاصة بك باستخدام بناء جملة النص الفريد، والذي يسمح لك بتعريف وظائف وسلوكيات مخصصة. يوفر هذا المزيد من المرونة في كيفية تعريف النماذج الخاصة بك ويمكن أن يحسن الأداء.
+
+يوفر TorchScript العديد من المزايا لتشغيل نماذج PyTorch في الإنتاج، بما في ذلك:
+
+- الأداء: يمكن لنماذج TorchScript الاستفادة من التحسينات التي تمكنها من العمل بشكل أسرع، خاصة على أجهزة GPU.
+
+- النشر: يمكنك نشر نماذج TorchScript على أجهزة مختلفة، بما في ذلك الخوادم وأجهزة الجوال والأجهزة المدمجة، دون الحاجة إلى الاعتماد على وقت تشغيل Python.
+
+- التوافق: يعمل TorchScript مع معظم وحدات PyTorch، مما يتيح لك استخدام مجموعة واسعة من الأدوات والوظائف في نماذجك.
+
+- قابلية التوسع: يدعم TorchScript التوزيع التلقائي، مما يسهل تشغيل نماذجك عبر أجهزة متعددة لتحسين الأداء.
+
+لمزيد من المعلومات حول TorchScript، يرجى الاطلاع على `دليل TorchScript <https://pytorch.org/docs/stable/jit.html>`_ في وثائق PyTorch الرسمية.
+
+مثال على استخدام TorchScript:
+
+.. code:: python
+
+   import torch
+   from torch import nn
+
+   class MyModel(nn.Module):
+       def __init__(self):
+           super(MyModel, self).__init__()
+           self.linear = nn.Linear(10، 1)
+
+       def forward(self، x):
+           y = self.linear(x)
+           return y
+
+   # قم بإنشاء مثيل للنموذج
+   model = MyModel()
+
+   # قم بتعريف مدخلات نموذج عينة
+   example_input = torch.rand(2, 10)
+
+   # قم بتتبع النموذج لإنشاء نموذج TorchScript
+   traced_model = torch.jit.trace(model، example_input)
+
+   # قم بتشغيل نموذج TorchScript
+   traced_model(example_input)
+
+في هذا المثال، نقوم أولاً بتحديد نموذج PyTorch بسيط باستخدام `` nn.Module ``. ثم نقوم بإنشاء مثيل للنموذج ونحدد مدخلات نموذج عينة. بعد ذلك، نقوم بتتبع النموذج باستخدام `` torch.jit.trace ``، والذي يسجل العمليات التي يتم تنفيذها على النموذج وإنشاء تمثيل TorchScript القابل للتنفيذ. وأخيرًا، يمكننا تشغيل نموذج TorchScript هذا باستخدام نفس مدخلات نموذج العينة.
+
+TorchScript هو أداة قوية تتيح لك الاستفادة من نماذج PyTorch في بيئة الإنتاج، وتقديم مزايا الأداء وقابلية النشر مع الحفاظ على التوافق والمرونة في تعريف النماذج الخاصة بك.
+
+
 ===========
 
 .. toctree::
    :maxdepth: 1
-   :caption: Builtin Functions
+   :caption: الوظائف المدمجة
    :hidden:
 
    torch.jit.supported_ops <jit_builtin_functions>
 
+.. toctree::
+   :maxdepth: 1
+   :caption: مرجع اللغة
+   :hidden:
+
+   jit_language_reference
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Language Reference
-    :hidden:
+   :maxdepth: 1
 
-    jit_language_reference
-
-
-.. toctree::
-    :maxdepth: 1
-
-    jit_language_reference_v2
-
+   jit_language_reference_v2
 
 .. contents:: :local:
-    :depth: 2
+   :depth: 2
 
 .. automodule:: torch.jit
 .. currentmodule:: torch.jit
 
-TorchScript is a way to create serializable and optimizable models from PyTorch code.
-Any TorchScript program can be saved from a Python
-process and loaded in a process where there is no Python dependency.
+TorchScript هي طريقة لإنشاء نماذج قابلة للتسلسل والتحسين من كود PyTorch.
+يمكن حفظ أي برنامج TorchScript من عملية Python
+وتحميله في عملية لا يوجد بها اعتماد على Python.
 
-We provide tools to incrementally transition a model from a pure Python program
-to a TorchScript program that can be run independently from Python, such as in a standalone C++ program.
-This makes it possible to train models in PyTorch using familiar tools in Python and then export
-the model via TorchScript to a production environment where Python programs may be disadvantageous
-for performance and multi-threading reasons.
+نقدم أدوات للانتقال التدريجي لنموذج من برنامج Python نقي
+إلى برنامج TorchScript يمكن تشغيله بشكل مستقل عن Python، كما هو الحال في برنامج C++ مستقل.
+هذا يجعل من الممكن تدريب النماذج في PyTorch باستخدام أدوات مألوفة في Python ثم تصدير
+النموذج عبر TorchScript إلى بيئة إنتاج حيث قد تكون برامج Python غير مناسبة
+لأسباب تتعلق بالأداء وتعدد الخيوط.
 
-For a gentle introduction to TorchScript, see the `Introduction to TorchScript <https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html>`_ tutorial.
+للحصول على مقدمة سهلة إلى TorchScript، راجع البرنامج التعليمي `مقدمة إلى TorchScript <https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html>`_.
 
-For an end-to-end example of converting a PyTorch model to TorchScript and running it in C++, see the
-`Loading a PyTorch Model in C++ <https://pytorch.org/tutorials/advanced/cpp_export.html>`_ tutorial.
+للحصول على مثال شامل حول تحويل نموذج PyTorch إلى TorchScript وتشغيله في C++، راجع
+البرنامج التعليمي `تحميل نموذج PyTorch في C++ <https://pytorch.org/tutorials/advanced/cpp_export.html>`_.
 
-Creating TorchScript Code
---------------------------
+إنشاء كود TorchScript
+--------------------
 
 .. autosummary::
-    :toctree: generated
-    :nosignatures:
+   :toctree: generated
+   :nosignatures:
 
-    script
-    trace
-    script_if_tracing
-    trace_module
-    fork
-    wait
-    ScriptModule
-    ScriptFunction
-    freeze
-    optimize_for_inference
-    enable_onednn_fusion
-    onednn_fusion_enabled
-    set_fusion_strategy
-    strict_fusion
-    save
-    load
-    ignore
-    unused
-    interface
-    isinstance
-    Attribute
-    annotate
+   script
+   trace
+   script_if_tracing
+   trace_module
+   fork
+   wait
+   ScriptModule
+   ScriptFunction
+   freeze
+   optimize_for_inference
+   enable_onednn_fusion
+   onednn_fusion_enabled
+   set_fusion_strategy
+   strict_fusion
+   save
+   load
+   ignore
+   unused
+   interface
+   isinstance
+   Attribute
+   annotate
 
-Mixing Tracing and Scripting
-----------------------------
+مزج التعقب والكتابة
+---------------
 
-In many cases either tracing or scripting is an easier approach for converting a model to TorchScript.
-Tracing and scripting can be composed to suit the particular requirements
-of a part of a model.
+في العديد من الحالات، يكون التتبع أو الكتابة أسهل نهج لتحويل نموذج إلى TorchScript.
+يمكن تكوين التتبع والكتابة لتلبية المتطلبات الخاصة
+جزء من نموذج.
 
-Scripted functions can call traced functions. This is particularly useful when you need
-to use control-flow around a simple feed-forward model. For instance the beam search
-of a sequence to sequence model will typically be written in script but can call an
-encoder module generated using tracing.
-
+يمكن لوظائف النص المكتوب استدعاء الوظائف المتبعة. هذا مفيد بشكل خاص عندما تحتاج
+إلى استخدام التحكم في التدفق حول نموذج التغذية الأمامية البسيط. على سبيل المثال، ستتم كتابة البحث الشعاعي
+لنموذج تسلسل إلى تسلسل بشكل نموذجي في النص، ولكنه يمكن أن يستدعي وحدة ترميز تم إنشاؤها باستخدام التتبع.
 
 .. testsetup::
 
-    # These are hidden from the docs, but these are necessary for `doctest`
-    # since the `inspect` module doesn't play nicely with the execution
-    # environment for `doctest`
-    import torch
+   # هذه مخفية من الوثائق، ولكنها ضرورية لـ `doctest`
+   # لأن وحدة "التفتيش" لا تتوافق مع بيئة التنفيذ
+   # لـ `doctest`
+   import torch
 
-    original_script = torch.jit.script
-    def script_wrapper(obj, *args, **kwargs):
-        obj.__module__ = 'FakeMod'
-        return original_script(obj, *args, **kwargs)
+   original_script = torch.jit.script
+   def script_wrapper(obj, *args, **kwargs):
+       obj.__module__ = 'FakeMod'
+       return original_script(obj, *args, **kwargs)
 
-    torch.jit.script = script_wrapper
+   torch.jit.script = script_wrapper
 
-    original_trace = torch.jit.trace
-    def trace_wrapper(obj, *args, **kwargs):
-        obj.__module__ = 'FakeMod'
-        return original_trace(obj, *args, **kwargs)
+   original_trace = torch.jit.trace
+   def trace_wrapper(obj, *args, **kwargs):
+       obj.__module__ = 'FakeMod'
+       return original_trace(obj, *args, **kwargs)
 
-    torch.jit.trace = trace_wrapper
+   torch.jit.trace = trace_wrapper
 
-
-Example (calling a traced function in script):
-
-.. testcode::
-
-    import torch
-
-    def foo(x, y):
-        return 2 * x + y
-
-    traced_foo = torch.jit.trace(foo, (torch.rand(3), torch.rand(3)))
-
-    @torch.jit.script
-    def bar(x):
-        return traced_foo(x, x)
-
-Traced functions can call script functions. This is useful when a small part of
-a model requires some control-flow even though most of the model is just a feed-forward
-network. Control-flow inside of a script function called by a traced function is
-preserved correctly.
-
-Example (calling a script function in a traced function):
+مثال (استدعاء وظيفة متتبعة في النص):
 
 .. testcode::
 
-    import torch
+   import torch
 
-    @torch.jit.script
-    def foo(x, y):
-        if x.max() > y.max():
-            r = x
-        else:
-            r = y
-        return r
+   def foo(x, y):
+       return 2 * x + y
 
+   traced_foo = torch.jit.trace(foo, (torch.rand(3), torch.rand(3)))
 
-    def bar(x, y, z):
-        return foo(x, y) + z
+   @torch.jit.script
+   def bar(x):
+       return traced_foo(x, x)
 
-    traced_bar = torch.jit.trace(bar, (torch.rand(3), torch.rand(3), torch.rand(3)))
+يمكن للوظائف المتبعة استدعاء وظائف النص. هذا مفيد عندما يتطلب جزء صغير من
+النموذج بعض التحكم في التدفق على الرغم من أن معظم النموذج عبارة عن شبكة تغذية أمامية فقط. يتم الحفاظ على التحكم في التدفق داخل
+وظيفة النص التي تستدعيها وظيفة متتبعة بشكل صحيح.
 
-This composition also works for ``nn.Module``\s as well, where it can be used to generate
-a submodule using tracing that can be called from the methods of a script module.
-
-Example (using a traced module):
+مثال (استدعاء وظيفة نص في وظيفة متتبعة):
 
 .. testcode::
-    :skipif: torchvision is None
 
-    import torch
-    import torchvision
+   import torch
 
-    class MyScriptModule(torch.nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.means = torch.nn.Parameter(torch.tensor([103.939, 116.779, 123.68])
-                                            .resize_(1, 3, 1, 1))
-            self.resnet = torch.jit.trace(torchvision.models.resnet18(),
-                                          torch.rand(1, 3, 224, 224))
-
-        def forward(self, input):
-            return self.resnet(input - self.means)
-
-    my_script_module = torch.jit.script(MyScriptModule())
+   @torch.jit.script
+   def foo(x, y):
+       if x.max() > y.max():
+           r = x
+       else:
+           r = y
+       return r
 
 
-TorchScript Language
---------------------
+   def bar(x, y, z):
+       return foo(x, y) + z
 
-TorchScript is a statically typed subset of Python, so many Python features apply
-directly to TorchScript. See the full :ref:`language-reference` for details.
+   traced_bar = torch.jit.trace(bar, (torch.rand(3)، torch.rand(3)، torch.rand(3)))
 
+يعمل هذا التكوين أيضًا مع الوحدات النمطية "nn" أيضًا، حيث يمكن استخدامه لإنشاء
+وحدة فرعية باستخدام التتبع الذي يمكن استدعاؤه من أساليب الوحدة النمطية للنص.
 
-.. _builtin functions:
+مثال (استخدام وحدة متتبعة):
 
-Built-in Functions and Modules
-------------------------------
+.. testcode::
+   :skipif: torchvision is None
 
-TorchScript supports the use of most PyTorch functions and many Python built-ins.
-See :ref:`builtin-functions` for a full reference of supported functions.
+   import torch
+   import torchvision
 
-PyTorch Functions and Modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   class MyScriptModule(torch.nn.Module):
+       def __init__(self):
+           super().__init__()
+           self.means = torch.nn.Parameter(torch.tensor([103.939, 116.779, 123.68])
+                                           .resize_(1, 3, 1, 1))
+           self.resnet = torch.jit.trace(torchvision.models.resnet18(),
+                                         torch.rand(1, 3, 224, 224))
 
-TorchScript supports a subset of the tensor and neural network
-functions that PyTorch provides. Most methods on Tensor as well as functions in
-the ``torch`` namespace, all functions in ``torch.nn.functional`` and
-most modules from ``torch.nn`` are supported in TorchScript.
+       def forward(self, input):
+           return self.resnet(input - self.means)
 
-See :ref:`jit_unsupported` for a list of unsupported PyTorch functions and modules.
+   my_script_module = torch.jit.script(MyScriptModule())
 
+لغة TorchScript
+-----------------
 
-Python Functions and Modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Many of Python's `built-in functions <https://docs.python.org/3/library/functions.html>`_ are supported in TorchScript.
-The :any:`math` module is also supported (see :ref:`math-module` for details), but no other Python modules
-(built-in or third party) are supported.
+TorchScript هي مجموعة فرعية ثابتة النوع من Python، لذلك تنطبق العديد من ميزات Python
+مباشرة إلى TorchScript. راجع مرجع اللغة الكامل: ref:`language-reference` للحصول على التفاصيل.
 
+.. _الوظائف المدمجة:
 
-Python Language Reference Comparison
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+الوظائف والوحدات النمطية المدمجة
+----------------------
 
-For a full listing of supported Python features, see :ref:`python-language-reference`.
+تدعم TorchScript استخدام معظم وظائف PyTorch والعديد من الوظائف المدمجة في Python.
+راجع: ref:`builtin-functions` للحصول على مرجع كامل للوظائف المدعومة.
 
-Debugging
----------
+وظائف PyTorch ووحداتها النمطية
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`disable TorchScript`:
+تدعم TorchScript مجموعة فرعية من وظائف الشبكة العصبية ووظائف التنسور التي توفرها PyTorch. معظم الأساليب على Tensor وكذلك الوظائف في
+مساحة الاسم "torch"، وجميع الوظائف في "torch.nn.functional" و
+معظم الوحدات النمطية من "torch.nn" مدعومة في TorchScript.
 
-Disable JIT for Debugging
-~~~~~~~~~~~~~~~~~~~~~~~~~
+راجع: ref:`jit_unsupported` للحصول على قائمة بوظائف PyTorch ووحداتها غير المدعومة.
+
+وظائف Python ووحداتها النمطية
+~~~~~~~~~~~~~~~~~~~~~~~~
+يتم دعم العديد من `الوظائف المدمجة في Python <https://docs.python.org/3/library/functions.html>`_ في TorchScript.
+كما يتم دعم وحدة: any:`math` (راجع: ref:`math-module` للحصول على التفاصيل)، ولكن لا يتم دعم أي وحدات نمطية Python أخرى
+(مدمجة أو تابعة لجهات خارجية).
+
+مقارنة مرجع لغة Python
+~~~~~~~~~~~~~~~~~~~~
+
+للحصول على قائمة كاملة بميزات Python المدعومة، راجع: ref:`python-language-reference`.
+
+تصحيح الأخطاء
+
+.. _`disable-TorchScript`:
+
+تعطيل JIT لأغراض التصحيح
+~~~~~~~~~~~~~~~~~~~~~
 .. envvar:: PYTORCH_JIT
 
-Setting the environment variable ``PYTORCH_JIT=0`` will disable all script
-and tracing annotations. If there is hard-to-debug error in one of your
-TorchScript models, you can use this flag to force everything to run using native
-Python. Since TorchScript (scripting and tracing) is disabled with this flag,
-you can use tools like ``pdb`` to debug the model code.  For example::
+يؤدي تعيين متغير البيئة ``PYTORCH_JIT=0`` إلى تعطيل جميع تعليمات النص البرمجي والتعقب. إذا كان هناك خطأ يصعب تصحيحه في أحد نماذج TorchScript، فيمكنك استخدام هذا العلم لإجبار كل شيء على التشغيل باستخدام Python الأصلي. نظرًا لأن TorchScript (النص البرمجي والتعقب) يتم تعطيله باستخدام هذا العلم، فيمكنك استخدام أدوات مثل ``pdb`` لتصحيح أخطاء كود النموذج. على سبيل المثال::
 
     @torch.jit.script
     def scripted_fn(x : torch.Tensor):
@@ -241,27 +281,18 @@ you can use tools like ``pdb`` to debug the model code.  For example::
     traced_fn = torch.jit.trace(fn, (torch.rand(4, 5),))
     traced_fn(torch.rand(3, 4))
 
-Debugging this script with ``pdb`` works except for when we invoke the
-:func:`@torch.jit.script <torch.jit.script>` function. We can globally disable
-JIT, so that we can call the :func:`@torch.jit.script <torch.jit.script>`
-function as a normal Python function and not compile it. If the above script
-is called ``disable_jit_example.py``, we can invoke it like so::
+يعمل تصحيح هذا النص البرمجي باستخدام ``pdb`` باستثناء عند استدعاء دالة :func:`@torch.jit.script <torch.jit.script>`. يمكننا تعطيل JIT بشكل عام، بحيث يمكننا استدعاء دالة :func:`@torch.jit.script <torch.jit.script>` كدالة Python عادية وعدم تجميعها. إذا تمت تسمية النص البرمجي أعلاه باسم ``disable_jit_example.py``، فيمكننا استدعاؤه على النحو التالي::
 
     $ PYTORCH_JIT=0 python disable_jit_example.py
 
-and we will be able to step into the :func:`@torch.jit.script
-<torch.jit.script>` function as a normal Python function. To disable the
-TorchScript compiler for a specific function, see
-:func:`@torch.jit.ignore <torch.jit.ignore>`.
+وسنتمكن من الدخول إلى دالة :func:`@torch.jit.script <torch.jit.script>` كدالة Python عادية. ولتعطيل مترجم TorchScript لدالة معينة، راجع :func:`@torch.jit.ignore <torch.jit.ignore>`.
 
-.. _inspecting-code:
+.. _تفقد-الكود:
 
-Inspecting Code
-~~~~~~~~~~~~~~~
+تفقد الكود
+~~~~~~~~~~
 
-TorchScript provides a code pretty-printer for all :class:`ScriptModule` instances. This
-pretty-printer gives an interpretation of the script method's code as valid
-Python syntax. For example:
+يوفر TorchScript أداة تنسيق كود لجميع حالات :class:`ScriptModule`. وتقدم هذه الأداة تفسيرًا لكود طريقة النص البرمجي ككود Python صالح. على سبيل المثال:
 
 .. testcode::
 
@@ -283,12 +314,9 @@ Python syntax. For example:
 
     ...
 
-A :class:`ScriptModule` with a single ``forward`` method will have an attribute
-``code``, which you can use to inspect the :class:`ScriptModule`'s code.
-If the :class:`ScriptModule` has more than one method, you will need to access
-``.code`` on the method itself and not the module. We can inspect the
-code of a method named ``foo`` on a :class:`ScriptModule` by accessing ``.foo.code``.
-The example above produces this output: ::
+ستكون لدى :class:`ScriptModule` ذات طريقة ``forward`` واحدة سمة ``code``، والتي يمكنك استخدامها لتفقد كود :class:`ScriptModule`. إذا كان لدى :class:`ScriptModule` أكثر من طريقة واحدة، فستحتاج إلى الوصول إلى ``.code`` على الطريقة نفسها وليس على الوحدة النمطية. يمكننا تفقد كود طريقة تسمى ``foo`` على :class:`ScriptModule` عن طريق الوصول إلى ``.foo.code``.
+
+ينتج المثال أعلاه هذا المخرج::
 
     def foo(len: int) -> Tensor:
         rv = torch.zeros([3, 4], dtype=None, layout=None, device=None, pin_memory=None)
@@ -301,22 +329,16 @@ The example above produces this output: ::
             rv0 = rv1
         return rv0
 
-This is TorchScript's compilation of the code for the ``forward`` method.
-You can use this to ensure TorchScript (tracing or scripting) has captured
-your model code correctly.
+هذا هو تجميع TorchScript لكود طريقة ``forward``. يمكنك استخدام هذا للتأكد من أن TorchScript (التعقب أو النص البرمجي) قد التقط كود النموذج بشكل صحيح.
 
 
-.. _interpreting-graphs:
+.. _تفسير-الرسوم-البيانية:
 
-Interpreting Graphs
+تفسير الرسوم البيانية
 ~~~~~~~~~~~~~~~~~~~
-TorchScript also has a representation at a lower level than the code pretty-
-printer, in the form of IR graphs.
+لدي TorchScript أيضًا تمثيل على مستوى أقل من أداة تنسيق الكود، في شكل رسوم بيانية IR.
 
-TorchScript uses a static single assignment (SSA) intermediate representation
-(IR) to represent computation. The instructions in this format consist of
-ATen (the C++ backend of PyTorch) operators and other primitive operators,
-including control flow operators for loops and conditionals. As an example:
+يستخدم TorchScript تمثيل وسيط ثابت الأحادي التعيين (SSA) لتمثيل الحساب. وتتكون التعليمات في هذا التنسيق من مشغلات ATen (الجهة الخلفية لـ C++ في PyTorch) ومشغلات أخرى بدائية، بما في ذلك مشغلات تدفق التحكم للحلقات والعبارات الشرطية. كمثال:
 
 .. testcode::
 
@@ -338,10 +360,9 @@ including control flow operators for loops and conditionals. As an example:
 
     ...
 
-``graph`` follows the same rules described in the :ref:`inspecting-code` section
-with regard to ``forward`` method lookup.
+يتبع ``graph`` نفس القواعد الموضحة في قسم :ref:`تفقد-الكود` فيما يتعلق بالبحث عن طريقة ``forward``.
 
-The example script above produces the graph::
+ينتج النص البرمجي أعلاه الرسم البياني التالي::
 
     graph(%len.1 : int):
       %24 : int = prim::Constant[value=1]()
@@ -369,44 +390,33 @@ The example script above produces the graph::
       return (%rv)
 
 
-Take the instruction ``%rv.1 : Tensor = aten::zeros(%4, %6, %6, %10, %12) # test.py:9:10`` for
-example.
+خذ التعليمات ``%rv.1 : Tensor = aten::zeros(%4, %6, %6, %10, %12) # test.py:9:10`` كمثال.
 
-* ``%rv.1 : Tensor`` means we assign the output to a (unique) value named ``rv.1``, that value is of ``Tensor`` type and that we do not know its concrete shape.
-* ``aten::zeros`` is the operator (equivalent to ``torch.zeros``) and the input list ``(%4, %6, %6, %10, %12)`` specifies which values in scope should be passed as inputs. The schema for built-in functions like ``aten::zeros`` can be found at `Builtin Functions`_.
-* ``# test.py:9:10`` is the location in the original source file that generated this instruction. In this case, it is a file named `test.py`, on line 9, and at character 10.
+* ``%rv.1 : Tensor`` يعني أننا نعين الإخراج لقيمة باسم ``rv.1`` (فريدة)، وأن تلك القيمة من نوع ``Tensor`` وأننا لا نعرف شكلها المحدد.
+* ``aten::zeros`` هو المشغل (المعادل لـ ``torch.zeros``) وقائمة الإدخال ``(%4, %6، %6، %10، %12)`` تحدد القيم في النطاق التي يجب تمريرها كإدخالات. ويمكن العثور على المخطط للوظائف المدمجة مثل ``aten::zeros`` في `الوظائف المدمجة`_.
+* ``# test.py:9:10`` هو الموقع في ملف المصدر الأصلي الذي أنتج هذه التعليمات. في هذه الحالة، هو ملف باسم `test.py`، في السطر 9، وفي الحرف 10.
 
-Notice that operators can also have associated ``blocks``, namely the
-``prim::Loop`` and ``prim::If`` operators. In the graph print-out, these
-operators are formatted to reflect their equivalent source code forms
-to facilitate easy debugging.
+لاحظ أن المشغلات يمكن أن يكون لها أيضًا كتل مرتبطة بها، وهي ``prim::Loop`` و ``prim::If`` على وجه التحديد. وفي إخراج الرسم البياني، يتم تنسيق هذه المشغلات بحيث تعكس أشكالها المكافئة في كود المصدر لتسهيل التصحيح.
 
-Graphs can be inspected as shown to confirm that the computation described
-by a :class:`ScriptModule` is correct, in both automated and manual fashion, as
-described below.
+يمكن تفقد الرسوم البيانية كما هو موضح للتأكد من أن الحساب الذي يصفه :class:`ScriptModule` صحيح، سواء بطريقة تلقائية أو يدوية، كما هو موضح أدناه.
 
-Tracer
+المتعقب
 ~~~~~~
 
 
-Tracing Edge Cases
+حالات حافة التعقب
+^^^^^^^^^^^^^^^^
+هناك بعض الحالات الحدية التي يكون فيها تعقب دالة أو وحدة نمطية Python معينة غير ممثِل للكود الأساسي. وقد تشمل هذه الحالات ما يلي:
+
+* تعقب تدفق التحكم الذي يعتمد على الإدخالات (مثل أشكال التنسيق)
+* تعقب العمليات في الموقع لعروض التنسيق (مثل الفهرسة على الجانب الأيسر من التعيين)
+
+لاحظ أن هذه الحالات قد تكون في الواقع قابلة للتعقب في المستقبل.
+
+
+التحقق التلقائي من التعقب
 ^^^^^^^^^^^^^^^^^^
-There are some edge cases that exist where the trace of a given Python
-function/module will not be representative of the underlying code. These
-cases can include:
-
-* Tracing of control flow that is dependent on inputs (e.g. tensor shapes)
-* Tracing of in-place operations of tensor views (e.g. indexing on the left-hand side of an assignment)
-
-Note that these cases may in fact be traceable in the future.
-
-
-Automatic Trace Checking
-^^^^^^^^^^^^^^^^^^^^^^^^
-One way to automatically catch many errors in traces is by using ``check_inputs``
-on the ``torch.jit.trace()`` API. ``check_inputs`` takes a list of tuples
-of inputs that will be used to re-trace the computation and verify the
-results. For example::
+تتمثل إحدى طرق اكتشاف العديد من الأخطاء في التعقب تلقائيًا في استخدام ``check_inputs`` في واجهة برمجة تطبيقات ``torch.jit.trace()``. حيث يأخذ ``check_inputs`` قائمة من توبلات الإدخالات التي سيتم استخدامها لإعادة تعقب الحساب والتحقق من النتائج. على سبيل المثال::
 
     def loop_in_traced_fn(x):
         result = x[0]
@@ -419,7 +429,7 @@ results. For example::
 
     traced = torch.jit.trace(loop_in_traced_fn, inputs, check_inputs=check_inputs)
 
-Gives us the following diagnostic information::
+يعطينا معلومات التشخيص التالية::
 
     ERROR: Graphs differed across invocations!
     Graph diff:
@@ -456,14 +466,9 @@ Gives us the following diagnostic information::
                 }
 
 
-This message indicates to us that the computation differed between when
-we first traced it and when we traced it with the ``check_inputs``. Indeed,
-the loop within the body of ``loop_in_traced_fn`` depends on the shape
-of the input ``x``, and thus when we try another ``x`` with a different
-shape, the trace differs.
+يشير هذا الرسالة إلى أن الحساب اختلف بين عندما قمنا بتعقبه لأول مرة وعندما قمنا بتعقبه باستخدام ``check_inputs``. وبالفعل، تعتمد الحلقة داخل جسم ``loop_in_traced_fn`` على شكل الإدخال ``x``، وبالتالي عندما نحاول استخدام ``x`` آخر بشكل مختلف، يختلف التعقب.
 
-In this case, data-dependent control flow like this can be captured using
-:func:`torch.jit.script` instead:
+في هذه الحالة، يمكن التقاط تدفق التحكم المعتمد على البيانات مثل هذا باستخدام :func:`torch.jit.script` بدلاً من ذلك:
 
 .. testcode::
 
@@ -489,7 +494,7 @@ In this case, data-dependent control flow like this can be captured using
     ...
 
 
-Which produces::
+والذي ينتج::
 
     graph(%x : Tensor) {
         %5 : bool = prim::Constant[value=1]()
@@ -505,11 +510,9 @@ Which produces::
         return (%result);
     }
 
-Tracer Warnings
+تحذيرات المتعقب
 ^^^^^^^^^^^^^^^
-The tracer produces warnings for several problematic patterns in traced
-computation. As an example, take a trace of a function that contains an
-in-place assignment on a slice (a view) of a Tensor:
+ينتج المتعقب تحذيرات لأنماط متعددة من الأنماط الإشكالية في الحساب المتعقب. كمثال، خذ تعقب دالة تحتوي على تعيين في الموقع على شريحة (عرض) من Tensor:
 
 .. testcode::
 
@@ -525,7 +528,7 @@ in-place assignment on a slice (a view) of a Tensor:
 
     ...
 
-Produces several warnings and a graph which simply returns the input::
+ينتج العديد من التحذيرات ورسم بياني يعيد ببساطة الإدخال::
 
     fill_row_zero.py:4: TracerWarning: There are 2 live references to the data region being modified when tracing in-place operator copy_ (possibly due to an assignment). This might cause the trace to be incorrect, because all other views that also reference this data will not reflect this change in the trace! On the other hand, if all other views use the same memory chunk, but are disjoint (e.g. are outputs of torch.split), this might still be safe.
         x[0] = torch.rand(*x.shape[1:2])
@@ -536,8 +539,7 @@ Produces several warnings and a graph which simply returns the input::
         return (%0);
     }
 
-We can fix this by modifying the code to not use the in-place update, but
-rather build up the result tensor out-of-place with ``torch.cat``:
+يمكننا إصلاح هذا عن طريق تعديل الكود لعدم استخدام التحديث في الموقع، ولكن بدلاً من ذلك بناء نتيجة Tensor خارج المكان باستخدام ``torch.cat``:
 
 .. testcode::
 
@@ -553,13 +555,12 @@ rather build up the result tensor out-of-place with ``torch.cat``:
 
     ...
 
-Frequently Asked Questions
---------------------------
+الأسئلة الشائعة
+------------
 
-Q: I would like to train a model on GPU and do inference on CPU. What are the
-best practices?
+س: أود تدريب نموذج على وحدة معالجة الرسوميات (GPU) واستنتاجه على وحدة المعالجة المركزية (CPU). ما هي أفضل الممارسات؟
 
-   First convert your model from GPU to CPU and then save it, like so: ::
+   أولاً، قم بتحويل نموذجك من وحدة معالجة الرسوميات إلى وحدة المعالجة المركزية ثم احفظه، كما هو موضح أدناه: ::
 
       cpu_model = gpu_model.cpu()
       sample_input_cpu = sample_input_gpu.cpu()
@@ -578,15 +579,11 @@ best practices?
 
       model(input)
 
-   This is recommended because the tracer may witness tensor creation on a
-   specific device, so casting an already-loaded model may have unexpected
-   effects. Casting the model *before* saving it ensures that the tracer has
-   the correct device information.
+   يوصى بهذا لأنه قد يشهد منشئ التعقب إنشاء tensor على جهاز محدد، لذا فقد يكون لتحويل نموذج محمل بالفعل آثار غير متوقعة. ويضمن تحويل النموذج *قبل* حفظه أن يمتلك منشئ التعقب معلومات الجهاز الصحيحة.
 
+س: كيف يمكنني تخزين السمات على :class: `ScriptModule`؟
 
-Q: How do I store attributes on a :class:`ScriptModule`?
-
-    Say we have a model like:
+    لنفترض أن لدينا نموذجًا مثل:
 
     .. testcode::
 
@@ -604,66 +601,64 @@ Q: How do I store attributes on a :class:`ScriptModule`?
 
 
 
-    If ``Model`` is instantiated it will result in a compilation error
-    since the compiler doesn't know about ``x``. There are 4 ways to inform the
-    compiler of attributes on :class:`ScriptModule`:
+    إذا تم إنشاء مثيل لـ ``Model``، فسيؤدي ذلك إلى خطأ في التجميع
+    لأن المترجم لا يعرف ``x``. هناك 4 طرق لإعلام المترجم
+    بالسمات على :class: `ScriptModule`:
 
-    1. ``nn.Parameter`` - Values wrapped in ``nn.Parameter`` will work as they
-    do on ``nn.Module``\s
+    1. ``nn.Parameter`` - ستعمل القيم الملفوفة في ``nn.Parameter`` كما تفعل
+    في ``nn.Module``\s
 
-    2. ``register_buffer`` - Values wrapped in ``register_buffer`` will work as
-    they do on ``nn.Module``\s. This is equivalent to an attribute (see 4) of type
+    2. ``register_buffer`` - ستعمل القيم الملفوفة في ``register_buffer`` كما
+    تفعل في ``nn.Module``\s. هذا يعادل سمة (انظر 4) من النوع
     ``Tensor``.
 
-    3. Constants - Annotating a class member as ``Final`` (or adding it to a list called
-    ``__constants__`` at the class definition level) will mark the contained names
-    as constants. Constants are saved directly in the code of the model. See
-    `builtin-constants` for details.
+    3. الثوابت - يؤدي وضع علامة على عضو فئة باسم ``Final`` (أو إضافته إلى قائمة تسمى
+    ``__constants__`` على مستوى تعريف الفئة) إلى وضع علامة على الأسماء
+    المحتواة كثوابت. يتم حفظ الثوابت مباشرة في كود النموذج. راجع
+    `الثوابت المدمجة <builtin-constants>` للحصول على التفاصيل.
 
-    4. Attributes - Values that are a `supported type` can be added as mutable
-    attributes. Most types can be inferred but some may need to be specified, see
-    `module attributes` for details.
+    4. السمات - يمكن إضافة القيم التي تكون من نوع `مدعوم <supported type>` كسمات قابلة للتغيير. يمكن استنتاج معظم الأنواع ولكن قد يلزم تحديد البعض، راجع
+    `سمات الوحدة النمطية <module attributes>` للحصول على التفاصيل.
 
-Q: I would like to trace module's method but I keep getting this error:
+س: أود تتبع طريقة وحدة نمطية ولكنني أواصل الحصول على هذا الخطأ:
 
-``RuntimeError: Cannot insert a Tensor that requires grad as a constant. Consider making it a parameter or input, or detaching the gradient``
+``RuntimeError: لا يمكن إدراج tensor الذي يتطلب تدرجًا كقيمة ثابتة. ضع في اعتبارك جعله معلمة أو إدخالًا، أو فصل تدرجه``
 
-    This error usually means that the method you are tracing uses a module's parameters and
-    you are passing the module's method instead of the module instance (e.g. ``my_module_instance.forward`` vs ``my_module_instance``).
+    عادةً ما يعني هذا الخطأ أن الطريقة التي تقوم بتتبعها تستخدم معلمات الوحدة النمطية
+    وتقوم بتمرير طريقة وحدة نمطية بدلاً من مثيل الوحدة النمطية (على سبيل المثال، ``my_module_instance.forward`` مقابل ``my_module_instance``).
 
-      - Invoking ``trace`` with a module's method captures module parameters (which may require gradients) as **constants**.
-      - On the other hand, invoking ``trace`` with module's instance (e.g. ``my_module``) creates a new module and correctly copies parameters into the new module, so they can accumulate gradients if required.
+      - يؤدي استدعاء ``trace`` بطريقة وحدة نمطية إلى التقاط معلمات الوحدة النمطية (التي قد تتطلب تدرجات) ك**ثوابت**.
+      - من ناحية أخرى، يؤدي استدعاء ``trace`` بمثيل الوحدة النمطية (على سبيل المثال ``my_module``) إلى إنشاء وحدة نمطية جديدة ونسخ المعلمات إلى الوحدة النمطية الجديدة بشكل صحيح، بحيث يمكنها تراكم التدرجات إذا لزم الأمر.
 
-    To trace a specific method on a module, see :func:`torch.jit.trace_module <torch.jit.trace_module>`
+    لتتبع طريقة محددة في وحدة نمطية، راجع :func: `torch.jit.trace_module <torch.jit.trace_module>`
 
-Known Issues
----------------
+مشكلات معروفة
+-----------
 
-If you're using ``Sequential`` with TorchScript, the inputs of some
-of the ``Sequential`` submodules may be falsely inferred to be
-``Tensor``, even if they're annotated otherwise. The canonical
-solution is to subclass ``nn.Sequential`` and redeclare ``forward``
-with the input typed correctly.
+إذا كنت تستخدم ``Sequential`` مع TorchScript، فقد يتم استنتاج إدخالات بعض
+من الوحدات النمطية الفرعية ``Sequential`` بشكل خاطئ على أنها
+``Tensor``، حتى إذا تم وضع علامة عليها على أنها غير ذلك. الحل الأساسي هو
+إنشاء فئة فرعية من ``nn.Sequential`` وإعادة إعلان ``forward``
+مع إدخال الكتابة بشكل صحيح.
 
-Appendix
---------
+التذييل
+----
 
-Migrating to PyTorch 1.2 Recursive Scripting API
+الهجرة إلى PyTorch 1.2 واجهة برمجة التطبيقات النصية المتكررة
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This section details the changes to TorchScript in PyTorch 1.2. If you are new to TorchScript you can
-skip this section. There are two main changes to the TorchScript API with PyTorch 1.2.
+يتضمن هذا القسم تفاصيل التغييرات التي تم إجراؤها على TorchScript في PyTorch 1.2. إذا كنت جديدًا في TorchScript، فيمكنك
+تخطي هذا القسم. هناك تغييرين رئيسيين في واجهة برمجة التطبيقات TorchScript مع PyTorch 1.2.
 
-1. :func:`torch.jit.script <torch.jit.script>` will now attempt to recursively compile functions,
-methods, and classes that it encounters. Once you call ``torch.jit.script``,
-compilation is "opt-out", rather than "opt-in".
+1. :func: `torch.jit.script <torch.jit.script>` ستحاول الآن تجميع الدالات والطرق والفئات بشكل متكرر والتي تواجهها. بمجرد استدعاء ``torch.jit.script``،
+   يصبح التجميع "اختياريًا"، بدلاً من "اختياريًا".
 
-2. ``torch.jit.script(nn_module_instance)`` is now the preferred way to create
-:class:`ScriptModule`\s, instead of inheriting from ``torch.jit.ScriptModule``.
-These changes combine to provide a simpler, easier-to-use API for converting
-your ``nn.Module``\s into :class:`ScriptModule`\s, ready to be optimized and executed in a
-non-Python environment.
+2. ``torch.jit.script(nn_module_instance)`` هي الآن الطريقة المفضلة لإنشاء
+:class: `ScriptModule`\s، بدلاً من الوراثة من ``torch.jit.ScriptModule``.
+تؤدي هذه التغييرات مجتمعة إلى توفير واجهة برمجة تطبيقات أبسط وأسهل للاستخدام لتحويل
+وحدات ``nn.Module``\s الخاصة بك إلى :class: `ScriptModule`\s، جاهزة للتحسين والتنفيذ في
+بيئة غير Python.
 
-The new usage looks like this:
+يبدو الاستخدام الجديد كما يلي:
 
 .. testcode::
 
@@ -685,93 +680,94 @@ The new usage looks like this:
     my_scripted_model = torch.jit.script(my_model)
 
 
-* The module's ``forward`` is compiled by default. Methods called from ``forward`` are lazily compiled in the order they are used in ``forward``.
-* To compile a method other than ``forward`` that is not called from ``forward``, add ``@torch.jit.export``.
-* To stop the compiler from compiling a method, add :func:`@torch.jit.ignore <torch.jit.ignore>` or :func:`@torch.jit.unused <torch.jit.unused>`. ``@ignore`` leaves the
-* method as a call to python, and ``@unused`` replaces it with an exception. ``@ignored`` cannot be exported; ``@unused`` can.
-* Most attribute types can be inferred, so ``torch.jit.Attribute`` is not necessary. For empty container types, annotate their types using `PEP 526-style <https://www.python.org/dev/peps/pep-0526/#class-and-instance-variable-annotations>`_ class annotations.
-* Constants can be marked with a ``Final`` class annotation instead of adding the name of the member to ``__constants__``.
-* Python 3 type hints can be used in place of ``torch.jit.annotate``
+* يتم تجميع طريقة ``forward`` للوحدة النمطية بشكل افتراضي. يتم تجميع الطرق التي يتم استدعاؤها من ``forward``
+بتراخٍ بالترتيب الذي يتم استخدامها به في ``forward``، وكذلك أي
+طرق ``@torch.jit.export``.
+* لتجميع طريقة أخرى غير ``forward`` لا يتم استدعاؤها من ``forward``، أضف ``@torch.jit.export``.
+* لإيقاف المترجم من تجميع طريقة، أضف :func: `@torch.jit.ignore <torch.jit.ignore>` أو :func: `@torch.jit.unused <torch.jit.unused>`. ``@ignore`` يترك
+* الطريقة كاستدعاء لـ Python، ويستبدل ``@unused`` بها باستثناء. لا يمكن تصدير ``@ignored``؛ يمكن تصدير ``@unused``.
+* يمكن استنتاج معظم أنواع السمات، لذا فإن ``torch.jit.Attribute`` غير ضروري. بالنسبة لأنواع الحاويات الفارغة، قم بوضع علامة على أنواعها باستخدام تعليقات PEP 526-style <https://www.python.org/dev/peps/pep-0526/#class-and-instance-variable-annotations>`_ class.
+* يمكن وضع علامة على الثوابت باستخدام تعليق ``Final`` بدلاً من إضافة اسم العضو إلى ``__constants__``.
+* يمكن استخدام تلميحات أنواع Python 3 بدلاً من ``torch.jit.annotate``
 
-As a result of these changes, the following items are considered deprecated and should not appear in new code:
-  * The ``@torch.jit.script_method`` decorator
-  * Classes that inherit from ``torch.jit.ScriptModule``
-  * The ``torch.jit.Attribute`` wrapper class
-  * The ``__constants__`` array
-  * The ``torch.jit.annotate`` function
+ونتيجة لهذه التغييرات، تعتبر العناصر التالية مهملة ولا يجب أن تظهر في التعليمات البرمجية الجديدة:
+  * زخرفة ``@torch.jit.script_method``
+  * الفئات التي ترث من ``torch.jit.ScriptModule``
+  * فئة الغلاف ``torch.jit.Attribute``
+  * صفيف ``__constants__``
+  * دالة ``torch.jit.annotate``
 
-Modules
-^^^^^^^
+الوحدات النمطية
+^^^^^^^^^^^
 .. warning::
 
-    The :func:`@torch.jit.ignore <torch.jit.ignore>` annotation's behavior changes in
-    PyTorch 1.2. Before PyTorch 1.2 the @ignore decorator was used to make a function
-    or method callable from code that is exported. To get this functionality back,
-    use ``@torch.jit.unused()``. ``@torch.jit.ignore`` is now equivalent
-    to ``@torch.jit.ignore(drop=False)``. See :func:`@torch.jit.ignore <torch.jit.ignore>`
-    and :func:`@torch.jit.unused<torch.jit.unused>` for details.
+    يتغير سلوك تعليق :func: `@torch.jit.ignore <torch.jit.ignore>` في
+    PyTorch 1.2. قبل PyTorch 1.2، تم استخدام زخرفة @ignore لجعل دالة
+    أو طريقة قابلة للاستدعاء من الكود المصدر. لاستعادة هذه الوظيفة،
+    استخدم ``@torch.jit.unused()``. ``@torch.jit.ignore`` يعادل الآن
+    ``@torch.jit.ignore(drop=False)``. راجع :func: `@torch.jit.ignore <torch.jit.ignore>`
+    و:func: `@torch.jit.unused<torch.jit.unused>` للحصول على التفاصيل.
 
-When passed to the :func:`torch.jit.script <torch.jit.script>` function, a ``torch.nn.Module``\'s data is
-copied to a :class:`ScriptModule` and the TorchScript compiler compiles the module.
-The module's ``forward`` is compiled by default. Methods called from ``forward`` are
-lazily compiled in the order they are used in ``forward``, as well as any
-``@torch.jit.export`` methods.
+عند تمريرها إلى دالة :func: `torch.jit.script <torch.jit.script>`، يتم
+نسخ بيانات ``torch.nn.Module`` إلى :class: `ScriptModule` ويقوم مترجم TorchScript بتجميع الوحدة النمطية.
+يتم تجميع طريقة ``forward`` للوحدة النمطية بشكل افتراضي. يتم تجميع الطرق التي يتم استدعاؤها من ``forward``
+بتراخٍ بالترتيب الذي يتم استخدامها به في ``forward``، وكذلك أي
+طرق ``@torch.jit.export``.
 
 .. autofunction:: export
 
-Functions
-^^^^^^^^^
-Functions don't change much, they can be decorated with :func:`@torch.jit.ignore <torch.jit.ignore>` or :func:`torch.jit.unused <torch.jit.unused>` if needed.
+الدوال
+^^^^
+لا تتغير الدوال كثيرًا، فيمكن تزيينها باستخدام :func: `@torch.jit.ignore <torch.jit.ignore>` أو :func: `torch.jit.unused <torch.jit.unused>` إذا لزم الأمر.
 
 .. testcode::
 
-    # Same behavior as pre-PyTorch 1.2
+    # نفس السلوك كما كان قبل PyTorch 1.2
     @torch.jit.script
     def some_fn():
         return 2
 
-    # Marks a function as ignored, if nothing
-    # ever calls it then this has no effect
+    # وضع علامة على دالة كمهملة، إذا لم يتم
+    # استدعاؤها مطلقًا، فلن يكون لها أي تأثير
     @torch.jit.ignore
     def some_fn2():
         return 2
 
-    # As with ignore, if nothing calls it then it has no effect.
-    # If it is called in script it is replaced with an exception.
+    # مثل ignore، إذا لم يتم استدعاؤها مطلقًا، فلن يكون لها أي تأثير.
+    # إذا تم استدعاؤها في النص البرمجي، فسيتم استبدالها باستثناء.
     @torch.jit.unused
     def some_fn3():
       import pdb; pdb.set_trace()
       return 4
 
-    # Doesn't do anything, this function is already
-    # the main entry point
+    # لا تفعل شيئًا، هذه الدالة هي بالفعل
+    # نقطة الدخول الرئيسية
     @torch.jit.export
     def some_fn4():
         return 2
 
-TorchScript Classes
-^^^^^^^^^^^^^^^^^^^
+فئات TorchScript
+^^^^^^^^^^^^^^^
 
 .. warning::
 
-    TorchScript class support is experimental. Currently it is best suited
-    for simple record-like types (think a ``NamedTuple`` with methods
-    attached).
+    دعم فئات TorchScript تجريبي. حاليًا، فهو مناسب بشكل أفضل
+    لأنواع السجلات البسيطة (تخيل ``NamedTuple`` مع أساليب
+    مرفقة).
 
-Everything in a user defined `TorchScript Class <torchscript-class>`_ is
-exported by default, functions can be decorated with :func:`@torch.jit.ignore
-<torch.jit.ignore>` if needed.
+يتم تصدير كل شيء في فئة TorchScript <torchscript-class> التي يحددها المستخدم
+بشكل افتراضي، ويمكن تزيين الدوال باستخدام :func: `@torch.jit.ignore
+<torch.jit.ignore>` إذا لزم الأمر.
 
-Attributes
-^^^^^^^^^^
-The TorchScript compiler needs to know the types of `module attributes`. Most types
-can be inferred from the value of the member. Empty lists and dicts cannot have their
-types inferred and must have their types annotated with `PEP 526-style <https://www.python.org/dev/peps/pep-0526/#class-and-instance-variable-annotations>`_ class annotations.
-If a type cannot be inferred and is not explicitly annotated, it will not be added as an attribute
-to the resulting :class:`ScriptModule`
+السمات
+^^^^^^
+يحتاج مترجم TorchScript إلى معرفة أنواع `سمات الوحدة النمطية`. يمكن استنتاج معظم الأنواع
+من قيمة العضو. لا يمكن استنتاج قوائم ومقارنات القواميس الفارغة ويجب وضع علامة على أنواعها باستخدام تعليقات `PEP 526-style <https://www.python.org/dev/peps/pep-0526/#class-and-instance-variable-annotations>`_ class.
+إذا لم يتم استنتاج نوع ولم يتم تحديده بشكل صريح، فلن يتم إضافته كسمة
+إلى :class: `ScriptModule` الناتج
 
 
-Old API:
+الواجهة القديمة:
 
 .. testcode::
 
@@ -786,7 +782,7 @@ Old API:
 
     m = MyModule()
 
-New API:
+الواجهة الجديدة:
 
 .. testcode::
 
@@ -797,10 +793,10 @@ New API:
 
         def __init__(self):
             super().__init__()
-            # This type cannot be inferred and must be specified
+            # لا يمكن استنتاج هذا النوع ويجب تحديده
             self.my_dict = {}
 
-            # The attribute type here is inferred to be `int`
+            # يتم استنتاج نوع السمة هنا على أنه `int`
             self.my_int = 20
 
         def forward(self):
@@ -809,11 +805,11 @@ New API:
     m = torch.jit.script(MyModule())
 
 
-Constants
-^^^^^^^^^
-The ``Final`` type constructor can be used to mark members as `constant`. If members are not marked constant, they will be copied to the resulting :class:`ScriptModule` as an attribute. Using ``Final`` opens opportunities for optimization if the value is known to be fixed and gives additional type safety.
+الثوابت
+^^^^^^
+يمكن استخدام منشئ النوع ``Final`` لوضع علامة على الأعضاء كـ `ثوابت`. إذا لم يتم وضع علامة على الأعضاء كقيم ثابتة، فسيتم نسخها إلى :class: `ScriptModule` الناتج كسمة. ويفتح استخدام ``Final`` فرصًا للتحسين إذا كان القيمة ثابتة ويعطي أمان نوع إضافي.
 
-Old API:
+الواجهة القديمة:
 
 .. testcode::
 
@@ -828,7 +824,7 @@ Old API:
             pass
     m = MyModule()
 
-New API:
+الواجهة الجديدة:
 
 ::
 
@@ -849,12 +845,11 @@ New API:
 
 .. _Python 3 type hints:
 
-Variables
-^^^^^^^^^
-Containers are assumed to have type ``Tensor`` and be non-optional (see
-`Default Types` for more information). Previously, ``torch.jit.annotate`` was used to
-tell the TorchScript compiler what the type should be. Python 3 style type hints are
-now supported.
+المتغيرات
+^^^^^^^
+يُفترض أن تكون الحاويات من النوع ``Tensor`` وغير اختيارية (راجع
+`الأنواع الافتراضية` لمزيد من المعلومات). تم سابقًا استخدام ``torch.jit.annotate``
+لإخبار مترجم TorchScript بالنوع الذي يجب أن يكون عليه. يتم الآن دعم تلميحات أنواع Python 3.
 
 .. testcode::
 
@@ -870,21 +865,21 @@ now supported.
             b = 2
         return x, b
 
-Fusion Backends
-~~~~~~~~~~~~~~~
-There are a couple of fusion backends available to optimize TorchScript execution. The default fuser on CPUs is NNC, which can perform fusions for both CPUs and GPUs. The default fuser on GPUs is NVFuser, which supports a wider range of operators and has demonstrated generated kernels with improved throughput. See the  `NVFuser documentation <https://github.com/pytorch/pytorch/blob/main/torch/csrc/jit/codegen/cuda/README.md>`_ for more details on usage and debugging.
+خلفيات الاندماج
+~~~~~~~~~~~~~
+تتوفر بعض خلفيات الاندماج لتنفيذ TorchScript. خلفية الاندماج الافتراضية على وحدات المعالجة المركزية هي NNC، والتي يمكنها تنفيذ عمليات الاندماج لكل من وحدات المعالجة المركزية ووحدات معالجة الرسوميات. وخلفية الاندماج الافتراضية على وحدات معالجة الرسوميات هي NVFuser، والتي تدعم مجموعة أوسع من المشغلات وقد أثبتت أن نواة الاندماج الناتجة لها معدل إنتاجية محسن. راجع وثائق NVFuser <https://github.com/pytorch/pytorch/blob/main/torch/csrc/jit/codegen/cuda/README.md>`_ لمزيد من التفاصيل حول الاستخدام والتصحيح.
 
 
-References
-~~~~~~~~~~
+مراجع
+~~~~~~
 .. toctree::
     :maxdepth: 1
 
     jit_python_reference
     jit_unsupported
 
-.. This package is missing doc. Adding it here for coverage
-.. This does not add anything to the rendered page.
+.. لم يتم توثيق هذه الحزمة. تمت إضافتها هنا للتغطية
+.. لا يضيف هذا أي شيء إلى الصفحة المقدمة.
 .. py:module:: torch.jit.mobile
 .. py:module:: torch.jit.annotations
 .. py:module:: torch.jit.frontend
