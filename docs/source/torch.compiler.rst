@@ -3,84 +3,63 @@
 torch.compiler
 ==============
 
-``torch.compiler`` is a namespace through which some of the internal compiler
-methods are surfaced for user consumption. The main function and the feature in
-this namespace is ``torch.compile``.
+``torch.compiler`` عبارة عن مساحة أسماء يتم من خلالها عرض بعض طرق المترجم الداخلية للاستهلاك من قبل المستخدم. الوظيفة الرئيسية والميزة في هذه المساحة هي ``torch.compile``.
 
-``torch.compile`` is a PyTorch function introduced in PyTorch 2.x that aims to
-solve the problem of accurate graph capturing in PyTorch and ultimately enable
-software engineers to run their PyTorch programs faster. ``torch.compile`` is
-written in Python and it marks the transition of PyTorch from C++ to Python.
+``torch.compile`` هي دالة PyTorch تم تقديمها في PyTorch 2.x تهدف إلى حل مشكلة التقاط الرسوم الدقيقة في PyTorch وفي النهاية تمكين مهندسي البرمجيات من تشغيل برامج PyTorch بشكل أسرع. ``torch.compile`` مكتوبة بلغة Python وهي تمثل انتقال PyTorch من C++ إلى Python.
 
-``torch.compile`` leverages the following underlying technologies:
+يستفيد ``torch.compile`` من التقنيات الأساسية التالية:
 
-* **TorchDynamo (torch._dynamo)** is an internal API that uses a CPython
-  feature called the Frame Evaluation API to safely capture PyTorch graphs.
-  Methods that are available externally for PyTorch users are surfaced
-  through the ``torch.compiler`` namespace.
+* **TorchDynamo (torch._dynamo)** عبارة عن واجهة برمجة تطبيقات (API) داخلية تستخدم ميزة في CPython تسمى واجهة برمجة تطبيقات تقييم الإطار (Frame Evaluation API) لالتقاط رسومات PyTorch بشكل آمن. يتم عرض الطرق المتاحة خارجيًا لمستخدمي PyTorch من خلال مساحة أسماء ``torch.compiler``.
 
-* **TorchInductor** is the default ``torch.compile`` deep learning compiler
-  that generates fast code for multiple accelerators and backends. You
-  need to use a backend compiler to make speedups through ``torch.compile``
-  possible. For NVIDIA, AMD and Intel GPUs, it leverages OpenAI Triton as the key
-  building block.
+* **TorchInductor** هو المترجم الافتراضي لـ ``torch.compile`` deep learning الذي يقوم بتوليد كود سريع لمسرعات وخلفيات متعددة. تحتاج إلى استخدام مترجم خلفي لتحقيق تسريع من خلال ``torch.compile``. بالنسبة لـ NVIDIA و AMD و Intel GPUs، فإنه يستفيد من OpenAI Triton باعتباره العنصر الأساسي.
 
-* **AOT Autograd** captures not only the user-level code, but also backpropagation,
-  which results in capturing the backwards pass "ahead-of-time". This enables
-  acceleration of both forwards and backwards pass using TorchInductor.
+* **AOT Autograd** لا يلتقط فقط التعليمات البرمجية على مستوى المستخدم، ولكن أيضًا backpropagation، مما يؤدي إلى التقاط تمرير الخلفيات "مسبقًا". يمكّن ذلك من تسريع كل من التمرير للأمام والخلف باستخدام TorchInductor.
 
-.. note:: In some cases, the terms ``torch.compile``, TorchDynamo, ``torch.compiler``
-   might be used interchangeably in this documentation.
+.. note:: في بعض الحالات، قد يتم استخدام مصطلحات ``torch.compile`` و TorchDynamo و ``torch.compiler`` بشكل متبادل في هذه الوثائق.
 
-As mentioned above, to run your workflows faster, ``torch.compile`` through
-TorchDynamo requires a backend that converts the captured graphs into a fast
-machine code. Different backends can result in various optimization gains.
-The default backend is called TorchInductor, also known as *inductor*,
-TorchDynamo has a list of supported backends developed by our partners,
-which can be see by running ``torch.compiler.list_backends()`` each of which
-with its optional dependencies.
+كما ذكرنا سابقًا، لتشغيل سير عملك بشكل أسرع، يتطلب ``torch.compile`` من خلال TorchDynamo وجود خلفية تقوم بتحويل الرسوم البيانية التي تم التقاطها إلى كود آلة سريع. يمكن أن تؤدي الخلفيات المختلفة إلى مكاسب تحسين مختلفة. والخلفية الافتراضية تسمى TorchInductor، والمعروفة أيضًا باسم *inductor*، لدى TorchDynamo قائمة من الخلفيات المدعومة التي طورها شركاؤنا، والتي يمكن الاطلاع عليها عن طريق تشغيل ``torch.compiler.list_backends()`` لكل منها مع تبعياتها الاختيارية.
 
-Some of the most commonly used backends include:
+بعض الخلفيات الأكثر استخدامًا تشمل:
 
-**Training & inference backends**
+**خلفيات التدريب والاستدلال**
 
 .. list-table::
    :widths: 50 50
    :header-rows: 1
 
-   * - Backend
-     - Description
+   * - الخلفية
+     - الوصف
    * - ``torch.compile(m, backend="inductor")``
-     - Uses the TorchInductor backend. `Read more <https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747>`__
+     - يستخدم خلفية TorchInductor. `اقرأ المزيد <https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747>`__
    * - ``torch.compile(m, backend="cudagraphs")``
-     - CUDA graphs with AOT Autograd. `Read more <https://github.com/pytorch/torchdynamo/pull/757>`__
+     - رسومات CUDA مع AOT Autograd. `اقرأ المزيد <https://github.com/pytorch/torchdynamo/pull/757>`__
    * - ``torch.compile(m, backend="ipex")``
-     - Uses IPEX on CPU. `Read more <https://github.com/intel/intel-extension-for-pytorch>`__
+     - يستخدم IPEX على وحدة المعالجة المركزية. `اقرأ المزيد <https://github.com/intel/intel-extension-for-pytorch>`__
    * - ``torch.compile(m, backend="onnxrt")``
-     - Uses ONNX Runtime for training on CPU/GPU. :doc:`Read more <onnx_dynamo_onnxruntime_backend>`
+     - يستخدم وقت تشغيل ONNX للتدريب على وحدة المعالجة المركزية/GPU. :doc:`اقرأ المزيد <onnx_dynamo_onnxruntime_backend>`
 
-**Inference-only backends**
+**خلفيات الاستدلال فقط**
 
 .. list-table::
    :widths: 50 50
    :header-rows: 1
 
-   * - Backend
-     - Description
+   * - الخلفية
+     - الوصف
    * - ``torch.compile(m, backend="tensorrt")``
-     - Uses Torch-TensorRT for inference optimizations. Requires ``import torch_tensorrt`` in the calling script to register backend. `Read more <https://github.com/pytorch/TensorRT>`__
+     - يستخدم Torch-TensorRT لتحسينات الاستدلال. يتطلب "استيراد torch_tensorrt" في النص البرمجي المستدعي لتسجيل الخلفية. `اقرأ المزيد <https://github.com/pytorch/TensorRT>`__
    * - ``torch.compile(m, backend="ipex")``
-     - Uses IPEX for inference on CPU. `Read more <https://github.com/intel/intel-extension-for-pytorch>`__
+     - يستخدم IPEX للاستدلال على وحدة المعالجة المركزية. `اقرأ المزيد <https://github.com/intel/intel-extension-for-pytorch>`__
    * - ``torch.compile(m, backend="tvm")``
-     - Uses Apache TVM for inference optimizations. `Read more <https://tvm.apache.org/>`__
+     - يستخدم Apache TVM لتحسينات الاستدلال. `اقرأ المزيد <https://tvm.apache.org/>`__
    * - ``torch.compile(m, backend="openvino")``
-     - Uses OpenVINO for inference optimizations. `Read more <https://docs.openvino.ai/torchcompile>`__
+     - يستخدم OpenVINO لتحسينات الاستدلال. `اقرأ المزيد <https://docs.openvino.ai/torchcompile>`__
 
-Read More
+اقرأ المزيد
 ~~~~~~~~~
 
 .. toctree::
-   :caption: Getting Started for PyTorch Users
+   :caption: البدء لمستخدمي PyTorch
    :maxdepth: 1
 
    torch.compiler_get_started
@@ -94,12 +73,12 @@ Read More
    torch.compiler_performance_dashboard
 
 ..
-  _If you want to contribute a developer-level topic
-   that provides in-depth overview of a torch._dynamo feature,
-   add in the below toc.
+  _إذا كنت ترغب في المساهمة بموضوع على مستوى المطور
+   الذي يوفر نظرة عامة متعمقة على ميزة torch._dynamo،
+   أضف في جدول المحتويات أدناه.
 
 .. toctree::
-   :caption: Deep Dive for PyTorch Developers
+   :caption: نظرة متعمقة لمطوري PyTorch
    :maxdepth: 1
 
    torch.compiler_dynamo_overview
@@ -111,7 +90,7 @@ Read More
    torch.compiler_fake_tensor
 
 .. toctree::
-   :caption: HowTo for PyTorch Backend Vendors
+   :caption: كيفية الاستخدام لموردي خلفيات PyTorch
    :maxdepth: 1
 
    torch.compiler_custom_backends
