@@ -3,47 +3,46 @@ torch.func
 
 .. currentmodule:: torch.func
 
-torch.func, previously known as "functorch", is
-`JAX-like <https://github.com/google/jax>`_ composable function transforms for PyTorch.
+torch.func، المعروف سابقًا باسم "functorch"، هو
+`JAX-like <https://github.com/google/jax>`_ قابل للتركيب تحويلات الدوال لبايثون.
 
 .. note::
-   This library is currently in `beta <https://pytorch.org/blog/pytorch-feature-classification-changes/#beta>`_.
-   What this means is that the features generally work (unless otherwise documented)
-   and we (the PyTorch team) are committed to bringing this library forward. However, the APIs
-   may change under user feedback and we don't have full coverage over PyTorch operations.
+   هذه المكتبة حاليا في مرحلة `beta <https://pytorch.org/blog/pytorch-feature-classification-changes/#beta>`_.
+   ما يعنيه هذا هو أن الميزات تعمل بشكل عام (ما لم يتم توثيقها بشكل آخر)
+   ونحن (فريق PyTorch) ملتزمون بتطوير هذه المكتبة. ومع ذلك، قد تتغير واجهات برمجة التطبيقات
+   بناءً على تعليقات المستخدمين ولا يوجد لدينا تغطية كاملة لعمليات PyTorch.
 
-   If you have suggestions on the API or use-cases you'd like to be covered, please
-   open an GitHub issue or reach out. We'd love to hear about how you're using the library.
+   إذا كان لديك أي اقتراحات حول واجهة برمجة التطبيقات أو حالات الاستخدام التي تود تغطيتها، يرجى
+   فتح مشكلة على GitHub أو التواصل معنا. نود أن نعرف كيف تستخدم المكتبة.
 
-What are composable function transforms?
-----------------------------------------
+ما هي تحويلات الدوال القابلة للتركيب؟
+----------------------------
 
-- A "function transform" is a higher-order function that accepts a numerical function
-  and returns a new function that computes a different quantity.
+- "تحويل الدالة" هو دالة من الدرجة العليا تقبل دالة رقمية
+  ويعيد دالة جديدة تقوم بحساب كمية مختلفة.
 
-- :mod:`torch.func` has auto-differentiation transforms (``grad(f)`` returns a function that
-  computes the gradient of ``f``), a vectorization/batching transform (``vmap(f)``
-  returns a function that computes ``f`` over batches of inputs), and others.
+- :mod:`torch.func` لديه تحويلات تفاضلية تلقائية (``grad(f)`` يعيد دالة تقوم بحساب تدرج ``f``)،
+  تحويل التجهيز/الدفعات (``vmap(f)`` يعيد دالة تقوم بحساب ``f`` على دفعات من المدخلات)، وغيرها.
 
-- These function transforms can compose with each other arbitrarily. For example,
-  composing ``vmap(grad(f))`` computes a quantity called per-sample-gradients that
-  stock PyTorch cannot efficiently compute today.
+- يمكن لهذه الدوال القابلة للتحويل أن تتركب مع بعضها البعض بشكل تعسفي. على سبيل المثال،
+  يقوم تكوين ``vmap(grad(f))`` بحساب كمية تسمى per-sample-gradients
+  لا يمكن لبايثون الأسهم حسابها بكفاءة اليوم.
 
-Why composable function transforms?
------------------------------------
+لماذا تحويلات الدوال القابلة للتركيب؟
+-----------------------
 
-There are a number of use cases that are tricky to do in PyTorch today:
+هناك عدد من حالات الاستخدام التي يصعب تنفيذها في PyTorch اليوم:
 
-- computing per-sample-gradients (or other per-sample quantities)
-- running ensembles of models on a single machine
-- efficiently batching together tasks in the inner-loop of MAML
-- efficiently computing Jacobians and Hessians
-- efficiently computing batched Jacobians and Hessians
+- حساب التدرجات لكل عينة (أو كميات أخرى لكل عينة)
+- تشغيل مجموعات من النماذج على آلة واحدة
+- دمج المهام بكفاءة في الحلقة الداخلية لـ MAML
+- حساب المصفوفات والمصفوفات المتقابلة بكفاءة
+- حساب المصفوفات المصفوفة والمصفوفات المتقابلة بكفاءة
 
-Composing :func:`vmap`, :func:`grad`, and :func:`vjp` transforms allows us to express the above without designing a separate subsystem for each.
-This idea of composable function transforms comes from the `JAX framework <https://github.com/google/jax>`_.
+تكوين تحويلات :func:`vmap`، :func:`grad`، و:func:`vjp` يسمح لنا بالتعبير عن ما سبق دون تصميم نظام فرعي منفصل لكل منها.
+جاءت فكرة تحويلات الدوال القابلة للتركيب هذه من `إطار عمل JAX <https://github.com/google/jax>`_.
 
-Read More
+اقرأ المزيد
 ---------
 
 .. toctree::
