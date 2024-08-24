@@ -1,30 +1,16 @@
 torch.Storage
-===================================
+===============
 
-:class:`torch.Storage` is an alias for the storage class that corresponds with
-the default data type (:func:`torch.get_default_dtype()`). For instance, if the
-default data type is :attr:`torch.float`, :class:`torch.Storage` resolves to
-:class:`torch.FloatStorage`.
+:class:`torch.Storage` هو مرادف لفئة التخزين التي تتوافق مع نوع البيانات الافتراضي (:func:`torch.get_default_dtype()`). على سبيل المثال، إذا كان نوع البيانات الافتراضي هو :attr:`torch.float`، فإن :class:`torch.Storage` يحل محل :class:`torch.FloatStorage`.
 
-The :class:`torch.<type>Storage` and :class:`torch.cuda.<type>Storage` classes,
-like :class:`torch.FloatStorage`, :class:`torch.IntStorage`, etc., are not
-actually ever instantiated. Calling their constructors creates
-a :class:`torch.TypedStorage` with the appropriate :class:`torch.dtype` and
-:class:`torch.device`.  :class:`torch.<type>Storage` classes have all of the
-same class methods that :class:`torch.TypedStorage` has.
+فئات :class:`torch.<type>Storage` و :class:`torch.cuda.<type>Storage`، مثل :class:`torch.FloatStorage`، :class:`torch.IntStorage`، وما إلى ذلك، لا يتم إنشاء مثيل منها فعليًا أبدًا. يؤدي استدعاء بنائيها إلى إنشاء :class:`torch.TypedStorage` مع :class:`torch.dtype` و :class:`torch.device` المناسبين. تحتوي فئات :class:`torch.<type>Storage` على نفس طرق الفئات التي لدى :class:`torch.TypedStorage`.
 
-A :class:`torch.TypedStorage` is a contiguous, one-dimensional array of
-elements of a particular :class:`torch.dtype`. It can be given any
-:class:`torch.dtype`, and the internal data will be interpreted appropriately.
-:class:`torch.TypedStorage` contains a :class:`torch.UntypedStorage` which
-holds the data as an untyped array of bytes.
+:class:`torch.TypedStorage` هو مصفوفة أحادية البعد ومتجاورة لعناصر من نوع :class:`torch.dtype` معين. يمكن إعطاؤه أي نوع :class:`torch.dtype`، وسيتم تفسير البيانات الداخلية بشكل مناسب. يحتوي :class:`torch.TypedStorage` على :class:`torch.UntypedStorage` والذي يحتفظ بالبيانات كمصفوفة غير معلمة من البايتات.
 
-Every strided :class:`torch.Tensor` contains a :class:`torch.TypedStorage`,
-which stores all of the data that the :class:`torch.Tensor` views.
+يحتوي كل :class:`torch.Tensor` متعدد الخطوات على :class:`torch.TypedStorage`، والذي يخزن جميع البيانات التي يعرضها :class:`torch.Tensor`.
 
 .. warning::
-  All storage classes except for :class:`torch.UntypedStorage` will be removed
-  in the future, and :class:`torch.UntypedStorage` will be used in all cases.
+  سيتم إزالة جميع فئات التخزين باستثناء :class:`torch.UntypedStorage` في المستقبل، وسيتم استخدام :class:`torch.UntypedStorage` في جميع الحالات.
 
 .. autoclass:: torch.TypedStorage
    :members:
