@@ -1,52 +1,41 @@
 .. automodule:: torch.package
 .. py:module:: torch.package.analyze
 
-.. currentmodule:: torch.package
+.. currentmodule:: torch.package.analyze
 
-torch.package
-=============
-``torch.package`` adds support for creating packages containing both artifacts and arbitrary
-PyTorch code. These packages can be saved, shared, used to load and execute models
-at a later date or on a different machine, and can even be deployed to production using
-``torch::deploy``.
+حزمة الشعلة
+أضاف ``torch.package`` الدعم لإنشاء حزم تحتوي على كل من الآثار ورمز PyTorch التعسفي. يمكن حفظ هذه الحزم ومشاركتها واستخدامها لتحميل نماذج وتشغيلها في تاريخ لاحق أو على جهاز مختلف، بل ويمكن نشرها في الإنتاج باستخدام ``torch::deploy``.
 
-This document contains tutorials, how-to guides, explanations, and an API reference that
-will help you learn more about ``torch.package`` and how to use it.
+تحتوي هذه الوثيقة على دروس تعليمية وأدلة إرشادية وتوضيحات ومرجع API سيساعدك على معرفة المزيد حول ``torch.package`` وكيفية استخدامه.
 
+.. تحذير ::
 
-.. warning::
+تعتمد هذه الوحدة على وحدة "pickle" غير الآمنة. لا تفك حزم البيانات إلا إذا كنت تثق بها.
 
-    This module depends on the ``pickle`` module which is not secure. Only unpackage data you trust.
+من الممكن إنشاء بيانات "pickle" ضارة والتي ستنفذ **رمزًا تعسفيًا أثناء فك التقطيع**. لا تقم مطلقًا بفك حزم البيانات التي قد تكون جاءت من مصدر غير موثوق أو قد تم العبث بها.
 
-    It is possible to construct malicious pickle data which will **execute arbitrary code during unpickling**.
-    Never unpackage data that could have come from an untrusted source, or that could have been tampered with.
+لمزيد من المعلومات، راجع وثائق وحدة "pickle" <https://docs.python.org/3/library/pickle.html>.
 
-    For more information, review the `documentation <https://docs.python.org/3/library/pickle.html>`_ for the ``pickle`` module.
+.. محتويات:: :local:
+:depth: 2
 
-
-.. contents:: :local:
-    :depth: 2
-
-
-Tutorials
+الدروس التعليمية
 ---------
-Packaging your first model
+تعبئة نموذجك الأول
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-A tutorial that guides you through packaging and unpackaging a simple model is available
-`on Colab <https://colab.research.google.com/drive/1lFZkLyViGfXxB-m3jqlyTQuYToo3XLo->`_.
-After completing this exercise, you will be familiar with the basic API for creating and using
-Torch packages.
+يتوفر درس يوجهك خلال تعبئة وفك تعبئة نموذج بسيط `على Colab <https://colab.research.google.com/drive/1lFZkLyViGfXxB-m3jqlyTQuYToo3XLo->`_.
+بعد الانتهاء من هذا التمرين، ستكون على دراية بواجهة برمجة التطبيقات الأساسية لإنشاء حزم Torch واستخدامها.
 
-How do I...
+كيف يمكنني...
 -----------
-See what is inside a package?
+مشاهدة ما بداخل حزمة؟
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Treat the package like a ZIP archive
+تعامل مع الحزمة مثل أرشيف ZIP
 """"""""""""""""""""""""""""""""""""
-The container format for a ``torch.package`` is ZIP, so any tools that work with standard ZIP files should
-work for exploring the contents. Some common ways to interact with ZIP files:
+تنسيق الحاوية لحزمة ``torch.package`` هو ZIP، لذلك يجب أن تعمل أي أدوات تعمل مع ملفات ZIP القياسية
+يجب أن يعمل لاستكشاف المحتويات. بعض الطرق الشائعة للتفاعل مع ملفات ZIP:
 
-* ``unzip my_package.pt`` will unzip the ``torch.package`` archive to disk, where you can freely inspect its contents.
+* ``unzip my_package.pt`` سيقوم بفك ضغط أرشيف ``torch.package`` إلى القرص، حيث يمكنك فحص محتوياته بحرية.
 
 
 ::
@@ -68,7 +57,7 @@ work for exploring the contents. Some common ways to interact with ZIP files:
     ...
 
 
-* The Python ``zipfile`` module provides a standard way to read and write ZIP archive contents.
+* توفر وحدة ``zipfile`` في Python طريقة قياسية لقراءة محتويات أرشيف ZIP وكتابتها.
 
 
 ::
@@ -80,25 +69,25 @@ work for exploring the contents. Some common ways to interact with ZIP files:
         myzip.writestr("torchvision/models/resnet.py", new_file_bytes)
 
 
-* vim has the ability to natively read ZIP archives. You can even edit files and :``write`` them back into the archive!
+* يمكن لـ vim قراءة أرشيفات ZIP بشكل أصلي. يمكنك حتى تحرير الملفات وإعادتها إلى الأرشيف!
 
 
 ::
 
-    # add this to your .vimrc to treat `*.pt` files as zip files
+    # أضف هذا إلى ملفك `.vimrc` لتعامل مع ملفات `*.pt` كملفات zip
     au BufReadCmd *.pt call zip#Browse(expand("<amatch>"))
 
     ~ vi my_package.pt
 
 
-Use the ``file_structure()`` API
+استخدم طريقة ``file_structure()`` API
 """"""""""""""""""""""""""""""""
-:class:`PackageImporter` provides a ``file_structure()`` method, which will return a printable
-and queryable :class:`Directory` object. The :class:`Directory` object is a simple directory structure that you can use to explore the
-current contents of a ``torch.package``.
+توفر :class:`PackageImporter` طريقة ``file_structure()``، والتي ستعيد كائنًا قابلًا للطباعة
+وكائن :class:`Directory` يمكن الاستعلام عنه. كائن :class:`Directory` هو هيكل دليل بسيط يمكنك استخدامه لاستكشاف
+محتويات حزمة ``torch.package`` الحالية.
 
-The :class:`Directory` object itself is directly printable and will print out a file tree representation. To filter what is returned,
-use the glob-style ``include`` and ``exclude`` filtering arguments.
+يمكن طباعة كائن :class:`Directory` نفسه، وسيقوم بطباعة تمثيل شجرة الملفات. لتصفية ما يتم إرجاعه،
+استخدم حجج التصفية "include" و"exclude" بأسلوب glob.
 
 
 ::
@@ -107,18 +96,18 @@ use the glob-style ``include`` and ``exclude`` filtering arguments.
         pe.save_pickle('models', 'model_1.pkl', mod)
 
     importer = PackageImporter('my_package.pt')
-    # can limit printed items with include/exclude args
+    # يمكن الحد من العناصر المطبوعة باستخدام حجج include/exclude
     print(importer.file_structure(include=["**/utils.py", "**/*.pkl"], exclude="**/*.storage"))
-    print(importer.file_structure()) # will print out all files
+    print(importer.file_structure()) # ستتم طباعة جميع الملفات
 
 
-Output:
+الناتج:
 
 
 ::
 
-    # filtered with glob pattern:
-    #    include=["**/utils.py", "**/*.pkl"], exclude="**/*.storage"
+    # تم التصفية باستخدام نمط glob:
+    # تشمل ["**/utils.py"، "**/*.pkl"]، واستبعاد "**/*.storage"
     ─── my_package.pt
         ├── models
         │   └── model_1.pkl
@@ -126,7 +115,7 @@ Output:
             └── models
                 └── utils.py
 
-    # all files
+    # جميع الملفات
     ─── my_package.pt
         ├── .data
         │   ├── 94304870911616.storage
@@ -141,7 +130,7 @@ Output:
                 └── utils.py
 
 
-You can also query :class:`Directory` objects with the ``has_file()`` method.
+يمكنك أيضًا استعلام كائنات :class:`Directory` باستخدام طريقة ``has_file()``.
 
 
 ::
@@ -149,36 +138,36 @@ You can also query :class:`Directory` objects with the ``has_file()`` method.
     importer_file_structure = importer.file_structure()
     found: bool = importer_file_structure.has_file("package_a/subpackage.py")
 
-See why a given module was included as a dependency?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+لماذا تم تضمين وحدة نمطية معينة كاعتماد؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Say there is a given module ``foo``, and you want to know why your :class:`PackageExporter` is pulling in ``foo`` as a dependency.
+لنفترض أن هناك وحدة نمطية معينة تسمى ``foo``، وتريد أن تعرف سبب قيام :class:`PackageExporter` بسحب ``foo`` كاعتماد.
 
-:meth:`PackageExporter.get_rdeps` will return all modules that directly depend on ``foo``.
+ستقوم طريقة :meth:`PackageExporter.get_rdeps` بإرجاع جميع الوحدات النمطية التي تعتمد مباشرة على ``foo``.
 
-If you would like to see how a given module ``src`` depends on ``foo``, the :meth:`PackageExporter.all_paths` method will
-return a DOT-formatted graph showing all the dependency paths between ``src`` and ``foo``.
+إذا كنت تريد أن ترى كيف تعتمد وحدة نمطية معينة ``src`` على ``foo``، فإن طريقة :meth:`PackageExporter.all_paths`
+ستعيد رسمًا بيانيًا بتنسيق DOT يُظهر جميع مسارات الاعتماد بين ``src`` و ``foo``.
 
-If you would just like to see the whole dependency graph of your :class:`PackageExporter`, you can use :meth:`PackageExporter.dependency_graph_string`.
+إذا كنت تريد فقط أن ترى الرسم البياني الكامل للاعتماد لحزمة :class:`PackageExporter`، فيمكنك استخدام طريقة :meth:`PackageExporter.dependency_graph_string`.
 
 
-Include arbitrary resources with my package and access them later?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:class:`PackageExporter` exposes three methods, ``save_pickle``, ``save_text`` and ``save_binary`` that allow you to save
-Python objects, text, and binary data to a package.
+تضمين موارد عشوائية مع الحزمة الخاصة بي والوصول إليها لاحقًا؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تعرض :class:`PackageExporter` ثلاث طرق، ``save_pickle``، و``save_text``، و``save_binary`` تسمح لك بحفظ
+الكائنات النصية، وبيانات Python، والبيانات الثنائية في الحزمة.
 
 
 ::
 
     with torch.PackageExporter("package.pt") as exporter:
-        # Pickles the object and saves to `my_resources/tensor.pkl` in the archive.
+        # يحفظ الكائن كملف Pickled ويحفظه في `my_resources/tensor.pkl` في الأرشيف.
         exporter.save_pickle("my_resources", "tensor.pkl", torch.randn(4))
         exporter.save_text("config_stuff", "words.txt", "a sample string")
         exporter.save_binary("raw_data", "binary", my_bytes)
 
 
-:class:`PackageImporter` exposes complementary methods named ``load_pickle``, ``load_text`` and ``load_binary`` that allow you to load
-Python objects, text and binary data from a package.
+تعرض :class:`PackageImporter` طرقًا تكميلية تسمى ``load_pickle``، و``load_text``، و``load_binary`` تسمح لك بتحميل
+كائنات Python، والنصوص، والبيانات الثنائية من الحزمة.
 
 
 ::
@@ -189,21 +178,21 @@ Python objects, text and binary data from a package.
     binary = importer.load_binary("raw_data", "binary")
 
 
-Customize how a class is packaged?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``torch.package`` allows for the customization of how classes are packaged. This behavior is accessed through defining the method
-``__reduce_package__`` on a class and by defining a corresponding de-packaging function. This is similar to defining ``__reduce__`` for
-Python’s normal pickling process.
+تخصيص كيفية تغليف فئة؟
+^^^^^^^^^^^^^^^^^^^^
+يسمح ``torch.package`` بتخصيص كيفية تغليف الفئات. يتم الوصول إلى هذا السلوك من خلال تعريف طريقة
+``__reduce_package__`` في الفئة ومن خلال تعريف دالة فك التغليف المقابلة. هذا مشابه لتعريف ``__reduce__`` لـ
+عملية التخليل القياسية في Python.
 
-Steps:
+الخطوات:
 
-1. Define the method ``__reduce_package__(self, exporter: PackageExporter)`` on the target class. This method should do the work to save the class instance inside of the package, and should return a tuple of the corresponding de-packaging function with the arguments needed to invoke the de-packaging function. This method is called by the ``PackageExporter`` when it encounters an instance of the target class.
-2. Define a de-packaging function for the class. This de-packaging function should do the work to reconstruct and return an instance of the class. The function signature’s first parameter should be a ``PackageImporter`` instance, and the rest of the parameters are user defined.
+1. قم بتعريف طريقة ``__reduce_package__(self, exporter: PackageExporter)`` في الفئة المستهدفة. يجب أن تقوم هذه الطريقة بتنفيذ العمل لحفظ مثيل الفئة داخل الحزمة، ويجب أن تعيد زوجًا من دالة فك التغليف مع وسائط استدعاء دالة فك التغليف. يتم استدعاء هذه الطريقة بواسطة ``PackageExporter`` عند مصادفة مثيل للفئة المستهدفة.
+2. قم بتعريف دالة فك التغليف للفئة. يجب أن تقوم دالة فك التغليف هذه بتنفيذ العمل اللازم لإعادة بناء مثيل الفئة وإعادته. يجب أن يكون أول وسيط في توقيع الدالة عبارة عن مثيل لـ ``PackageImporter``، ويجب أن تكون بقية الوسائط معرفة من قبل المستخدم.
 
 
 ::
 
-    # foo.py [Example of customizing how class Foo is packaged]
+    # foo.py [مثال على تخصيص كيفية تغليف فئة Foo]
     from torch.package import PackageExporter, PackageImporter
     import time
 
@@ -217,26 +206,26 @@ Steps:
 
         def __reduce_package__(self, exporter: PackageExporter):
             """
-            Called by ``torch.package.PackageExporter``'s Pickler's ``persistent_id`` when
-            saving an instance of this object. This method should do the work to save this
-            object inside of the ``torch.package`` archive.
+            يتم استدعاء هذه الطريقة بواسطة ``torch.package.PackageExporter``'s Pickler's ``persistent_id`` عند
+            حفظ مثيل من هذا الكائن. يجب أن تقوم هذه الطريقة بتنفيذ العمل لحفظ هذا
+            الكائن داخل أرشيف ``torch.package``.
 
-            Returns function w/ arguments to load the object from a
+            تعيد الدالة مع وسائط لإعادة تحميل الكائن من
             ``torch.package.PackageImporter``'s Pickler's ``persistent_load`` function.
             """
 
-            # use this pattern to ensure no naming conflicts with normal dependencies,
-            # anything saved under this module name shouldn't conflict with other
-            # items in the package
+            # استخدم هذا النمط لضمان عدم وجود تعارضات في التسمية مع التبعيات العادية،
+            # يجب ألا تتعارض أي عناصر محفوظة ضمن اسم الوحدة النمطية هذا مع العناصر الأخرى
+            # في الحزمة
             generated_module_name = f"foo-generated._{exporter.get_unique_id()}"
             exporter.save_text(
-                generated_module_name,
+                generated_module_partumodule_name,
                 "foo.txt",
                 self.my_string + ", with exporter modification!",
             )
             time_exported = time.clock_gettime(1)
 
-            # returns de-packaging function w/ arguments to invoke with
+            # تعيد دالة فك التغليف مع وسائط لاستدعائها
             return (unpackage_foo, (generated_module_name, time_exported,))
 
 
@@ -244,9 +233,9 @@ Steps:
         importer: PackageImporter, generated_module_name: str, time_exported: float
     ) -> Foo:
         """
-        Called by ``torch.package.PackageImporter``'s Pickler's ``persistent_load`` function
-        when depickling a Foo object.
-        Performs work of loading and returning a Foo instance from a ``torch.package`` archive.
+        يتم استدعاء هذه الدالة بواسطة ``torch.package.PackageImporter``'s Pickler's ``persistent_load`` function
+        عند فك تغليف كائن Foo.
+        تقوم بتنفيذ العمل اللازم لتحميل وإعادة مثيل من فئة Foo من أرشيف ``torch.package``.
         """
         time_imported = time.clock_gettime(1)
         foo = Foo(importer.load_text(generated_module_name, "foo.txt"))
@@ -257,7 +246,7 @@ Steps:
 
 ::
 
-    # example of saving instances of class Foo
+    # مثال على حفظ مثيلات من فئة Foo
 
     import torch
     from torch.package import PackageImporter, PackageExporter
@@ -266,7 +255,7 @@ Steps:
     foo_1 = foo.Foo("foo_1 initial string")
     foo_2 = foo.Foo("foo_2 initial string")
     with PackageExporter('foo_package.pt') as pe:
-        # save as normal, no extra work necessary
+        # احفظه بشكل طبيعي، لا يلزم عمل إضافي
         pe.save_pickle('foo_collection', 'foo1.pkl', foo_1)
         pe.save_pickle('foo_collection', 'foo2.pkl', foo_2)
 
@@ -280,7 +269,7 @@ Steps:
 
 ::
 
-    # output of running above script
+    # إخراج تشغيل البرنامج النصي أعلاه
     ─── foo_package
         ├── foo-generated
         │   ├── _0
@@ -297,17 +286,17 @@ Steps:
     foo_1 import time: 9857706.652698385
 
 
-Test in my source code whether or not it is executing inside a package?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A :class:`PackageImporter` will add the attribute ``__torch_package__`` to every module that it initializes. Your code can check for the
-presence of this attribute to determine whether it is executing in a packaged context or not.
+اختبار في شفرة المصدر الخاصة بي ما إذا كان يتم التنفيذ داخل حزمة أم لا؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+سيضيف :class:`PackageImporter` السمة ``__torch_package__`` إلى كل وحدة نمطية يقوم بتهيئتها. يمكن لشفرة التحقق من وجود
+هذه السمة لتحديد ما إذا كان يتم تنفيذها في سياق الحزمة أم لا.
 
 
 ::
 
-    # In foo/bar.py:
+    # في foo/bar.py:
 
-    if "__torch_package__" in dir():  # true if the code is being loaded from a package
+    if "__torch_package__" in dir():  # true إذا كان يتم تحميل الكود من حزمة
         def is_in_package():
             return True
 
@@ -319,7 +308,7 @@ presence of this attribute to determine whether it is executing in a packaged co
         UserException = UnpackageableException
 
 
-Now, the code will behave differently depending on whether it’s imported normally through your Python environment or imported from a
+الآن، سيتصرف الكود بشكل مختلف اعتمادًا على ما إذا كان يتم استيراده بشكل طبيعي من خلال بيئة Python الخاصة بك أو استيراده من
 ``torch.package``.
 
 
@@ -333,24 +322,24 @@ Now, the code will behave differently depending on whether it’s imported norma
     loaded_module.is_in_package()  # True
 
 
-**Warning**: in general, it’s bad practice to have code that behaves differently depending on whether it’s packaged or not. This can lead to
-hard-to-debug issues that are sensitive to how you imported your code. If your package is intended to be heavily used, consider restructuring
-your code so that it behaves the same way no matter how it was loaded.
+**تحذير**: بشكل عام، من السيئ أن يكون لديك كود يتصرف بشكل مختلف اعتمادًا على ما إذا كان معبأً أم لا. يمكن أن يؤدي ذلك إلى
+مشكلات يصعب تصحيحها والتي تتأثر بكيفية استيرادك لشفرة المصدر الخاصة بك. إذا كانت حزمتك مصممة للاستخدام المكثف، ففكر في إعادة هيكلة
+شفرة المصدر الخاصة بك بحيث تتصرف بنفس الطريقة بغض النظر عن كيفية تحميلها.
 
 
-Patch code into a package?
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-:class:`PackageExporter` offers a ``save_source_string()`` method that allows one to save arbitrary Python source code to a module of your choosing.
+تصحيح رمز في حزمة؟
+^^^^^^^^^^^^^^^
+تقدم :class:`PackageExporter` طريقة ``save_source_string()`` تسمح لك بحفظ شفرة مصدر Python عشوائية إلى وحدة نمطية من اختيارك.
 
 
 ::
 
     with PackageExporter(f) as exporter:
-        # Save the my_module.foo available in your current Python environment.
+        # احفظ my_module.foo المتاحة في بيئة Python الحالية الخاصة بك.
         exporter.save_module("my_module.foo")
 
-        # This saves the provided string to my_module/foo.py in the package archive.
-        # It will override the my_module.foo that was previously saved.
+        # يحفظ هذا السلسلة المقدمة إلى my_module/foo.py في أرشيف الحزمة.
+        # سوف يلغي ما تم حفظه مسبقًا في my_module.foo
         exporter.save_source_string("my_module.foo", textwrap.dedent(
             """\
             def my_function():
@@ -358,38 +347,36 @@ Patch code into a package?
             """
         ))
 
-        # If you want to treat my_module.bar as a package
-        # (e.g. save to `my_module/bar/__init__.py` instead of `my_module/bar.py)
-        # pass is_package=True,
+        # إذا كنت تريد التعامل مع my_module.bar كحزمة
+        # (على سبيل المثال، قم بالتخزين في `my_module/bar/__init__.py` بدلاً من `my_module/bar.py)
+        # قم بتمرير is_package=True،
         exporter.save_source_string("my_module.bar",
                                     "def foo(): print('hello')\n",
                                     is_package=True)
 
     importer = PackageImporter(f)
-    importer.import_module("my_module.foo").my_function()  # prints 'hello world'
+    importer.import_module("my_module.foo").my_function()  # يطبع 'مرحبًا بالعالم'
 
 
-Access package contents from packaged code?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:class:`PackageImporter` implements the
+الوصول إلى محتويات الحزمة من الكود المعلب؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ينفذ :class:`PackageImporter` واجهة برمجة التطبيقات
 `importlib.resources <https://docs.python.org/3/library/importlib.html#module-importlib.resources>`_
-API for accessing resources from inside a package.
-
-
+للوصول إلى الموارد من داخل حزمة.
 ::
 
     with PackageExporter(f) as exporter:
-        # saves text to my_resource/a.txt in the archive
+        # يحفظ النص في my_resource/a.txt داخل الأرشيف
         exporter.save_text("my_resource", "a.txt", "hello world!")
-        # saves the tensor to my_pickle/obj.pkl
+        # يحفظ التنسور في my_pickle/obj.pkl
         exporter.save_pickle("my_pickle", "obj.pkl", torch.ones(2, 2))
 
-        # see below for module contents
+        # شاهد أدناه لمحتويات الوحدة النمطية
         exporter.save_module("foo")
         exporter.save_module("bar")
 
 
-The ``importlib.resources`` API allows access to resources from within packaged code.
+يتيح واجهة برمجة التطبيقات (API) ``importlib.resources`` الوصول إلى الموارد من داخل التعليمات البرمجية المعلبة.
 
 
 ::
@@ -398,36 +385,35 @@ The ``importlib.resources`` API allows access to resources from within packaged 
     import importlib.resources
     import my_resource
 
-    # returns "hello world!"
+    # يعيد "hello world!"
     def get_my_resource():
         return importlib.resources.read_text(my_resource, "a.txt")
 
 
-Using ``importlib.resources`` is the recommended way to access package contents from within packaged code, since it complies
-with the Python standard. However, it is also possible to access the parent :class:`PackageImporter` instance itself from within
-packaged code.
+يعد استخدام ``importlib.resources`` الطريقة الموصى بها للوصول إلى محتويات الحزمة من داخل التعليمات البرمجية المعلبة، حيث يتوافق
+مع معيار بايثون. ومع ذلك، من الممكن أيضًا الوصول إلى مثيل :class:`PackageImporter` الأساسي نفسه من داخل التعليمات البرمجية المعلبة.
 
 
 ::
 
     # bar.py:
-    import torch_package_importer # this is the PackageImporter that imported this module.
+    import torch_package_importer # هذا هو PackageImporter الذي قام باستيراد هذه الوحدة النمطية.
 
-    # Prints "hello world!", equivalent to importlib.resources.read_text
+    # يطبع "hello world!"، وهو ما يعادل importlib.resources.read_text
     def get_my_resource():
         return torch_package_importer.load_text("my_resource", "a.txt")
 
-    # You also do things that the importlib.resources API does not support, like loading
-    # a pickled object from the package.
+    # يمكنك أيضًا القيام بأشياء لا تدعمها واجهة برمجة تطبيقات importlib.resources، مثل تحميل
+    # كائن مخلل من الحزمة.
     def get_my_pickle():
         return torch_package_importer.load_pickle("my_pickle", "obj.pkl")
 
 
-Distinguish between packaged code and non-packaged code?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To tell if an object’s code is from a ``torch.package``, use the ``torch.package.is_from_package()`` function.
-Note: if an object is from a package but its definition is from a module marked ``extern`` or from ``stdlib``,
-this check will return ``False``.
+التمييز بين التعليمات البرمجية المعلبة وغير المعلبة؟
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+للتحقق مما إذا كانت التعليمات البرمجية لكائن ما من ``torch.package``، استخدم دالة ``torch.package.is_from_package()``.
+ملاحظة: إذا كان الكائن من حزمة ولكن تعريفه من وحدة نمطية موسومة بـ ``extern`` أو من ``stdlib``،
+فستعيد هذه الدالة ``False``.
 
 
 ::
@@ -439,13 +425,13 @@ this check will return ``False``.
 
     assert is_from_package(mod)
     assert is_from_package(obj)
-    assert not is_from_package(txt) # str is from stdlib, so this will return False
+    assert not is_from_package(txt) # str هو من stdlib، لذلك ستعيد هذه الدالة False
 
 
-Re-export an imported object?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To re-export an object that was previously imported by a :class:`PackageImporter`, you must make the new :class:`PackageExporter`
-aware of the original :class:`PackageImporter` so that it can find source code for your object’s dependencies.
+إعادة تصدير كائن مستورد؟
+^^^^^^^^^^^^^^^^^^^
+لإعادة تصدير كائن تم استيراده مسبقًا بواسطة :class:`PackageImporter`، يجب جعل :class:`PackageExporter` الجديد
+على علم بـ :class:`PackageImporter` الأصلي حتى يتمكن من العثور على شفرة المصدر لتبعيات الكائن الخاص بك.
 
 
 ::
@@ -453,71 +439,67 @@ aware of the original :class:`PackageImporter` so that it can find source code f
     importer = PackageImporter(f)
     obj = importer.load_pickle("model", "model.pkl")
 
-    # re-export obj in a new package
+    # إعادة تصدير الكائن في حزمة جديدة
     with PackageExporter(f2, importer=(importer, sys_importer)) as exporter:
         exporter.save_pickle("model", "model.pkl", obj)
 
 
-Package a TorchScript module?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To package a TorchScript model, use the same ``save_pickle`` and ``load_pickle`` APIs as you would with any other object.
-Saving TorchScript objects that are attributes or submodules is supported as well with no extra work.
+تعبئة وحدة نمطية TorchScript؟
+^^^^^^^^^^^^^^^^^^^^^^^^^
+لتعبئة نموذج TorchScript، استخدم نفس واجهات برمجة التطبيقات (APIs) ``save_pickle`` و ``load_pickle`` كما تفعل مع أي كائن آخر.
+كما يتم دعم حفظ كائنات TorchScript التي تكون سمات أو وحدات نمطية فرعية دون أي جهد إضافي.
 
 
 ::
 
-    # save TorchScript just like any other object
+    # حفظ TorchScript مثل أي كائن آخر
     with PackageExporter(file_name) as e:
         e.save_pickle("res", "script_model.pkl", scripted_model)
         e.save_pickle("res", "mixed_model.pkl", python_model_with_scripted_submodule)
-    # load as normal
+    # تحميل كالمعتاد
     importer = PackageImporter(file_name)
     loaded_script = importer.load_pickle("res", "script_model.pkl")
     loaded_mixed = importer.load_pickle("res", "mixed_model.pkl"
 
 
-Explanation
------------
-``torch.package`` Format Overview
+شرح
+``torch.package`` نظرة عامة على التنسيق
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A ``torch.package`` file is a ZIP archive which conventionally uses the ``.pt`` extension. Inside the ZIP archive, there are two kinds of files:
+ملف ``torch.package`` هو أرشيف ZIP الذي يستخدم بشكل تقليدي امتداد ``.pt``. داخل أرشيف ZIP، هناك نوعان من الملفات:
 
-* Framework files, which are placed in the ``.data/``.
-* User files, which is everything else.
+* ملفات الإطار، والتي يتم وضعها في ``.data/``.
+* ملفات المستخدم، والتي هي كل شيء آخر.
 
-As an example, this is what a fully packaged ResNet model from ``torchvision`` looks like:
-
+على سبيل المثال، هذا هو الشكل الذي يبدو عليه نموذج ResNet مُعبأ بالكامل من ``torchvision``:
 
 ::
 
     resnet
-    ├── .data  # All framework-specific data is stored here.
-    │   │      # It's named to avoid conflicts with user-serialized code.
-    │   ├── 94286146172688.storage  # tensor data
+    ├── .data  # يتم تخزين جميع البيانات الخاصة بالإطار هنا.
+    │   │      # تمت تسميته لتجنب التضارب مع التعليمات البرمجية المُسلسلة من قبل المستخدم.
+    │   ├── 94286146172688.storage  # بيانات tensor
     │   ├── 94286146172784.storage
-    │   ├── extern_modules  # text file with names of extern modules (e.g. 'torch')
-    │   ├── version         # version metadata
+    │   ├── extern_modules  # ملف نصي بأسماء الوحدات النمطية الخارجية (مثل 'torch')
+    │   ├── version         # بيانات وصفية للإصدار
     │   ├── ...
-    ├── model  # the pickled model
+    ├── model  # النموذج المُخلل
     │   └── model.pkl
-    └── torchvision  # all code dependencies are captured as source files
+    └── torchvision  # يتم التقاط جميع تبعيات التعليمات البرمجية كملفات مصدر
         └── models
             ├── resnet.py
             └── utils.py
 
-
-Framework files
+ملفات الإطار
 """""""""""""""
-The ``.data/`` directory is owned by torch.package, and its contents are considered to be a private implementation detail.
-The ``torch.package`` format makes no guarantees about the contents of ``.data/``, but any changes made will be backward compatible
-(that is, newer version of PyTorch will always be able to load older ``torch.packages``).
+تعتبر ملفات الدليل ``.data/`` مملوكة لـ torch.package، ويتم اعتبار محتوياتها تفاصيل تنفيذ خاصة.
+لا يضمن تنسيق ``torch.package`` أي شيء حول محتويات ``.data/``، ولكن أي تغييرات يتم إجراؤها ستكون متوافقة مع الإصدارات السابقة
+(بمعنى أن الإصدارات الأحدث من PyTorch ستتمكن دائمًا من تحميل حزم ``torch.packages`` القديمة).
 
-Currently, the ``.data/`` directory contains the following items:
+حاليًا، يحتوي دليل ``.data/`` على العناصر التالية:
 
-* ``version``: a version number for the serialized format, so that the ``torch.package`` import infrastructures knows how to load this package.
-* ``extern_modules``: a list of modules that are considered ``extern``. ``extern`` modules will be imported using the loading environment’s system importer.
-* ``*.storage``: serialized tensor data.
-
+* ``version``: رقم إصدار لتنسيق المُسلسل، بحيث يعرف البنية الأساسية لاستيراد ``torch.package`` كيفية تحميل هذه الحزمة.
+* ``extern_modules``: قائمة بالوحدات النمطية التي تعتبر "خارجية". سيتم استيراد الوحدات النمطية "الخارجية" باستخدام مُحمل النظام البيئي للتحميل.
+* ``*.storage``: بيانات tensor المُسلسلة.
 
 ::
 
@@ -528,212 +510,181 @@ Currently, the ``.data/`` directory contains the following items:
     ├── version
     ├── ...
 
-
-User files
-""""""""""
-All other files in the archive were put there by a user. The layout is identical to a Python
-`regular package <https://docs.python.org/3/reference/import.html#regular-packages>`_. For a deeper dive in how Python packaging works,
-please consult `this essay <https://www.python.org/doc/essays/packages/>`_ (it’s slightly out of date, so double-check implementation details
-with the `Python reference documentation <https://docs.python.org/3/library/importlib.html>`_).
-
+ملفات المستخدم
+""""""""""""
+جميع الملفات الأخرى في الأرشيف قام المستخدم بوضعها هناك. التخطيط مطابق تمامًا لحزمة Python
+`العادية <https://docs.python.org/3/reference/import.html#regular-packages>`_. للحصول على نظرة أكثر تعمقًا في كيفية عمل التعبئة في Python،
+يرجى الرجوع إلى `هذه المقالة <https://www.python.org/doc/essays/packages/>`_ (إنها قديمة بعض الشيء، لذا تحقق من تفاصيل التنفيذ
+مع `وثائق مرجع Python <https://docs.python.org/3/library/importlib.html>`_).
 
 ::
 
     <package root>
-    ├── model  # the pickled model
+    ├── model  # النموذج المخلل
     │   └── model.pkl
     ├── another_package
     │   ├── __init__.py
-    │   ├── foo.txt         # a resource file , see importlib.resources
+    │   ├── foo.txt         # ملف مورد، راجع importlib.resources
     │   └── ...
     └── torchvision
         └── models
             ├── resnet.py   # torchvision.models.resnet
             └── utils.py    # torchvision.models.utils
 
+كيف يجد ``torch.package`` تبعيات كودك
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تحليل تبعيات كائن
+""""""""""""
+عندما تصدر أمر ``save_pickle(obj, ...)``، سيقوم :class:`PackageExporter` بتخليل الكائن بشكل طبيعي. بعد ذلك، يستخدم وحدة ``pickletools`` النمطية في المكتبة القياسية لتحليل بايت كود التخليل.
 
-How ``torch.package`` finds your code's dependencies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Analyzing an object's dependencies
-""""""""""""""""""""""""""""""""""
-When you issue a ``save_pickle(obj, ...)`` call, :class:`PackageExporter` will pickle the object normally. Then, it uses the
-``pickletools`` standard library module to parse the pickle bytecode.
-
-In a pickle, an object is saved along with a ``GLOBAL`` opcode that describes where to find the implementation of the object’s type, like:
-
+في التخليل، يتم حفظ الكائن مع رمز تشغيل ``GLOBAL`` الذي يصف مكان العثور على تنفيذ نوع الكائن، مثل:
 
 ::
 
     GLOBAL 'torchvision.models.resnet Resnet`
 
+سيقوم محلل التبعيات بتجميع جميع عمليات ``GLOBAL`` ووضع علامة عليها كتبعيات للكائن المخلل.
+للحصول على مزيد من المعلومات حول التخليل وتنسيق التخليل، يرجى الرجوع إلى `وثائق Python <https://docs.python.org/3/library/pickle.html>`_.
 
-The dependency resolver will gather up all ``GLOBAL`` ops and mark them as dependencies of your pickled object.
-For more information about pickling and the pickle format, please consult `the Python docs <https://docs.python.org/3/library/pickle.html>`_.
+تحليل تبعيات وحدة نمطية
+"""""""""""""""""""
+عندما يتم تحديد وحدة نمطية Python كتبعيات، يقوم ``torch.package`` بالانتقال عبر التمثيل AST للوحدة النمطية والبحث عن عبارات الاستيراد مع
+الدعم الكامل للأشكال القياسية: ``from x import y``، ``import z``، ``from w import v as u``، إلخ. عندما يتم العثور على إحدى عبارات الاستيراد هذه،
+يسجل ``torch.package`` الوحدات النمطية المستوردة كتبعيات يتم بعد ذلك تحليلها بنفس طريقة المشي AST.
 
-Analyzing a module's dependencies
-"""""""""""""""""""""""""""""""""
-When a Python module is identified as a dependency, ``torch.package`` walks the module’s python AST representation and looks for import statements with
-full support for the standard forms: ``from x import y``, ``import z``, ``from w import v as u``, etc. When one of these import statements are
-encountered, ``torch.package`` registers the imported modules as dependencies that are then themselves parsed in the same AST walking way.
+**ملاحظة**: التحليل النحوي AST له دعم محدود لبناء الجملة ``__import__(...)`` ولا يدعم استدعاءات ``importlib.import_module``. بشكل عام، لا يجب أن تتوقع أن يكتشف ``torch.package`` الاستيرادات الديناميكية.
 
-**Note**: AST parsing has limited support for the ``__import__(...)`` syntax and does not support ``importlib.import_module`` calls. In general, you should
-not expect dynamic imports to be detected by ``torch.package``.
+إدارة التبعيات
+^^^^^^^^^^
+يقوم ``torch.package`` تلقائيًا بالعثور على وحدات Python النمطية التي تعتمد عليها التعليمات البرمجية والكائنات الخاصة بك. تُعرف هذه العملية باسم حل التبعيات.
+بالنسبة لكل وحدة نمطية يعثر عليها محلل التبعيات، يجب عليك تحديد *إجراء* لاتخاذه.
 
+الإجراءات المسموح بها هي:
 
-Dependency Management
-^^^^^^^^^^^^^^^^^^^^^
-``torch.package`` automatically finds the Python modules that your code and objects depend on. This process is called dependency resolution.
-For each module that the dependency resolver finds, you must specify an *action* to take.
+* ``intern``: ضع هذه الوحدة النمطية في الحزمة.
+* ``extern``: إعلان هذه الوحدة النمطية كتبعيات خارجية للحزمة.
+* ``mock``: إنشاء وحدة نمطية وهمية لهذه الوحدة النمطية.
+* ``deny``: سيؤدي الاعتماد على هذه الوحدة النمطية إلى حدوث خطأ أثناء تصدير الحزمة.
 
-The allowed actions are:
+أخيرًا، هناك إجراء آخر مهم لا يعتبر جزءًا تقنيًا من ``torch.package``:
 
-* ``intern``: put this module into the package.
-* ``extern``: declare this module as an external dependency of the package.
-* ``mock``: stub out this module.
-* ``deny``: depending on this module will raise an error during package export.
+* إعادة العامل: إزالة تبعيات التعليمات البرمجية أو تغييرها.
 
-Finally, there is one more important action that is not technically part of ``torch.package``:
+لاحظ أن الإجراءات محددة فقط لوحدات Python النمطية بأكملها. لا توجد طريقة لتعبئة "مجرد" دالة أو فئة من وحدة نمطية وترك الباقي.
+هذا عن قصد. لا تقدم Python حدودًا واضحة بين الكائنات المحددة في وحدة نمطية. الوحدة النمطية المحددة الوحيدة لوحدة التنظيم هي وحدة نمطية، لذا فهذا ما يستخدمه ``torch.package``.
 
-* Refactoring: remove or change the dependencies in your code.
-
-Note that actions are only defined on entire Python modules. There is no way to package “just” a function or class from a module and leave the rest out.
-This is by design. Python does not offer clean boundaries between objects defined in a module. The only defined unit of dependency organization is a
-module, so that’s what ``torch.package`` uses.
-
-Actions are applied to modules using patterns. Patterns can either be module names (``"foo.bar"``) or globs (like ``"foo.**"``). You associate a pattern
-with an action using methods on :class:`PackageExporter`, e.g.
-
+يتم تطبيق الإجراءات على الوحدات النمطية باستخدام الأنماط. يمكن أن تكون الأنماط إما أسماء وحدات نمطية (``"foo.bar"``) أو أنماطًا فرعية (مثل ``"foo.**"``). يمكنك ربط نمط بإجراء باستخدام طرق على :class:`PackageExporter`، على سبيل المثال
 
 ::
 
     my_exporter.intern("torchvision.**")
     my_exporter.extern("numpy")
 
-
-If a module matches a pattern, the corresponding action is applied to it. For a given module, patterns will be checked in the order that they were defined,
-and the first action will be taken.
-
+إذا تطابقت وحدة نمطية مع نمط، فسيتم تطبيق الإجراء المقابل عليها. بالنسبة لوحدة نمطية معينة، سيتم التحقق من الأنماط بالترتيب الذي تم تحديدها به،
+وسيتم اتخاذ الإجراء الأول.
 
 ``intern``
 """"""""""
-If a module is ``intern``-ed, it will be placed into the package.
+إذا تم "intern" وحدة نمطية، فسيتم وضعها في الحزمة.
 
-This action is your model code, or any related code you want to package. For example, if you are trying to package a ResNet from ``torchvision``,
-you will need to ``intern`` the module torchvision.models.resnet.
+هذا الإجراء هو رمز نموذجك، أو أي رمز ذي صلة تريد تعبئته. على سبيل المثال، إذا كنت تحاول تعبئة ResNet من ``torchvision``،
+فستحتاج إلى "intern" وحدة نمطية torchvision.models.resnet.
 
-On package import, when your packaged code tries to import an ``intern``-ed module, PackageImporter will look inside your package for that module.
-If it can’t find that module, an error will be raised. This ensures that each :class:`PackageImporter` is isolated from the loading environment—even
-if you have ``my_interned_module`` available in both your package and the loading environment, :class:`PackageImporter` will only use the version in your
-package.
+عند استيراد الحزمة، عندما تحاول التعليمات البرمجية المعبأة استيراد وحدة نمطية "intern"، فسوف يبحث PackageImporter داخل حزمتك عن تلك الوحدة النمطية.
+إذا لم يتمكن من العثور على الوحدة النمطية، فسيتم إثارة خطأ. يضمن ذلك أن يتم عزل كل :class:`PackageImporter` عن بيئة التحميل - حتى إذا كان لديك ``my_interned_module`` متاحًا في كل من حزمتك وبيئة التحميل،
+فسيستخدم :class:`PackageImporter` الإصدار الموجود في حزمتك فقط.
 
-**Note**: Only Python source modules can be ``intern``-ed. Other kinds of modules, like C extension modules and bytecode modules, will raise an error if
-you attempt to ``intern`` them. These kinds of modules need to be ``mock``-ed or ``extern``-ed.
-
+**ملاحظة**: يمكن "intern" فقط وحدات Python النمطية المصدرية. سيؤدي أنواع أخرى من الوحدات النمطية، مثل وحدات نمطية ملحقة C ووحدات نمطية بايت كود، إلى حدوث خطأ إذا
+حاولت "intern" بها. يجب "mock" هذه الأنواع من الوحدات النمطية أو "extern"ها.
 
 ``extern``
 """"""""""
-If a module is ``extern``-ed, it will not be packaged. Instead, it will be added to a list of external dependencies for this package. You can find this
-list on ``package_exporter.extern_modules``.
+إذا تم "extern" وحدة نمطية، فلن يتم تعبئتها. بدلاً من ذلك، سيتم إضافته إلى قائمة التبعيات الخارجية لهذه الحزمة. يمكنك العثور على هذه
+القائمة في ``package_exporter.extern_modules``.
 
-On package import, when the packaged code tries to import an ``extern``-ed module, :class:`PackageImporter` will use the default Python importer to find
-that module, as if you did ``importlib.import_module("my_externed_module")``. If it can’t find that module, an error will be raised.
+عند استيراد الحزمة، عندما تحاول التعليمات البرمجية المعبأة استيراد وحدة نمطية "extern"، سيستخدم :class:`PackageImporter` المستورد الافتراضي لـ Python للعثور
+على تلك الوحدة النمطية، كما لو قمت بتشغيل ``importlib.import_module("my_externed_module")``. إذا لم يتمكن من العثور على تلك الوحدة النمطية، فسيتم إثارة خطأ.
 
-In this way, you can depend on third-party libraries like ``numpy`` and ``scipy`` from within your package without having to package them too.
+بهذه الطريقة، يمكنك الاعتماد على مكتبات الطرف الثالث مثل ``numpy`` و ``scipy`` من داخل حزمتك دون الحاجة إلى تعبئتها أيضًا.
 
-**Warning**: If any external library changes in a backwards-incompatible way, your package may fail to load. If you need long-term reproducibility
-for your package, try to limit your use of ``extern``.
-
+**تحذير**: إذا تم تغيير أي مكتبة خارجية بطريقة غير متوافقة مع الإصدارات السابقة، فقد تفشل حزمتك في التحميل. إذا كنت بحاجة إلى قابلية إعادة إنتاج طويلة الأجل
+لحزمتك، فحاول الحد من استخدام "extern".
 
 ``mock``
 """"""""
-If a module is ``mock``-ed, it will not be packaged. Instead a stub module will be packaged in its place. The stub module will allow you to retrieve
-objects from it (so that ``from my_mocked_module import foo`` will not error), but any use of that object will raise a ``NotImplementedError``.
+إذا تم "mock" وحدة نمطية، فلن يتم تعبئتها. بدلاً من ذلك، سيتم تعبئة وحدة نمطية وهمية في مكانها. ستسمح لك وحدة نمطية وهمية باسترداد
+الكائنات منها (حتى لا يؤدي تشغيل "from my_mocked_module import foo" إلى حدوث خطأ)، ولكن أي استخدام لهذا الكائن سيرفع ``NotImplementedError``.
 
-``mock`` should be used for code that you “know” will not be needed in the loaded package, but you still want available for use in non-packaged contents.
-For example, initialization/configuration code, or code only used for debugging/training.
+يجب استخدام "mock" للرمز الذي "تعرف" أنه لن يكون مطلوبًا في الحزمة المحملة، ولكنك تريد توفره للاستخدام في المحتويات غير المعبأة.
+على سبيل المثال، رمز التهيئة/التكوين، أو الرمز المستخدم فقط للتصحيح/التدريب.
 
-**Warning**: In general, ``mock`` should be used as a last resort. It introduces behavioral differences between packaged code and non-packaged code,
-which may lead to later confusion. Prefer instead to refactor your code to remove unwanted dependencies.
+**تحذير**: بشكل عام، يجب استخدام "mock" كملاذ أخير. فهو يقدم اختلافات في السلوك بين التعليمات البرمجية المعبأة وغير المعبأة،
+والتي قد تؤدي إلى حدوث ارتباك لاحقًا. يُفضل بدلاً من ذلك إعادة عاملي التعليمات البرمجية الخاصة بك لإزالة التبعيات غير المرغوب فيها.
 
-
-Refactoring
+إعادة العامل
 """""""""""
-The best way to manage dependencies is to not have dependencies at all! Often, code can be refactored to remove unnecessary dependencies. Here are some
-guidelines for writing code with clean dependencies (which are also generally good practices!):
+أفضل طريقة لإدارة التبعيات هي عدم وجود تبعيات على الإطلاق! غالبًا ما يمكن إعادة عاملي التعليمات البرمجية لإزالة التبعيات غير الضرورية. فيما يلي بعض
+المبادئ التوجيهية لكتابة التعليمات البرمجية بتبعيات نظيفة (والتي تعد أيضًا ممارسات جيدة بشكل عام!):
 
-**Include only what you use**. Do not leave unused imports in your code. The dependency resolver is not smart enough to tell that they are indeed unused,
-and will try to process them.
+**تضمين ما تستخدمه فقط**. لا تترك استيرادات غير مستخدمة في التعليمات البرمجية الخاصة بك. محلل التبعيات ليس ذكيًا بدرجة كافية لمعرفة أنها غير مستخدمة بالفعل،
+وسيحاول معالجتها.
 
-**Qualify your imports**. For example, instead of writing import foo and later using ``foo.bar.baz``, prefer to write ``from foo.bar import baz``. This more
-precisely specifies your real dependency (``foo.bar``) and lets the dependency resolver know you don’t need all of ``foo``.
+**قم بتأهيل استيراداتك**. على سبيل المثال، بدلاً من كتابة استيراد foo واستخدام ``foo.bar.baz`` لاحقًا، يُفضل كتابة ``from foo.bar import baz``. هذا يحدد تبعيتك الحقيقية بشكل أكثر دقة (``foo.bar``) ويتيح لمحلل التبعيات معرفة أنك لا تحتاج إلى كل شيء من ``foo``.
 
-**Split up large files with unrelated functionality into smaller ones**. If your ``utils`` module contains a hodge-podge of unrelated functionality, any module
-that depends on ``utils`` will need to pull in lots of unrelated dependencies, even if you only needed a small part of it. Prefer instead to define
-single-purpose modules that can be packaged independently of one another.
+**قم بتقسيم الملفات الكبيرة ذات الوظائف غير ذات الصلة إلى ملفات أصغر**. إذا كانت وحدة "utils" الخاصة بك تحتوي على مجموعة من الوظائف غير ذات الصلة، فستحتاج أي وحدة نمطية تعتمد على "utils" إلى سحب العديد من التبعيات غير ذات الصلة، حتى إذا كنت بحاجة فقط إلى جزء صغير منها. يُفضل بدلاً من ذلك تحديد وحدات نمطية أحادية الغرض يمكن تعبئتها بشكل مستقل عن بعضها البعض.
 
-
-Patterns
+الأنماط
 """"""""
-Patterns allow you to specify groups of modules with a convenient syntax. The syntax and behavior of patterns follows the Bazel/Buck
+تسمح الأنماط بتحديد مجموعات من الوحدات النمطية باستخدام بناء جملة مناسب. يتبع بناء الجملة والسلوك للأنماط وظيفة Bazel/Buck
 `glob() <https://docs.bazel.build/versions/master/be/functions.html#glob>`_.
 
-A module that we are trying to match against a pattern is called a candidate. A candidate is composed of a list of segments separated by a
-separator string, e.g. ``foo.bar.baz``.
+تتكون الوحدة النمطية المرشحة التي نحاول مطابقتها مع نمط من قائمة من المقاطع مفصولة بسلسلة فاصلة، على سبيل المثال ``foo.bar.baz``.
 
-A pattern contains one or more segments. Segments can be:
+يحتوي النمط على مقطع واحد أو أكثر. يمكن أن تكون المقاطع:
 
-* A literal string (e.g. ``foo``), which matches exactly.
-* A string containing a wildcard (e.g. ``torch``, or ``foo*baz*``). The wildcard matches any string, including the empty string.
-* A double wildcard (``**``). This matches against zero or more complete segments.
+* سلسلة حرفية (مثل ``foo``)، والتي تتطابق تمامًا.
+* سلسلة تحتوي على حرف البدل (مثل ``torch``، أو ``foo*baz*``). يتطابق حرف البدل مع أي سلسلة، بما في ذلك السلسلة الفارغة.
+* نجمتان مزدوجتان (``**``). يتطابق هذا مع صفر أو أكثر من المقاطع الكاملة.
 
-Examples:
+أمثلة:
 
-* ``torch.**``: matches ``torch`` and all its submodules, e.g. ``torch.nn`` and ``torch.nn.functional``.
-* ``torch.*``: matches ``torch.nn`` or ``torch.functional``, but not ``torch.nn.functional`` or ``torch``
-* ``torch*.**``: matches ``torch``, ``torchvision``, and all of their submodules
+* ``torch.**``: يتطابق مع ``torch`` وجميع وحداته الفرعية، مثل ``torch.nn`` و ``torch.nn.functional``.
+* ``torch.*``: يتطابق مع ``torch.nn`` أو ``torch.functional``، ولكن ليس مع ``torch.nn.functional`` أو ``torch``.
+* ``torch*.**``: يتطابق مع ``torch``، و ``torchvision``، وجميع وحداتها الفرعية
 
-When specifying actions, you can pass multiple patterns, e.g.
-
+عند تحديد الإجراءات، يمكنك تمرير أنماط متعددة، على سبيل المثال
 
 ::
 
     exporter.intern(["torchvision.models.**", "torchvision.utils.**"])
 
+ستتطابق الوحدة النمطية مع هذا الإجراء إذا تطابقت مع أي من الأنماط.
 
-A module will match against this action if it matches any of the patterns.
-
-You can also specify patterns to exclude, e.g.
-
-
+يمكنك أيضًا تحديد أنماط للاستبعاد، على سبيل المثال
 ::
 
     exporter.mock("**", exclude=["torchvision.**"])
 
 
-A module will not match against this action if it matches any of the exclude patterns. In this example, we are mocking all modules except
-``torchvision`` and its submodules.
+لن تتطابق وحدة البرنامج مع إجراء الاستبعاد هذا إذا تطابقت مع أي من أنماط الاستبعاد. في هذا المثال، نقوم بمحاكاة جميع الوحدات النمطية باستثناء
+``torchvision`` والوحدات الفرعية التابعة لها.
 
-When a module could potentially match against multiple actions, the first action defined will be taken.
+عندما يمكن لوحدة البرنامج أن تتطابق مع إجراءات متعددة، يتم تنفيذ الإجراء الأول المحدد.
 
 
-``torch.package`` sharp edges
+``torch.package`` الحواف الحادة
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Avoid global state in your modules
-""""""""""""""""""""""""""""""""""
-Python makes it really easy to bind objects and run code at module-level scope. This is generally fine—after all, functions and classes are bound to
-names this way. However, things become more complicated when you define an object at module scope with the intention of mutating it, introducing mutable
-global state.
+تجنب حالة التخزين العالمية في وحداتك النمطية
+""""""""""""""""""""""""""""""""
+تسهل Python ربط الأشياء وتشغيل التعليمات البرمجية على مستوى نطاق الوحدة النمطية. هذا جيد بشكل عام - بعد كل شيء، يتم ربط الدوال والصفوف بالأسماء بهذه الطريقة. ومع ذلك، تصبح الأمور أكثر تعقيدًا عندما تقوم بتعريف كائن على مستوى الوحدة النمطية بهدف تغييره، مما يقدم حالة تخزين عالمية قابلة للتغيير.
 
-Mutable global state is quite useful—it can reduce boilerplate, allow for open registration into tables, etc. But unless employed very carefully, it can
-cause complications when used with ``torch.package``.
+حالة التخزين العالمية القابلة للتغيير مفيدة جدًا - فيمكنها تقليل التعليمات البرمجية النمطية، والسماح بالتسجيل المفتوح في الجداول، وما إلى ذلك. ولكن ما لم يتم توظيفها بعناية، فقد تسبب تعقيدات عند استخدامها مع ``torch.package``.
 
-Every :class:`PackageImporter` creates an independent environment for its contents. This is nice because it means we load multiple packages and ensure
-they are isolated from each other, but when modules are written in a way that assumes shared mutable global state, this behavior can create hard-to-debug
-errors.
+يخلق كل :class: 'PackageImporter' بيئة مستقلة لمحتوياته. هذا أمر رائع لأنه يعني أننا نقوم بتحميل العديد من الحزم والتأكد من أنها معزولة عن بعضها البعض، ولكن عندما يتم كتابة الوحدات بطريقة تفترض حالة تخزين عالمية مشتركة، يمكن لهذا السلوك إنشاء أخطاء يصعب تصحيحها.
 
-Types are not shared between packages and the loading environment
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Any class that you import from a :class:`PackageImporter` will be a version of the class specific to that importer. For example:
+الأنواع غير مشتركة بين الحزم وبيئة التحميل
+""""""""""""""""""""""""""""""
+أي فئة تقوم باستيرادها من :class: 'PackageImporter' ستكون إصدارًا من الفئة الخاصة بمستورد الاستيراد هذا. على سبيل المثال:
 
 
 ::
@@ -748,79 +699,68 @@ Any class that you import from a :class:`PackageImporter` will be a version of t
     importer = PackageImporter(f)
     imported_MyClass = importer.import_module("foo").MyClass
 
-    assert isinstance(my_class_instance, MyClass)  # works
-    assert isinstance(my_class_instance, imported_MyClass)  # ERROR!
+    assert isinstance(my_class_instance, MyClass)  # يعمل
+    assert isinstance(my_class_instance, imported_MyClass)  # خطأ!
 
 
-In this example, ``MyClass`` and ``imported_MyClass`` are *not the same type*. In this specific example, ``MyClass`` and ``imported_MyClass`` have exactly the
-same implementation, so you might think it’s okay to consider them the same class. But consider the situation where ``imported_MyClass`` is coming from an
-older package with an entirely different implementation of ``MyClass`` — in that case, it’s unsafe to consider them the same class.
+في هذا المثال، ``MyClass`` و ``imported_MyClass`` *ليسوا من نفس النوع*. في هذا المثال المحدد، لدى ``MyClass`` و ``imported_MyClass`` نفس التنفيذ بالضبط، لذلك قد تعتقد أنه من الآمن اعتبارها من نفس الفئة. ولكن ضع في اعتبارك الموقف الذي يأتي فيه ``imported_MyClass`` من حزمة أقدم مع تنفيذ مختلف تمامًا لـ ``MyClass`` - في هذه الحالة، من غير الآمن اعتبارها من نفس الفئة.
 
-Under the hood, each importer has a prefix that allows it to uniquely identify classes:
+تحت الغطاء، لكل مستورد بادئة تسمح له بتحديد الفئات بشكل فريد:
 
 
 ::
 
-    print(MyClass.__name__)  # prints "foo.MyClass"
-    print(imported_MyClass.__name__)  # prints <torch_package_0>.foo.MyClass
+    print(MyClass.__name__)  # يطبع "foo.MyClass"
+    print(imported_MyClass.__name__)  # يطبع <torch_package_0>.foo.MyClass
 
 
-That means you should not expect ``isinstance`` checks to work when one of the arguments is from a package and the other is not. If you need this
-functionality, consider the following options:
+هذا يعني أنه لا ينبغي لك توقع نجاح فحوصات "isinstance" عندما يكون أحد الوسيطين من حزمة والآخر لا. إذا كنت بحاجة إلى هذه الوظيفة، فكر في الخيارات التالية:
 
-* Doing duck typing (just using the class instead of explicitly checking that it is of a given type).
-* Make the typing relationship an explicit part of the class contract. For example, you can add an attribute tag ``self.handler = "handle_me_this_way"`` and have client code check for the value of ``handler`` instead of checking the type directly.
+* قم بالكتابة باستخدام أسلوب البط (duck typing) (مجرد استخدام الفئة بدلاً من التحقق الصريح من أنها من نوع معين).
+* اجعل علاقة الكتابة جزءًا صريحًا من عقد الفئة. على سبيل المثال، يمكنك إضافة علامة تبويب للصفة ``self.handler = "handle_me_this_way"`` ولتتحقق شفرة العميل من قيمة ``handler`` بدلاً من التحقق من النوع مباشرة.
 
 
-How ``torch.package`` keeps packages isolated from each other
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Each :class:`PackageImporter` instance creates an independent, isolated environment for its modules and objects. Modules in a package can only import
-other packaged modules, or modules marked ``extern``. If you use multiple :class:`PackageImporter` instances to load a single package, you will get
-multiple independent environments that do not interact.
+كيف يحافظ ``torch.package`` على عزل الحزم عن بعضها البعض
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ينشئ كل مثيل لـ :class: 'PackageImporter' بيئة مستقلة ومعزولة لوحداته النمطية وكائناته. لا يمكن للوحدات النمطية في الحزمة استيراد سوى الوحدات النمطية الأخرى المعلبة، أو الوحدات النمطية التي تم وضع علامة عليها على أنها "خارجية". إذا كنت تستخدم العديد من مثيلات :class: 'PackageImporter' لتحميل حزمة واحدة، فستحصل على بيئات مستقلة متعددة لا تتفاعل مع بعضها البعض.
 
-This is achieved by extending Python’s import infrastructure with a custom importer. :class:`PackageImporter` provides the same core API as the
-``importlib`` importer; namely, it implements the ``import_module`` and ``__import__`` methods.
+يتم تحقيق ذلك عن طريق توسيع البنية الأساسية لاستيراد Python باستخدام مستورد مخصص. يوفر :class: 'PackageImporter' نفس واجهة برمجة التطبيقات الأساسية كمستورد "importlib"؛ أي أنه ينفذ أساليب "import_module" و "``__import__``".
 
-When you invoke :meth:`PackageImporter.import_module`, :class:`PackageImporter` will construct and return a new module, much as the system importer does.
-However, :class:`PackageImporter` patches the returned module to use ``self`` (i.e. that :class:`PackageImporter` instance) to fulfill future import
-requests by looking in the package rather than searching the user’s Python environment.
+عند استدعاء :meth: 'PackageImporter.import_module'، يقوم :class: 'PackageImporter' ببناء وإرجاع وحدة نمطية جديدة، تمامًا كما يفعل المستورد النظامي. ومع ذلك، يقوم :class: 'PackageImporter' بتصحيح الوحدة النمطية التي تمت إعادتها لاستخدام "self" (أي مثيل :class: 'PackageImporter' هذا) لتلبية طلبات الاستيراد المستقبلية عن طريق البحث في الحزمة بدلاً من البحث في بيئة Python الخاصة بالمستخدم.
 
-Mangling
+التحريف
 """"""""
-To avoid confusion (“is this ``foo.bar`` object the one from my package, or the one from my Python environment?”), :class:`PackageImporter` mangles the
-``__name__`` and ``__file__`` of all imported modules, by adding a *mangle prefix* to them.
+لتجنب الالتباس ("هل هذا الكائن "foo.bar" من حزمتي، أم من بيئة Python الخاصة بي؟")، يقوم :class: 'PackageImporter' بتحريف "``__name__``" و "``__file__``" لجميع الوحدات المستوردة، عن طريق إضافة بادئة تحريف إليها.
 
-For ``__name__``, a name like ``torchvision.models.resnet18`` becomes ``<torch_package_0>.torchvision.models.resnet18``.
+بالنسبة لـ "``__name__``"، يصبح اسم مثل "torchvision.models.resnet18" "``<torch_package_0>.torchvision.models.resnet18``".
 
-For ``__file__``, a name like ``torchvision/models/resnet18.py`` becomes ``<torch_package_0>.torchvision/modules/resnet18.py``.
+بالنسبة لـ "``__file__``"، يصبح اسم مثل "torchvision/models/resnet18.py" "``<torch_package_0>.torchvision/modules/resnet18.py``".
 
-Name mangling helps avoid inadvertent punning of module names between different packages, and helps you debug by making stack traces and print
-statements more clearly show whether they are referring to packaged code or not. For developer-facing details about mangling, consult
-``mangling.md`` in ``torch/package/``.
+يساعد تحريف الاسم على تجنب التلاعب غير المقصود لأسماء الوحدات النمطية بين الحزم المختلفة، ويساعدك في تصحيح الأخطاء من خلال جعل آثار المكدس والبيانات المطبوعة توضح بشكل أكبر ما إذا كانت تشير إلى كود معلب أم لا. للحصول على تفاصيل حول التحريف، راجع الملاحظات الموجهة للمطورين في "mangling.md" في "torch/package/".
 
 
-API Reference
--------------
-.. autoclass:: torch.package.PackagingError
+مرجع API
+---------
+.. autoclass:: torch.package.خطأ_التعبئة
 
-.. autoclass:: torch.package.EmptyMatchError
+.. autoclass:: torch.package.خطأ_المطابقة_الفارغة
 
-.. autoclass:: torch.package.PackageExporter
+.. autoclass:: torch.package.مصدر_التعبئة
   :members:
 
   .. automethod:: __init__
 
-.. autoclass:: torch.package.PackageImporter
+.. autoclass:: torch.package.مُستورد_التعبئة
   :members:
 
   .. automethod:: __init__
 
-.. autoclass:: torch.package.Directory
+.. autoclass:: torch.package.الدليل
   :members:
 
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. تحتاج هذه الوحدة إلى توثيق. نقوم بإضافتها هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.package.analyze.find_first_use_of_broken_modules
 .. py:module:: torch.package.analyze.is_from_package
 .. py:module:: torch.package.analyze.trace_dependencies
