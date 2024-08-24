@@ -1,35 +1,33 @@
 .. role:: hidden
     :class: hidden-section
 
-Distributed Checkpoint - torch.distributed.checkpoint
-=====================================================
+نقطة تفتيش موزعة - torch.distributed.checkpoint
+==============================================
 
+تدعم نقطة التفتيش الموزعة (DCP) تحميل وحفظ النماذج من مراتب متعددة بالتوازي.
+وهي تتعامل مع إعادة التجزئة في وقت التحميل، مما يمكّن من الحفظ في بنية عنقودية وتحميلها في بنية أخرى.
 
-Distributed Checkpoint (DCP) support loading and saving models from multiple ranks in parallel.
-It handles load-time resharding which enables saving in one cluster topology and loading into another.
+تختلف DCP عن ``torch.save`` و ``torch.load`` بعدة طرق مهمة:
 
-DCP is different than `torch.save` and `torch.load` in a few significant ways:
+* ينتج ملفات متعددة لكل نقطة تفتيش، مع ملف واحد على الأقل لكل رتبة.
+* تعمل في المكان، مما يعني أن النموذج يجب أن يخصص بياناته أولاً ويستخدم DCP ذلك التخزين بدلاً من ذلك.
 
-* It produces multiple files per checkpoint, with at least one per rank.
-* It operates in place, meaning that the model should allocate its data first and DCP uses that storage instead.
-
-The entrypoints to load and save a checkpoint are the following:
-
+نقاط الدخول لتحميل وحفظ نقطة تفتيش هي كما يلي:
 
 .. automodule:: torch.distributed.checkpoint
 
 .. currentmodule:: torch.distributed.checkpoint.state_dict_saver
 
-.. autofunction::  save
-.. autofunction::  async_save
-.. autofunction::  save_state_dict
+.. autofunction:: save
+.. autofunction:: async_save
+.. autofunction:: save_state_dict
 
 .. currentmodule:: torch.distributed.checkpoint.state_dict_loader
 
-.. autofunction::  load
-.. autofunction::  load_state_dict
+.. autofunction:: load
+.. autofunction:: load_state_dict
 
-The following module is also useful for additional customization of the staging mechanisms used for asynchronous checkpointing (`torch.distributed.checkpoint.async_save`):
+الفصل التالي مفيد أيضًا للتخصيص الإضافي لآليات التجهيز المستخدمة لنقطة التفتيش غير المتزامنة (``torch.distributed.checkpoint.async_save``):
 
 .. automodule:: torch.distributed.checkpoint.staging
 
@@ -39,15 +37,16 @@ The following module is also useful for additional customization of the staging 
 .. autoclass:: torch.distributed.checkpoint.staging.BlockingAsyncStager
   :members:
 
-In addition to the above entrypoints, `Stateful` objects, as described below, provide additional customization during saving/loading
+بالإضافة إلى نقاط الدخول المذكورة أعلاه، توفر الكائنات "Stateful" الموصوفة أدناه تخصيصًا إضافيًا أثناء الحفظ/التحميل.
+
 .. automodule:: torch.distributed.checkpoint.stateful
 
 .. autoclass:: torch.distributed.checkpoint.stateful.Stateful
   :members:
 
-This `example <https://github.com/pytorch/pytorch/blob/main/torch/distributed/checkpoint/examples/fsdp_checkpoint_example.py>`_ shows how to use Pytorch Distributed Checkpoint to save a FSDP model.
+يُظهر هذا `المثال <https://github.com/pytorch/pytorch/blob/main/torch/distributed/checkpoint/examples/fsdp_checkpoint_example.py>`_ كيفية استخدام نقطة تفتيش PyTorch الموزعة لحفظ نموذج FSDP.
 
-The following types define the IO interface used during checkpoint:
+تحدد الأنواع التالية واجهة الإدخال/الإخراج المستخدمة أثناء نقطة التفتيش:
 
 .. autoclass:: torch.distributed.checkpoint.StorageReader
   :members:
@@ -55,7 +54,7 @@ The following types define the IO interface used during checkpoint:
 .. autoclass:: torch.distributed.checkpoint.StorageWriter
   :members:
 
-The following types define the planner interface used during checkpoint:
+تحدد الأنواع التالية واجهة المخطط المستخدمة أثناء نقطة التفتيش:
 
 .. autoclass:: torch.distributed.checkpoint.LoadPlanner
   :members:
@@ -75,7 +74,7 @@ The following types define the planner interface used during checkpoint:
 .. autoclass:: torch.distributed.checkpoint.planner.WriteItem
   :members:
 
-We provide a filesystem based storage layer:
+نقدم طبقة تخزين قائمة على نظام الملفات:
 
 .. autoclass:: torch.distributed.checkpoint.FileSystemReader
   :members:
@@ -83,8 +82,8 @@ We provide a filesystem based storage layer:
 .. autoclass:: torch.distributed.checkpoint.FileSystemWriter
   :members:
 
-We provide default implementations of `LoadPlanner` and `SavePlanner` that
-can handle all of torch.distributed constructs such as FSDP, DDP, ShardedTensor and DistributedTensor.
+نقدم التطبيقات الافتراضية لـ ``LoadPlanner`` و ``SavePlanner`` التي
+يمكنها التعامل مع جميع البنيات الموزعة في PyTorch مثل FSDP و DDP و ShardedTensor و DistributedTensor.
 
 .. autoclass:: torch.distributed.checkpoint.DefaultSavePlanner
   :members:
@@ -92,15 +91,13 @@ can handle all of torch.distributed constructs such as FSDP, DDP, ShardedTensor 
 .. autoclass:: torch.distributed.checkpoint.DefaultLoadPlanner
   :members:
 
+بسبب قرارات التصميم القديمة، قد تحتوي القواميس الحالة لـ ``FSDP`` و ``DDP`` على مفاتيح أو أسماء مؤهلة بشكل كامل مختلفة (مثل layer1.weight) حتى عندما يكون النموذج غير الموازي الأصلي متطابقًا. بالإضافة إلى ذلك، توفر ``FSDP`` أنواعًا مختلفة من قواميس حالة النموذج، مثل القواميس الحالة الكاملة والمجزأة. علاوة على ذلك، تستخدم قواميس حالة المحسن معرفات المعلمات بدلاً من الأسماء المؤهلة بالكامل لتحديد المعلمات، مما قد يتسبب في حدوث مشكلات عند استخدام التوازي (مثل التوازي الأنبوبي).
 
-Due to legacy design decisions, the state dictionaries of `FSDP` and `DDP` may have different keys or fully qualified names (e.g., layer1.weight) even when the original unparallelized model is identical. Moreover, `FSDP` offers various types of model state dictionaries, such as full and sharded state dictionaries. Additionally, optimizer state dictionaries employ parameter IDs instead of fully qualified names to identify parameters, potentially causing issues when parallelisms are used (e.g., pipeline parallelism).
+للتغلب على هذه التحديات، نقدم مجموعة من واجهات برمجة التطبيقات للمستخدمين لإدارة قواميس الحالة بسهولة. تعيد دالة ``get_model_state_dict`` قاموس حالة النموذج بمفاتيح متسقة مع تلك التي تعيدها قاموس حالة النموذج غير الموازي. وبالمثل، توفر ``get_optimizer_state_dict`` قاموس حالة المحسن بمفاتيح موحدة عبر جميع التوازيات المطبقة. لتحقيق هذا الاتساق، تحول ``get_optimizer_state_dict`` معرفات المعلمات إلى أسماء مؤهلة بالكامل متطابقة مع تلك الموجودة في قاموس حالة النموذج غير الموازي.
 
-To tackle these challenges, we offer a collection of APIs for users to easily manage state_dicts. `get_model_state_dict` returns a model state dictionary with keys consistent with those returned by the unparallelized model state dictionary. Similarly, `get_optimizer_state_dict` provides the optimizer state dictionary with keys uniform across all parallelisms applied. To achieve this consistency, `get_optimizer_state_dict` converts parameter IDs to fully qualified names identical to those found in the unparallelized model state dictionary.
+لاحظ أنه يمكن استخدام النتائج التي تعيدها هذه الواجهات مباشرة مع طريقتي ``torch.distributed.checkpoint.save()`` و ``torch.distributed.checkpoint.load()`` دون الحاجة إلى أي تحويلات إضافية.
 
-Note that results returned by these APIs can be used directly with the `torch.distributed.checkpoint.save()` and `torch.distributed.checkpoint.load()` methods without requiring any additional conversions.
-
-Note that this feature is experimental, and API signatures might change in the future.
-
+يرجى ملاحظة أن هذه الميزة تجريبية، وقد تتغير تواقيع واجهات برمجة التطبيقات في المستقبل.
 
 .. autofunction:: torch.distributed.checkpoint.state_dict.get_state_dict
 
@@ -117,7 +114,7 @@ Note that this feature is experimental, and API signatures might change in the f
 .. autoclass:: torch.distributed.checkpoint.state_dict.StateDictOptions
    :members:
 
-For users which are used to using and sharing models in the `torch.save` format, the following methods are provided which provide offline utilities for converting betweeing formats.
+بالنسبة للمستخدمين المعتادين على استخدام ومشاركة النماذج بتنسيق ``torch.save``، يتم توفير الطرق التالية التي توفر المرافق غير المتصلة بالإنترنت للتحويل بين التنسيقات.
 
 .. automodule:: torch.distributed.checkpoint.format_utils
 
@@ -126,7 +123,7 @@ For users which are used to using and sharing models in the `torch.save` format,
 .. autofunction:: dcp_to_torch_save
 .. autofunction:: torch_save_to_dcp
 
-The following classes can also be utilized for online loading and resharding of models from the torch.save format.
+يمكن أيضًا استخدام الفئات التالية لتحميل وإعادة تجزئة النماذج عبر الإنترنت من تنسيق ``torch.save``.
 
 .. autoclass:: torch.distributed.checkpoint.format_utils.BroadcastingTorchSaveReader
    :members:
@@ -134,7 +131,7 @@ The following classes can also be utilized for online loading and resharding of 
 .. autoclass:: torch.distributed.checkpoint.format_utils.DynamicMetaLoadPlanner
    :members:
 
-The following experimental interfaces are provided for improved observability in production environments:
+تتوفر واجهات تجريبية التالية لتحسين الرصد في بيئات الإنتاج:
 
 .. py:module:: torch.distributed.checkpoint.logger
 .. py:module:: torch.distributed.checkpoint.logging_handlers
