@@ -6,8 +6,8 @@ torch.nn.functional
 
 .. currentmodule:: torch.nn.functional
 
-Convolution functions
-----------------------------------
+دالات التحويل
+----------
 
 .. autosummary::
     :toctree: generated
@@ -22,8 +22,8 @@ Convolution functions
     unfold
     fold
 
-Pooling functions
-----------------------------------
+دالات تجميع البيانات
+--------------
 
 .. autosummary::
     :toctree: generated
@@ -50,11 +50,10 @@ Pooling functions
     fractional_max_pool2d
     fractional_max_pool3d
 
-Attention Mechanisms
--------------------------------
+آليات الانتباه
+---------
 
-The :mod:`torch.nn.attention.bias` module contains attention_biases that are designed to be used with
-scaled_dot_product_attention.
+يحتوي نميط :mod:`torch.nn.attention.bias` على انحيازات الانتباه المصممة للاستخدام مع scaled_dot_product_attention.
 
 .. autosummary::
     :toctree: generated
@@ -62,8 +61,8 @@ scaled_dot_product_attention.
 
     scaled_dot_product_attention
 
-Non-linear activation functions
--------------------------------
+دوال التفعيل غير الخطية
+----------------
 
 .. autosummary::
     :toctree: generated
@@ -112,10 +111,10 @@ Non-linear activation functions
     normalize
 
 .. _Link 1: https://arxiv.org/abs/1611.00712
-.. _Link 2: https://arxiv.org/abs/1611.01144
+.. _Link 2: https://arxiv.org0/abs/1611.01144
 
-Linear functions
-----------------
+الدالات الخطية
+----------
 
 .. autosummary::
     :toctree: generated
@@ -124,7 +123,7 @@ Linear functions
     linear
     bilinear
 
-Dropout functions
+دالات التوقف العشوائي
 -----------------
 
 .. autosummary::
@@ -138,8 +137,8 @@ Dropout functions
     dropout2d
     dropout3d
 
-Sparse functions
-----------------------------------
+دالات نادرة
+---------
 
 .. autosummary::
     :toctree: generated
@@ -149,8 +148,8 @@ Sparse functions
     embedding_bag
     one_hot
 
-Distance functions
-----------------------------------
+دالات المسافة
+-----------
 
 .. autosummary::
     :toctree: generated
@@ -160,9 +159,8 @@ Distance functions
     cosine_similarity
     pdist
 
-
-Loss functions
---------------
+دالات الخسارة
+-----------
 
 .. autosummary::
     :toctree: generated
@@ -190,8 +188,8 @@ Loss functions
     triplet_margin_loss
     triplet_margin_with_distance_loss
 
-Vision functions
-----------------
+دالات الرؤية
+---------
 
 .. autosummary::
     :toctree: generated
@@ -207,8 +205,8 @@ Vision functions
     grid_sample
     affine_grid
 
-DataParallel functions (multi-GPU, distributed)
------------------------------------------------
+دالات DataParallel (متعددة-GPU، موزعة)
+------------------------------------
 
 :hidden:`data_parallel`
 ~~~~~~~~~~~~~~~~~~~~~~~
