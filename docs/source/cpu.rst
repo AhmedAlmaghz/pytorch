@@ -1,5 +1,7 @@
+.. _torch.cpu:
+
 torch.cpu
-===================================
+=======================
 .. automodule:: torch.cpu
 .. currentmodule:: torch.cpu
 
@@ -16,8 +18,8 @@ torch.cpu
     device_count
     StreamContext
 
-Streams and events
-------------------
+تيارات (Streams) والأحداث (Events)
+--------------------------------
 .. autosummary::
     :toctree: generated
     :nosignatures:
