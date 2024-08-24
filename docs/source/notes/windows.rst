@@ -1,25 +1,24 @@
-Windows FAQ
-==========================
+أسئلة شائعة حول Windows
+====================
 
-Building from source
---------------------
+بناء من المصدر
+-------------
 
-Include optional components
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تضمين المكونات الاختيارية
+^^^^^^^^^^^^^^^^^^^^
 
-There are two supported components for Windows PyTorch:
-MKL and MAGMA. Here are the steps to build with them.
+هناك مكونان مدعومان لنظام Windows PyTorch: MKL و MAGMA. فيما يلي خطوات البناء باستخدامها.
 
 .. code-block:: bat
 
-    REM Make sure you have 7z and curl installed.
+    REM تأكد من تثبيت 7z و curl.
 
-    REM Download MKL files
+    REM تنزيل ملفات MKL
     curl https://s3.amazonaws.com/ossci-windows/mkl_2020.2.254.7z -k -O
     7z x -aoa mkl_2020.2.254.7z -omkl
 
-    REM Download MAGMA files
-    REM version available:
+    REM تنزيل ملفات MAGMA
+    REM الإصدارات المتاحة:
     REM 2.5.4 (CUDA 10.1 10.2 11.0 11.1) x (Debug Release)
     REM 2.5.3 (CUDA 10.1 10.2 11.0) x (Debug Release)
     REM 2.5.2 (CUDA 9.2 10.0 10.1 10.2) x (Debug Release)
@@ -29,42 +28,41 @@ MKL and MAGMA. Here are the steps to build with them.
     curl -k https://s3.amazonaws.com/ossci-windows/magma_2.5.4_%CUDA_PREFIX%_%CONFIG%.7z -o magma.7z
     7z x -aoa magma.7z -omagma
 
-    REM Setting essential environment variables
+    REM تعيين متغيرات البيئة الأساسية
     set "CMAKE_INCLUDE_PATH=%cd%\mkl\include"
     set "LIB=%cd%\mkl\lib;%LIB%"
     set "MAGMA_HOME=%cd%\magma"
 
-Speeding CUDA build for Windows
+تسريع بناء CUDA لنظام Windows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Visual Studio doesn't support parallel custom task currently.
-As an alternative, we can use ``Ninja`` to parallelize CUDA
-build tasks. It can be used by typing only a few lines of code.
+لا يدعم Visual Studio حاليًا المهام المخصصة الموازية.
+وكبديل، يمكننا استخدام ``Ninja`` لموازاة
+مهام بناء CUDA. يمكن استخدامه عن طريق كتابة بضع سطور من التعليمات البرمجية فقط.
 
 .. code-block:: bat
 
-    REM Let's install ninja first.
+    REM دعونا نقوم بتثبيت ninja أولاً.
     pip install ninja
 
-    REM Set it as the cmake generator
+    REM تعيينه كمولد cmake
     set CMAKE_GENERATOR=Ninja
 
-
-One key install script
+سكريبت التثبيت بنقرة واحدة
 ^^^^^^^^^^^^^^^^^^^^^^
 
-You can take a look at `this set of scripts
+يمكنك إلقاء نظرة على `هذه المجموعة من السكريبتات
 <https://github.com/peterjc123/pytorch-scripts>`_.
-It will lead the way for you.
+سيقودك إلى الطريق.
 
-Extension
+امتداد
 ---------
 
-CFFI Extension
+امتداد CFFI
 ^^^^^^^^^^^^^^
 
-The support for CFFI Extension is very experimental. You must specify
-additional ``libraries`` in ``Extension`` object to make it build on
+إن الدعم لامتداد CFFI تجريبي للغاية. يجب عليك تحديد
+مكتبات ``إضافية`` في كائن ``Extension`` لجعله يبني على
 Windows.
 
 .. code-block:: python
@@ -77,33 +75,32 @@ Windows.
        relative_to=__file__,
        with_cuda=with_cuda,
        extra_compile_args=["-std=c99"],
-       libraries=['ATen', '_C'] # Append cuda libraries when necessary, like cudart
+       libraries=['ATen', '_C'] # أضف مكتبات cuda عند الضرورة، مثل cudart
    )
 
-Cpp Extension
+امتداد Cpp
 ^^^^^^^^^^^^^
 
-This type of extension has better support compared with
-the previous one. However, it still needs some manual
-configuration. First, you should open the
-**x86_x64 Cross Tools Command Prompt for VS 2017**.
-And then, you can start your compiling process.
+هذا النوع من الامتداد له دعم أفضل مقارنة
+بالسابق. ومع ذلك، لا يزال بحاجة إلى بعض التكوين اليدوي. أولاً، يجب عليك فتح
+**x86_x64 أدوات متقاطعة سطر الأوامر لـ VS 2017**.
+وبعد ذلك، يمكنك بدء عملية التجميع الخاصة بك.
 
-Installation
-------------
+التثبيت
+-------
 
-Package not found in win-32 channel.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تعذر العثور على الحزمة في قناة win-32.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: bat
 
-    Solving environment: failed
+    فشل حل البيئة:
 
-    PackagesNotFoundError: The following packages are not available from current channels:
+    PackagesNotFoundError: لا تتوفر الحزم التالية من القنوات الحالية:
 
     - pytorch
 
-    Current channels:
+    القنوات الحالية:
     - https://conda.anaconda.org/pytorch/win-32
     - https://conda.anaconda.org/pytorch/noarch
     - https://repo.continuum.io/pkgs/main/win-32
@@ -117,87 +114,85 @@ Package not found in win-32 channel.
     - https://repo.continuum.io/pkgs/msys2/win-32
     - https://repo.continuum.io/pkgs/msys2/noarch
 
-PyTorch doesn't work on 32-bit system. Please use Windows and
-Python 64-bit version.
+لا يعمل PyTorch على نظام 32 بت. يرجى استخدام إصدار Windows و
+Python 64 بت.
 
 
-Import error
+خطأ الاستيراد
 ^^^^^^^^^^^^
 
 .. code-block:: python
 
     from torch._C import *
 
-    ImportError: DLL load failed: The specified module could not be found.
+    ImportError: فشل تحميل DLL: لم يتم العثور على الوحدة النمطية المحددة.
 
 
-The problem is caused by the missing of the essential files. Actually,
-we include almost all the essential files that PyTorch need for the conda
-package except VC2017 redistributable and some mkl libraries.
-You can resolve this by typing the following command.
+تسبب المشكلة في فقدان الملفات الأساسية. في الواقع،
+نحن ندرج جميع الملفات الأساسية تقريبًا التي تحتاجها PyTorch لحزمة conda
+باستثناء VC2017 القابلة لإعادة التوزيع وبعض مكتبات MKL.
+يمكنك حل هذه المشكلة عن طريق كتابة الأمر التالي.
 
 .. code-block:: bat
 
     conda install -c peterjc123 vc vs2017_runtime
     conda install mkl_fft intel_openmp numpy mkl
 
-As for the wheels package, since we didn't pack some libraries and VS2017
-redistributable files in, please make sure you install them manually.
-The `VS 2017 redistributable installer
-<https://aka.ms/vs/15/release/VC_redist.x64.exe>`_ can be downloaded.
-And you should also pay attention to your installation of Numpy. Make sure it
-uses MKL instead of OpenBLAS. You may type in the following command.
+بالنسبة لحزمة العجلات، نظرًا لأننا لم نقم بتعبئة بعض المكتبات وملفات VC2017
+القابلة لإعادة التوزيع، يرجى التأكد من تثبيتها يدويًا.
+يمكن تنزيل `مثبت VC 2017 القابل لإعادة التوزيع
+<https://aka.ms/vs/15/release/VC_redist.x64.exe>`_.
+وعليك أيضًا الانتباه إلى تثبيت Numpy الخاص بك. تأكد من أنه
+يستخدم MKL بدلاً من OpenBLAS. قد تكتب الأمر التالي.
 
 .. code-block:: bat
 
     pip install numpy mkl intel-openmp mkl_fft
 
-Another possible cause may be you are using GPU version without NVIDIA
-graphics cards. Please replace your GPU package with the CPU one.
+قد يكون السبب المحتمل الآخر هو استخدامك للإصدار GPU دون بطاقات رسومات NVIDIA.
+يرجى استبدال حزمة GPU الخاصة بك بالإصدار CPU.
 
 .. code-block:: python
 
     from torch._C import *
 
-    ImportError: DLL load failed: The operating system cannot run %1.
+    ImportError: فشل تحميل DLL: لا يمكن تشغيل نظام التشغيل %1.
 
 
-This is actually an upstream issue of Anaconda. When you initialize your
-environment with conda-forge channel, this issue will emerge. You may fix
-the intel-openmp libraries through this command.
+هذه في الواقع مشكلة في Anaconda. عندما تقوم بتهيئة بيئتك باستخدام قناة conda-forge،
+ستظهر هذه المشكلة. يمكنك إصلاح
+مكتبات intel-openmp من خلال هذا الأمر.
 
 .. code-block:: bat
 
     conda install -c defaults intel-openmp -f
 
 
-Usage (multiprocessing)
--------------------------------------------------------
+الاستخدام (تعدد العمليات)
+----------------------
 
-Multiprocessing error without if-clause protection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+خطأ تعدد العمليات دون حماية شرط if
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
     RuntimeError:
-           An attempt has been made to start a new process before the
-           current process has finished its bootstrapping phase.
+           تم إجراء محاولة لبدء عملية جديدة قبل أن تنتهي العملية الحالية من مرحلة التمهيد الخاصة بها.
 
-       This probably means that you are not using fork to start your
-       child processes and you have forgotten to use the proper idiom
-       in the main module:
+       هذا يعني على الأرجح أنك لا تستخدم fork لبدء عمليات الطفل الخاصة بك وأنك نسيت استخدام الاصطلاح الصحيح
+       في الوحدة النمطية الرئيسية:
 
            if __name__ == '__main__':
                freeze_support()
                ...
 
-       The "freeze_support()" line can be omitted if the program
-       is not going to be frozen to produce an executable.
+       يمكن حذف سطر "freeze_support()" إذا لم يكن البرنامج
+       سيتم تجميده لإنتاج ملف تنفيذي.
 
-The implementation of ``multiprocessing`` is different on Windows, which
-uses ``spawn`` instead of ``fork``. So we have to wrap the code with an
-if-clause to protect the code from executing multiple times. Refactor
-your code into the following structure.
+يختلف تنفيذ ``multiprocessing`` على نظام Windows، والذي
+يستخدم ``spawn`` بدلاً من ``fork``. لذلك يجب علينا لف التعليمات البرمجية باستخدام
+شرط if لحماية التعليمات البرمجية من التنفيذ عدة مرات. قم بإعادة هيكلة التعليمات البرمجية الخاصة بك إلى
+هيكل التالي.
 
 .. code-block:: python
 
@@ -205,52 +200,52 @@ your code into the following structure.
 
     def main()
         for i, data in enumerate(dataloader):
-            # do something here
+            # قم بشيء ما هنا
 
     if __name__ == '__main__':
         main()
 
 
-Multiprocessing error "Broken pipe"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+خطأ تعدد العمليات "كسر الأنبوب"
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
     ForkingPickler(file, protocol).dump(obj)
 
-    BrokenPipeError: [Errno 32] Broken pipe
+    BrokenPipeError: [Errno 32] كسر الأنبوب
 
-This issue happens when the child process ends before the parent process
-finishes sending data. There may be something wrong with your code. You
-can debug your code by reducing the ``num_worker`` of
-:class:`~torch.utils.data.DataLoader` to zero and see if the issue persists.
+تحدث هذه المشكلة عندما تنتهي عملية الطفل قبل أن تنتهي عملية الوالد
+من إرسال البيانات. قد يكون هناك خطأ ما في التعليمات البرمجية الخاصة بك. يمكنك
+تصحيح التعليمات البرمجية الخاصة بك عن طريق تقليل ``num_worker`` من
+:class:`~torch.utils.data.DataLoader` إلى الصفر ومعرفة ما إذا كانت المشكلة مستمرة.
 
-Multiprocessing error "driver shut down"
+خطأ تعدد العمليات "إيقاف التشغيل"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
-    Couldn’t open shared file mapping: <torch_14808_1591070686>, error code: <1455> at torch\lib\TH\THAllocator.c:154
+    لم يتمكن من فتح ملف الخريطة المشتركة: <torch_14808_1591070686>، رمز الخطأ: <1455> في torch\lib\TH\THAllocator.c:154
 
-    [windows] driver shut down
+    [windows] توقف التشغيل
 
-Please update your graphics driver. If this persists, this may be that your
-graphics card is too old or the calculation is too heavy for your card. Please
-update the TDR settings according to this `post
+يرجى تحديث برنامج تشغيل الرسومات الخاص بك. إذا استمرت هذه المشكلة، فقد يكون ذلك بسبب أن
+بطاقة الرسومات لديك قديمة جدًا أو أن الحساب ثقيل جدًا لبطاقتك. يرجى
+تحديث إعدادات TDR وفقًا لهذا `المنشور
 <https://www.pugetsystems.com/labs/hpc/Working-around-TDR-in-Windows-for-a-better-GPU-computing-experience-777/>`_.
 
-CUDA IPC operations
+عمليات IPC CUDA
 ^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   THCudaCheck FAIL file=torch\csrc\generic\StorageSharing.cpp line=252 error=63 : OS call failed or operation not supported on this OS
+   فشل THCudaCheck ملف=torch\csrc\generic\StorageSharing.cpp line=252 error=63: فشل استدعاء نظام التشغيل أو عدم دعم العملية على نظام التشغيل هذا
 
-They are not supported on Windows. Something like doing multiprocessing on CUDA
-tensors cannot succeed, there are two alternatives for this.
+إنها غير مدعومة على Windows. لا يمكن لشيء مثل القيام بتعدد العمليات على CUDA
+tensors أن ينجح، هناك بديلان لهذا.
 
-1. Don't use ``multiprocessing``. Set the ``num_worker`` of
-:class:`~torch.utils.data.DataLoader` to zero.
+1. لا تستخدم ``multiprocessing``. قم بتعيين ``num_worker`` من
+:class:`~torch.utils.data.DataLoader` إلى الصفر.
 
-2. Share CPU tensors instead. Make sure your custom
-:class:`~torch.utils.data.DataSet` returns CPU tensors.
+2. شارك tensors CPU بدلاً من ذلك. تأكد من أن مجموعة البيانات المخصصة الخاصة بك
+:class:`~torch.utils.data.DataSet` تعيد tensors CPU.
