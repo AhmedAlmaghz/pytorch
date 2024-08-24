@@ -1,226 +1,159 @@
 .. role:: hidden
     :class: hidden-section
 
-Pipeline Parallelism
-####################
+توازي الأنابيب
+##########
 
 .. note::
-  ``torch.distributed.pipelining`` is currently in alpha state and under
-  development. API changes may be possible. It was migrated from the `PiPPy
-  <https://github.com/pytorch/PiPPy>`_ project.
+   ``torch.distributed.pipelining`` هو حاليًا في حالة ألفا وتحت التطوير. قد تكون تغييرات واجهة برمجة التطبيقات (API) ممكنة. تم نقله من مشروع `PiPPy <https://github.com/pytorch/PiPPy>`_ .
 
+لماذا التوازي الأنبوبي؟
+***************
 
-Why Pipeline Parallel?
-**********************
+توازي الأنابيب هو أحد التوازيات **البدائية** للتعلم العميق. يسمح بتقسيم **تنفيذ** نموذج بحيث يمكن تنفيذ **ميكروباتشات** متعددة لأجزاء مختلفة من كود النموذج في نفس الوقت. يمكن أن يكون توازي الأنابيب تقنية فعالة لـ:
 
-Pipeline Parallelism is one of the **primitive** parallelism for deep learning.
-It allows the **execution** of a model to be partitioned such that multiple
-**micro-batches** can execute different parts of the model code concurrently.
-Pipeline parallelism can be an effective technique for:
+* التدريب واسع النطاق
+* مجموعات محدودة النطاق الترددي
+* استنتاج النماذج الكبيرة
 
-* large-scale training
-* bandwidth-limited clusters
-* large model inference
+تتشارك السيناريوهات المذكورة أعلاه في خاصية مشتركة تتمثل في أن الحساب لكل جهاز لا يمكنه إخفاء التواصل للتوازي التقليدي، على سبيل المثال، تجميع الأوزان الكاملة لـ FSDP.
 
-The above scenarios share a commonality that the computation per device cannot
-hide the communication of conventional parallelism, for example, the weight
-all-gather of FSDP.
-
-
-What is ``torch.distributed.pipelining``?
+ما هو ``torch.distributed.pipelining``؟
 *****************************************
 
-While promising for scaling, pipelining is often difficult to implement because
-it needs to **partition the execution** of a model in addition to model weights.
-The partitioning of execution often requires intrusive code changes to your
-model. Another aspect of complexity comes from **scheduling micro-batches in a
-distributed environment**, with **data flow dependency** considered.
+بينما يعد التوصيل الواعد للقياس، إلا أنه غالبًا ما يكون من الصعب تنفيذه لأنه يحتاج إلى **تقسيم تنفيذ** نموذج بالإضافة إلى أوزان النموذج. غالبًا ما يتطلب تقسيم التنفيذ إجراء تغييرات في كود النموذج. يأتي جانب آخر من التعقيد من **جدولة الميكروبتشات في بيئة موزعة**، مع مراعاة **اعتماد تدفق البيانات**.
 
-The ``pipelining`` package provides a toolkit that does said things
-**automatically** which allows easy implementation of pipeline parallelism
-on **general** models.
+توفر حزمة "pipelining" مجموعة أدوات تقوم تلقائيًا بالأشياء المذكورة أعلاه، مما يسمح بتنفيذ سهل لتوازي الأنابيب في النماذج **العامة**.
 
-It consists of two parts: a
-**splitting frontend** and a **distributed runtime**.
-The splitting frontend takes your model code as-is, splits it up into "model
-partitions", and captures the data-flow relationship.  The distributed runtime
-executes the pipeline stages on different devices in parallel, handling things
-like micro-batch splitting, scheduling, communication, and gradient propagation,
-etc.
+يتكون من جزأين: **واجهة أمامية مقسمة** و **وقت تشغيل موزع**. تأخذ الواجهة الأمامية المقسمة كود النموذج كما هو، وتقسمه إلى "تقسيمات نموذج"، وتلتقط علاقة تدفق البيانات. يقوم وقت التشغيل الموزع بتنفيذ مراحل الأنابيب على أجهزة مختلفة بالتوازي، والتعامل مع أشياء مثل تقسيم الميكروبتشات، والجدولة، والاتصال، وانتشار التدرجات، وما إلى ذلك.
 
-Overall, the ``pipelining`` package provides the following features:
+بشكل عام، توفر حزمة "pipelining" الميزات التالية:
 
-* Splitting of model code based on simple specification.
-* Rich support for pipeline schedules, including GPipe, 1F1B,
-  Interleaved 1F1B and Looped BFS, and providing the infrastructure for writing
-  customized schedules.
-* First-class support for cross-host pipeline parallelism, as this is where PP
-  is typically used (over slower interconnects).
-* Composability with other PyTorch parallel techniques such as data parallel
-  (DDP, FSDP) or tensor  parallel. The `TorchTitan
-  <https://github.com/pytorch/torchtitan>`_ project demonstrates a "3D parallel"
-  application on the Llama model.
+* تقسيم كود النموذج بناءً على المواصفات البسيطة.
+* الدعم الغني لجداول الأنابيب، بما في ذلك GPipe و 1F1B و Interleaved 1F1B و Looped BFS، وتوفير البنية الأساسية لكتابة الجداول المخصصة.
+* دعم من الدرجة الأولى لتوازي الأنابيب عبر المضيف، حيث يتم استخدام PP عادةً (عبر وصلات الاتصال البطيئة).
+* قابلية التركيب مع تقنيات PyTorch المتوازية الأخرى مثل الموازي للبيانات (DDP و FSDP) أو الموازي للموتر. يوضح مشروع `TorchTitan <https://github.com/pytorch/torchtitan>`_ تطبيق "3D Parallel" على نموذج Llama.
 
-
-Step 1: build ``PipelineStage``
+الخطوة 1: إنشاء ``PipelineStage``
 *******************************
 
-Before we can use a ``PipelineSchedule``, we need to create ``PipelineStage``
-objects that wrap the part of the model running in that stage.  The
-``PipelineStage`` is responsible for allocating communication buffers and
-creating send/recv ops to communicate with its peers.  It manages intermediate
-buffers e.g. for the outputs of forward that have not been consumed yet, and it
-provides a utility for running the backwards for the stage model.
+قبل أن نتمكن من استخدام ``PipelineSchedule``، نحتاج إلى إنشاء كائنات ``PipelineStage`` التي تلتف حول الجزء من النموذج الذي يتم تشغيله في تلك المرحلة. ``PipelineStage`` مسؤول عن تخصيص مخازن مؤقتة للاتصال وإنشاء عمليات الإرسال/الاستقبال للتواصل مع الأقران. يدير المخازن المؤقتة الوسيطة، على سبيل المثال، لنتائج الإرسال الأمامي التي لم يتم استهلاكها بعد، ويوفر أداة لتشغيل الخلفيات لمرحلة النموذج.
 
-A ``PipelineStage`` needs to know the input and output shapes for the stage
-model, so that it can correctly allocate communication buffers.  The shapes must
-be static, e.g. at runtime the shapes can not change from step to step.  A class
-``PipeliningShapeError`` will be raised if runtime shapes do not match the
-expected shapes.  When composing with other paralleisms or applying mixed
-precision, these techniques must be taken into account so the ``PipelineStage``
-knows the correct shape (and dtype) for the output of the stage module at
-runtime.
+تحتاج "PipelineStage" إلى معرفة أشكال الإدخال والإخراج لمرحلة النموذج، حتى تتمكن من تخصيص المخازن المؤقتة للاتصال بشكل صحيح. يجب أن تكون الأشكال ثابتة، على سبيل المثال، لا يمكن أن تتغير الأشكال أثناء التشغيل من خطوة إلى أخرى. سيتم رفع فئة "PipeliningShapeError" إذا لم تتطابق الأشكال أثناء التشغيل مع الأشكال المتوقعة. عند التركيب مع تقنيات الموازاة الأخرى أو تطبيق الدقة المختلطة، يجب مراعاة هذه التقنيات حتى تتمكن "PipelineStage" من معرفة الشكل (ونوع البيانات) الصحيح لنتيجة وحدة المرحلة في وقت التشغيل.
 
-Users may construct a ``PipelineStage`` instance directly, by passing in an
-``nn.Module`` representing the portion of the model that should run on the
-stage.  This may require changes to the original model code.  See the example
-in :ref:`option_1_manual`.
+يمكن للمستخدمين إنشاء مثيل "PipelineStage" مباشرة، عن طريق تمرير "nn.Module" الذي يمثل الجزء من النموذج الذي يجب تشغيله في المرحلة. قد يتطلب ذلك إجراء تغييرات على كود النموذج الأصلي. راجع المثال في: ref: `option_1_manual` .
 
-Alternatively, the splitting frontend can use graph partitioning to split your
-model into a series of ``nn.Module`` automatically.  This technique requires the
-model is traceable with ``torch.Export``. Composability of the resulting
-``nn.Module`` with other parallelism techniques is experimental, and may require
-some workarounds.  Usage of this frontend may be more appealing if the user
-cannot easily change the model code.  See :ref:`option_2_tracer` for more
-information.
+بدلاً من ذلك، يمكن أن تستخدم الواجهة الأمامية المقسمة تقسيم الرسم البياني لتقسيم نموذجك إلى سلسلة من "nn.Module" تلقائيًا. تتطلب هذه التقنية إمكانية تتبع النموذج باستخدام "torch.Export". قابلية تركيب "nn.Module" الناتجة مع تقنيات الموازاة الأخرى تجريبية، وقد تتطلب بعض الحلول البديلة. قد يكون استخدام هذه الواجهة الأمامية أكثر جاذبية إذا لم يتمكن المستخدم من تغيير كود النموذج بسهولة. راجع: ref: `option_2_tracer` لمزيد من المعلومات.
 
+الخطوة 2: استخدام ``PipelineSchedule`` للتنفيذ
+*****************************************
 
-Step 2: use ``PipelineSchedule`` for execution
-**********************************************
-
-We can now attach the ``PipelineStage`` to a pipeline schedule, and run the
-schedule with input data. Here is a GPipe example:
+الآن يمكننا توصيل "PipelineStage" بجدول الأنابيب، وتشغيل الجدول باستخدام بيانات الإدخال. إليك مثال على GPipe:
 
 .. code-block:: python
 
-  from torch.distributed.pipelining import ScheduleGPipe
+   من torch.distributed.pipelining import ScheduleGPipe
 
-  # Create a schedule
-  schedule = ScheduleGPipe(stage, n_microbatches)
+   # إنشاء جدول
+   الجدول = ScheduleGPipe(stage، n_microbatches)
 
-  # Input data (whole batch)
-  x = torch.randn(batch_size, in_dim, device=device)
+   # بيانات الإدخال (الدفعة الكاملة)
+   x = torch.randn(batch_size، in_dim، device=device)
 
-  # Run the pipeline with input `x`
-  # `x` will be divided into microbatches automatically
-  if rank == 0:
-      schedule.step(x)
-  else:
-      output = schedule.step()
+   # تشغيل الأنبوب باستخدام الإدخال `x`
+   # سيتم تقسيم `x` إلى ميكروبتشات تلقائيًا
+   إذا كان الرتبة == 0:
+       الجدول.الخطوة (x)
+   آخر:
+       الإخراج = الجدول.الخطوة ()
 
-Note that the above code needs to be launched for each worker, thus we use a
-launcher service to launch multiple processes:
+لاحظ أن الكود أعلاه يحتاج إلى إطلاقه لكل عامل، لذا نستخدم خدمة التشغيل لإطلاق عمليات متعددة:
 
 .. code-block:: bash
 
-  torchrun --nproc_per_node=2 example.py
+   torchrun --nproc_per_node=2 example.py
 
-
-Options for Splitting a Model
-*****************************
+خيارات لتقسيم نموذج
+**************
 
 .. _option_1_manual:
 
-Option 1: splitting a model manually
-====================================
+الخيار 1: تقسيم نموذج يدويًا
+====================
 
-To directly construct a ``PipelineStage``, the user is responsible for providing
-a single ``nn.Module`` instance that owns the relevant ``nn.Parameters`` and
-``nn.Buffers``, and defines a ``forward()`` method that executes the operations
-relevant for that stage.  For example, a condensed version of the Transformer
-class defined in Torchtitan shows a pattern of building an easily partitionable
-model.
+لإنشاء مثيل "PipelineStage" مباشرةً، يكون المستخدم مسؤولاً عن توفير مثيل "nn.Module" واحد يمتلك "nn.Parameters" و "nn.Buffers" ذات الصلة، ويحدد طريقة "forward()" التي تنفذ العمليات ذات الصلة بتلك المرحلة. على سبيل المثال، تعرض نسخة مختصرة من فئة Transformer المحددة في Torchtitan نمطًا لبناء نموذج قابل للتقسيم بسهولة.
 
 .. code-block:: python
 
-  class Transformer(nn.Module):
-      def __init__(self, model_args: ModelArgs):
-          super().__init__()
+   class Transformer(nn.Module):
+       def __init__(self، model_args: ModelArgs):
+           super().__init__()
 
-          self.tok_embeddings = nn.Embedding(...)
+           self.tok_embeddings = nn.Embedding(...)
 
-          # Using a ModuleDict lets us delete layers without affecting names,
-          # ensuring checkpoints will correctly save and load.
-          self.layers = torch.nn.ModuleDict()
-          for layer_id in range(model_args.n_layers):
-              self.layers[str(layer_id)] = TransformerBlock(...)
+           # باستخدام ModuleDict، يمكننا حذف الطبقات دون التأثير على الأسماء،
+           # ضمان حفظ نقاط التفتيش وتحميلها بشكل صحيح.
+           self.layers = torch.nn.ModuleDict()
+           for layer_id in range(model_args.n_layers):
+               self.layers[str(layer_id)] = TransformerBlock(...)
 
-          self.output = nn.Linear(...)
+           self.output = nn.Linear(...)
 
-      def forward(self, tokens: torch.Tensor):
-          # Handling layers being 'None' at runtime enables easy pipeline splitting
-          h = self.tok_embeddings(tokens) if self.tok_embeddings else tokens
+       def forward(self، tokens: torch.Tensor):
+           # يمكّن التعامل مع الطبقات "None" في وقت التشغيل من تقسيم الأنابيب بسهولة
+           h = self.tok_embeddings(tokens) if self.tok_embeddings else tokens
 
-          for layer in self.layers.values():
-              h = layer(h, self.freqs_cis)
+           for layer in self.layers.values():
+               h = layer(h، self.freqs_cis)
 
-          h = self.norm(h) if self.norm else h
-          output = self.output(h).float() if self.output else h
-          return output
+           h = self.norm(h) if self.norm else h
+           output = self.output(h).float() if self.output else h
+           return output
 
-A model defined in this manner can be easily configured per stage by first
-initializing the whole model (using meta-device to avoid OOM errors), deleting
-undesired layers for that stage, and then creating a PipelineStage that wraps
-the model.  For example:
+يمكن تكوين نموذج محدد بهذه الطريقة بسهولة لكل مرحلة عن طريق أولاً تهيئة النموذج بالكامل (باستخدام جهاز ميتا لتجنب أخطاء OOM)، وحذف الطبقات غير المرغوب فيها لتلك المرحلة، ثم إنشاء "PipelineStage" الذي يلتف حول النموذج. على سبيل المثال:
 
 .. code-block:: python
 
-  with torch.device("meta"):
-      assert num_stages == 2, "This is a simple 2-stage example"
+   مع جهاز الشعلة ("الميتا"):
+       التأكيد num_stages == 2، "هذا مثال بسيط على مرحلتين"
 
-      # we construct the entire model, then delete the parts we do not need for this stage
-      # in practice, this can be done using a helper function that automatically divides up layers across stages.
-      model = Transformer()
+       # نقوم ببناء النموذج بالكامل، ثم نقوم بحذف الأجزاء التي لا نحتاجها لهذه المرحلة
+       # في الممارسة العملية، يمكن القيام بذلك باستخدام دالة مساعدة تقسم الطبقات تلقائيًا عبر المراحل.
+       النموذج = محول ()
 
-      if stage_index == 0:
-          # prepare the first stage model
-          del model.layers["1"]
-          model.norm = None
-          model.output = None
+       إذا كان stage_index == 0:
+           # إعداد نموذج المرحلة الأولى
+           حذف النموذج.الطبقات ["1"]
+           النموذج.norm = None
+           النموذج.output = None
 
-      elif stage_index == 1:
-          # prepare the second stage model
-          model.tok_embeddings = None
-          del model.layers["0"]
+       elif stage_index == 1:
+           # إعداد نموذج المرحلة الثانية
+           النموذج.tok_embeddings = None
+           حذف النموذج.الطبقات ["0"]
 
-      from torch.distributed.pipelining import PipelineStage
-      stage = PipelineStage(
-          model,
-          stage_index,
-          num_stages,
-          device,
-          input_args=example_input_microbatch,
-      )
+       من الشعلة.distributed.pipelining import PipelineStage
+       stage = PipelineStage(
+           النموذج،
+           stage_index،
+           num_stages،
+           الجهاز،
+           input_args=example_input_microbatch،
+       )
 
 
-The ``PipelineStage`` requires an example argument ``input_args`` representing
-the runtime input to the stage, which would be one microbatch worth of input
-data.  This argument is passed through the forward method of the stage module to
-determine the input and output shapes required for communication.
+تحتاج "PipelineStage" إلى حجة مثال "input_args" التي تمثل إدخال وقت التشغيل للمرحلة، والتي ستكون دفعة صغيرة واحدة من بيانات الإدخال. يتم تمرير هذه الحجة عبر طريقة الإرسال الأمامي لوحدة المرحلة لتحديد أشكال الإدخال والإخراج المطلوبة للاتصال.
 
-When composing with other Data or Model parallelism techniques, ``output_args``
-may also be required, if the output shape/dtype of the model chunk will be
-affected.
+عند التركيب مع تقنيات الموازاة الأخرى للبيانات أو النماذج، قد تكون "output_args" مطلوبة أيضًا، إذا تأثر شكل/نوع بيانات جزء النموذج.
 
 
 .. _option_2_tracer:
 
-Option 2: splitting a model automatically
-=========================================
+الخيار 2: تقسيم نموذج تلقائيًا
+=====================
 
-If you have a full model and do not want to spend time on modifying it into a
-sequence of "model partitions", the ``pipeline`` API is here to help.
-Here is a brief example:
+إذا كان لديك نموذج كامل ولا تريد قضاء الوقت في تعديله إلى سلسلة من "أجزاء النموذج"، فإن واجهة برمجة التطبيقات "بايبلاين" موجودة للمساعدة.
+فيما يلي مثال مختصر:
 
 .. code-block:: python
 
@@ -241,7 +174,7 @@ Here is a brief example:
           return x
 
 
-If we print the model, we can see multiple hierarchies, which makes it hard to split by hand::
+إذا قمنا بطباعة النموذج، يمكننا أن نرى تسلسلات هرمية متعددة، مما يجعل من الصعب التقسيم يدويًا::
 
   Model(
     (emb): Embedding(10, 3)
@@ -255,13 +188,13 @@ If we print the model, we can see multiple hierarchies, which makes it hard to s
     )
   )
 
-Let us see how the ``pipeline`` API works:
+دعونا نرى كيف تعمل واجهة برمجة التطبيقات "بايبلاين":
 
 .. code-block:: python
 
   from torch.distributed.pipelining import pipeline, SplitPoint
 
-  # An example micro-batch input
+  # مثال على إدخال الميكروبتش
   x = torch.LongTensor([1, 2, 4, 5])
 
   pipe = pipeline(
@@ -272,12 +205,11 @@ Let us see how the ``pipeline`` API works:
       }
   )
 
-The ``pipeline`` API splits your model given a ``split_spec``, where
-``SplitPoint.BEGINNING`` stands for adding a split point
-*before* execution of certain submodule in the ``forward`` function, and
-similarly, ``SplitPoint.END`` for split point *after* such.
+تقوم واجهة برمجة التطبيقات "بايبلاين" بتقسيم نموذجك بناءً على "split_spec"، حيث
+يشير "SplitPoint.BEGINNING" إلى إضافة نقطة تقسيم
+*قبل* تنفيذ وحدة فرعية معينة في دالة "forward"، وبالمثل، يشير "SplitPoint.END" إلى نقطة التقسيم *بعد* ذلك.
 
-If we ``print(pipe)``, we can see::
+إذا قمنا بـ "print(pipe)"، يمكننا أن نرى::
 
   GraphModule(
     (submod_0): GraphModule(
@@ -306,31 +238,26 @@ If we ``print(pipe)``, we can see::
       return (submod_1,)
 
 
-The "model partitions" are represented by submodules (``submod_0``,
-``submod_1``), each of which is reconstructed with original model operations, weights
-and hierarchies.  In addition, a "root-level" ``forward`` function is
-reconstructed to capture the data flow between those partitions. Such data flow
-will be replayed by the pipeline runtime later, in a distributed fashion.
+تمثل "أجزاء النموذج" الوحدات الفرعية (submod_0، submod_1)، ويتم إعادة بناء كل منها باستخدام عمليات النموذج الأصلي والأوزان والهياكل الهرمية. بالإضافة إلى ذلك، يتم إعادة بناء دالة "forward" على مستوى "الجذر" لالتقاط تدفق البيانات بين هذه الأقسام. وسيقوم وقت تشغيل "البايبلاين" لاحقًا بتشغيل تدفق البيانات هذا بطريقة موزعة.
 
-The ``Pipe`` object provides a method for retrieving the "model partitions":
+يوفر كائن "بايبلاين" طريقة لاسترداد "أجزاء النموذج":
 
 .. code-block:: python
 
   stage_mod : nn.Module = pipe.get_stage_module(stage_idx)
 
-The returned ``stage_mod`` is a ``nn.Module``, with which you can create an
-optimizer, save or load checkpoints, or apply other parallelisms.
+تكون "stage_mod" المرتجعة عبارة عن "nn.Module"، والتي يمكنك من خلالها إنشاء محدد لسرعة التعلم، أو حفظ نقاط التفتيش أو تحميلها، أو تطبيق عمليات موازية أخرى.
 
-``Pipe`` also allows you to create a distributed stage runtime on a device given
-a ``ProcessGroup``:
+يسمح "بايبلاين" أيضًا بإنشاء وقت تشغيل مرحلة موزعة على جهاز معين
+إعطاء "مجموعة عمليات":
 
 .. code-block:: python
 
   stage = pipe.build_stage(stage_idx, device, group)
 
-Alternatively, if you would like to build the stage runtime later after some
-modification to the ``stage_mod``, you can use a functional version of the
-``build_stage`` API. For example:
+بدلاً من ذلك، إذا كنت ترغب في بناء وقت تشغيل المرحلة لاحقًا بعد إجراء بعض
+التعديلات على "stage_mod"، فيمكنك استخدام إصدار وظيفي من
+واجهة برمجة تطبيقات "build_stage". على سبيل المثال:
 
 .. code-block:: python
 
@@ -342,101 +269,95 @@ modification to the ``stage_mod``, you can use a functional version of the
   stage = build_stage(dp_mod, stage_idx, info, device, group)
 
 .. note::
-  The ``pipeline`` frontend uses a tracer (``torch.export``) to capture your
-  model into a single graph. If your model is not full-graph'able, you can use
-  our manual frontend below.
+  تستخدم واجهة "بايبلاين" الأمامية أداة تتبع (torch.export) لالتقاط نموذجك
+  في رسم بياني واحد. إذا كان نموذجك غير قابل للرسم الكامل، فيمكنك استخدام
+  واجهة برمجة التطبيقات اليدوية أدناه.
 
 
-Hugging Face Examples
-*********************
+أمثلة Hugging Face
+******************
 
-In the `PiPPy <https://github.com/pytorch/PiPPy>`_ repo where this package was
-original created, we kept examples based on unmodified Hugging Face models.
-See the `examples/huggingface
-<https://github.com/pytorch/PiPPy/tree/main/examples/huggingface>`_ directory.
+في مستودع "PiPPy" <https://github.com/pytorch/PiPPy> حيث تم إنشاء هذه الحزمة
+في الأصل، قمنا بالاحتفاظ بأمثلة بناءً على نماذج Hugging Face غير المعدلة.
+راجع دليل "examples/huggingface
+<https://github.com/pytorch/PiPPy/tree/main/examples/huggingface>`_.
 
-Examples include:
+تشمل الأمثلة ما يلي:
 
 * `GPT2 <https://github.com/pytorch/PiPPy/tree/main/examples/huggingface/pippy_gpt2.py>`_
 * `Llama <https://github.com/pytorch/PiPPy/tree/main/examples/llama>`_
 
 
-Technical Deep Dive
-*******************
+نظرة فنية متعمقة
+*************
 
-How does the ``pipeline`` API split a model?
-============================================
+كيف تقوم واجهة برمجة التطبيقات "بايبلاين" بتقسيم نموذج؟
+=======================================
 
-First, the ``pipeline`` API turns our model into a directed acyclic graph (DAG)
-by tracing the model.  It traces the model using ``torch.export`` -- a PyTorch 2
-full-graph capturing tool.
+أولاً، تحول واجهة برمجة التطبيقات "بايبلاين" نموذجنا إلى رسم بياني موجه غير دوري (DAG)
+من خلال تتبع النموذج. إنه يتعقب النموذج باستخدام "torch.export" - أداة التقاط الرسم البياني الكامل لـ PyTorch 2.
 
-Then, it groups together the **operations and parameters** needed by a stage
-into a reconstructed submodule: ``submod_0``, ``submod_1``, ...
+بعد ذلك، يقوم بتجميع **العمليات والبارامترات** اللازمة لكل مرحلة
+في وحدة فرعية معاد بناؤها: "submod_0"، "submod_1"، ...
 
-Different from conventional submodule access methods like ``Module.children()``,
-the ``pipeline`` API does not only cut the module structure of your model, but
-also the **forward** function of your model.
+على عكس طرق الوصول إلى الوحدة الفرعية التقليدية مثل "Module.children()"، فإن واجهة برمجة التطبيقات "بايبلاين" لا تقطع بنية الوحدة النمطية للنموذج فحسب، بل أيضًا دالة **forward** للنموذج.
 
-This is necessary because model structure like ``Module.children()`` merely
-captures information during ``Module.__init__()``, and does not capture any
-information about ``Module.forward()``. Said differently, ``Module.children()``
-lacks information about the following aspects key to pipelininig:
+هذا أمر ضروري لأن بنية النموذج مثل "Module.children()" تلتقط المعلومات فقط أثناء "Module.__init__()"، ولا تلتقط أي
+معلومات حول "Module.forward()". وبعبارة أخرى، تفتقر "Module.children()"
+معلومات حول الجوانب الرئيسية لتقسيم النموذج:
 
-* Execution order of child modules in ``forward``
-* Activation flows between child modules
-* Whether there are any functional operators between child modules (for example,
-  ``relu`` or ``add`` operations will not be captured by ``Module.children()``).
+* ترتيب تنفيذ الوحدات الفرعية في "forward"
+* تدفقات التنشيط بين الوحدات الفرعية
+* ما إذا كانت هناك أي عوامل تشغيل وظيفية بين الوحدات الفرعية (على سبيل المثال،
+  لن يتم التقاط عمليات "relu" أو "add" بواسطة "Module.children()").
 
-The ``pipeline`` API, on the contrary, makes sure that the ``forward`` behavior
-is truly preserved. It also captures the activation flow between the partitions,
-helping the distributed runtime to make correct send/receive calls without human
-intervention.
+من ناحية أخرى، تضمن واجهة برمجة التطبيقات "بايبلاين" الحفاظ على سلوك "forward"
+بشكل حقيقي. كما أنه يلتقط تدفق التنشيط بين الأقسام،
+مساعدة وقت تشغيل الموزع على إجراء مكالمات الإرسال/الاستقبال الصحيحة دون تدخل بشري.
 
-Another flexibility of the ``pipeline`` API is that split points can be at
-arbitrary levels within your model hierarchy. In the split partitions, the original model
-hierarchy related to that partition will be reconstructed at no cost to you.
-At a result, fully-qualified names (FQNs) pointing to a submodule or parameter
-would be still valid, and services that relies on FQNs (such as FSDP, TP or
-checkpointing) can still run with your partitioned modules with almost zero code
-change.
+تتمثل إحدى ميزات واجهة برمجة التطبيقات "بايبلاين" في إمكانية وجود نقاط التقسيم على
+مستويات عشوائية داخل التسلسل الهرمي للنموذج. في الأقسام المقسمة، سيتم إعادة بناء التسلسل الهرمي للنموذج الأصلي
+المتعلق بذلك القسم دون أي تكلفة عليك.
+ونتيجة لذلك، ستظل الأسماء المؤهلة بالكامل (FQNs) التي تشير إلى وحدة فرعية أو معلمة
+صحيحة، ويمكن للخدمات التي تعتمد على FQNs (مثل FSDP أو TP أو
+التخزين المؤقت) لا تزال تعمل مع الوحدات النمطية المقسمة الخاصة بك دون أي تغيير تقريبًا في التعليمات البرمجية.
 
 
-Implementing Your Own Schedule
+تنفيذ الجدول الزمني الخاص بك
 ******************************
 
-You can implement your own pipeline schedule by extending one of the following two class:
+يمكنك تنفيذ جدول زمني للبايبلاين الخاص بك عن طريق توسيع إحدى الفئتين التاليتين:
 
 * ``PipelineScheduleSingle``
 * ``PipelineScheduleMulti``
 
-``PipelineScheduleSingle`` is for schedules that assigns *only one* stage per rank.
-``PipelineScheduleMulti`` is for schedules that assigns multiple stages per rank.
+يُستخدم "PipelineScheduleSingle" للجداول الزمنية التي تقوم بتعيين *مرحلة واحدة فقط* لكل رتبة.
+يُستخدم "PipelineScheduleMulti" للجداول الزمنية التي تقوم بتعيين مراحل متعددة لكل رتبة.
 
-For example, ``ScheduleGPipe`` and ``Schedule1F1B`` are subclasses of ``PipelineScheduleSingle``.
-Whereas, ``ScheduleFlexibleInterleaved1F1B``, ``ScheduleInterleaved1F1B`` and ``ScheduleLoopedBFS``
-are subclasses of ``PipelineScheduleMulti``.
+على سبيل المثال، "ScheduleGPipe" و "Schedule1F1B" هما فئتان فرعيتان من "PipelineScheduleSingle".
+بينما "ScheduleFlexibleInterleaved1F1B" و "ScheduleInterleaved1F1B" و "ScheduleLoopedBFS"
+هي فئات فرعية من "PipelineScheduleMulti".
 
 
-Logging
+التسجيل
 *******
 
-You can turn on additional logging using the `TORCH_LOGS` environment variable from [`torch._logging`](https://pytorch.org/docs/main/logging.html#module-torch._logging):
+يمكنك تشغيل تسجيل إضافي باستخدام متغير البيئة `TORCH_LOGS` من [`torch._logging`] (https://pytorch.org/docs/main/logging.html#module-torch._logging):
 
-* `TORCH_LOGS=+pp` will display `logging.DEBUG` messages and all levels above it.
-* `TORCH_LOGS=pp` will display `logging.INFO` messages and above.
-* `TORCH_LOGS=-pp` will display `logging.WARNING` messages and above.
+* `TORCH_LOGS=+pp` ستعرض رسائل `logging.DEBUG` وجميع المستويات أعلاها.
+* `TORCH_LOGS=pp` ستعرض رسائل `logging.INFO` والمستويات أعلاها.
+* `TORCH_LOGS=-pp` ستعرض رسائل `logging.WARNING` والمستويات أعلاها.
 
 
-API Reference
-*************
+مرجع واجهة برمجة التطبيقات
+*******************
 
 .. automodule:: torch.distributed.pipelining
 
-Model Split APIs
-============================
+واجهات برمجة تطبيقات تقسيم النماذج
+========================
 
-The following set of APIs transform your model into a pipeline representation.
+مجموعة واجهات برمجة التطبيقات التالية تحول نموذجك إلى تمثيل بايبلاين.
 
 .. currentmodule:: torch.distributed.pipelining
 
@@ -448,8 +369,8 @@ The following set of APIs transform your model into a pipeline representation.
 
 .. autofunction:: pipe_split
 
-Microbatch Utilities
-====================
+مرافق الميكروبتش
+===========
 
 .. automodule:: torch.distributed.pipelining.microbatch
 
@@ -461,8 +382,8 @@ Microbatch Utilities
 
 .. autofunction:: merge_chunks
 
-Pipeline Stages
-===============
+مراحل البايبلاين
+==========
 
 .. automodule:: torch.distributed.pipelining.stage
 
@@ -472,8 +393,8 @@ Pipeline Stages
 
 .. autofunction:: build_stage
 
-Pipeline Schedules
-==================
+جداول زمنية للبايبلاين
+==============
 
 .. automodule:: torch.distributed.pipelining.schedules
 
