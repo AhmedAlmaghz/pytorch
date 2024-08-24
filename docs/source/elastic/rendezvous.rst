@@ -1,16 +1,16 @@
 .. _rendezvous-api:
 
-Rendezvous
+نقطة الالتقاء
 ==========
 
 .. automodule:: torch.distributed.elastic.rendezvous
 
-Below is a state diagram describing how rendezvous works.
+فيما يلي مخطط حالة يصف كيفية عمل نقطة الالتقاء.
 
 .. image:: etcd_rdzv_diagram.png
 
-Registry
---------
+السجل
+-------
 
 .. autoclass:: RendezvousParameters
    :members:
@@ -19,7 +19,7 @@ Registry
 
 .. automodule:: torch.distributed.elastic.rendezvous.registry
 
-Handler
+مُعالج
 -------
 
 .. currentmodule:: torch.distributed.elastic.rendezvous
@@ -27,7 +27,7 @@ Handler
 .. autoclass:: RendezvousHandler
    :members:
 
-Dataclasses
+فئات البيانات
 -----------
 .. autoclass:: RendezvousInfo
 
@@ -37,8 +37,8 @@ Dataclasses
 
    .. automethod:: build(rank, store)
 
-Exceptions
-----------
+الاستثناءات
+---------
 .. autoclass:: RendezvousError
 .. autoclass:: RendezvousClosedError
 .. autoclass:: RendezvousTimeoutError
@@ -46,10 +46,10 @@ Exceptions
 .. autoclass:: RendezvousStateError
 .. autoclass:: RendezvousGracefulExitError
 
-Implementations
----------------
+التنفيذ
+-------
 
-Dynamic Rendezvous
+نقطة الالتقاء الديناميكية
 ******************
 
 .. currentmodule:: torch.distributed.elastic.rendezvous.dynamic_rendezvous
@@ -65,7 +65,7 @@ Dynamic Rendezvous
 .. autoclass:: RendezvousTimeout
    :members:
 
-C10d Backend
+الخلفي C10d
 ^^^^^^^^^^^^
 
 .. currentmodule:: torch.distributed.elastic.rendezvous.c10d_rendezvous_backend
@@ -75,7 +75,7 @@ C10d Backend
 .. autoclass:: C10dRendezvousBackend
    :members:
 
-Etcd Backend
+خلفي Etcd
 ^^^^^^^^^^^^
 
 .. currentmodule:: torch.distributed.elastic.rendezvous.etcd_rendezvous_backend
@@ -85,41 +85,43 @@ Etcd Backend
 .. autoclass:: EtcdRendezvousBackend
    :members:
 
-Etcd Rendezvous (Legacy)
+نقطة الالتقاء Etcd (الإصدار القديم)
 ************************
 
 .. warning::
-    The ``DynamicRendezvousHandler`` class supersedes the ``EtcdRendezvousHandler``
-    class, and is recommended for most users. ``EtcdRendezvousHandler`` is in
-    maintenance mode and will be deprecated in the future.
+    تفوق فئة ``DynamicRendezvousHandler`` على فئة ``EtcdRendezvousHandler``
+    ويوصى بها لمعظم المستخدمين. ``EtcdRendezvousHandler`` في
+    وضع الصيانة وسيتم إيقافها في المستقبل.
 
 .. currentmodule:: torch.distributed.elastic.rendezvous.etcd_rendezvous
 
 .. autoclass:: EtcdRendezvousHandler
 
-Etcd Store
+متجر Etcd
 **********
 
-The ``EtcdStore`` is the C10d ``Store`` instance type returned by
-``next_rendezvous()`` when etcd is used as the rendezvous backend.
+"EtcdStore" هو نوع مثيل "Store" C10d الذي يتم إرجاعه بواسطة
+``next_rendezvous()`` عندما يتم استخدام etcd كخلفية نقطة الالتقاء.
 
 .. currentmodule:: torch.distributed.elastic.rendezvous.etcd_store
 
 .. autoclass:: EtcdStore
    :members:
 
-Etcd Server
+خادم Etcd
 ***********
 
-The ``EtcdServer`` is a convenience class that makes it easy for you to
-start and stop an etcd server on a subprocess. This is useful for testing
-or single-node (multi-worker) deployments where manually setting up an
-etcd server on the side is cumbersome.
+"EtcdServer" هو فئة ملائمة تجعل من السهل عليك
+بدء وإيقاف خادم etcd في عملية فرعية. هذا مفيد لاختبار
+أو عمليات النشر للعقدة الواحدة (متعددة العمال) حيث من الصعب إعداد
+خادم etcd يدويًا.
 
-.. warning:: For production and multi-node deployments please consider
-             properly deploying a highly available etcd server as this is
-             the single point of failure for your distributed jobs.
+.. warning:: بالنسبة لعمليات النشر الإنتاجية والمتعددة العقد، يرجى مراعاة
+             نشر خادم etcd عالي التوفر بشكل صحيح، حيث أن هذا هو
+             نقطة فشل واحدة لوظائفك الموزعة.
 
 .. currentmodule:: torch.distributed.elastic.rendezvous.etcd_server
 
 .. autoclass:: EtcdServer
+
+آمل أن يكون هذا ما تبحث عنه! إذا كنت تريد تنسيق النص أو الترجمة بطريقة مختلفة، فما عليك سوى أن تطلب.
