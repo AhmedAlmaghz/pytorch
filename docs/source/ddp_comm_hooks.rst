@@ -1,29 +1,27 @@
-DDP Communication Hooks
-=======================
+هوكات اتصال DDP
+===============
 
-DDP communication hook is a generic interface to control how to communicate
-gradients across workers by overriding the vanilla allreduce in
+هوكة اتصال DDP هي واجهة عامة للتحكم في كيفية تبادل التدرجات عبر العمال عن طريق تجاوز allreduce الفانيليا في
 `DistributedDataParallel <https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.>`_.
-A few built-in communication hooks are provided,
-and users can easily apply any of these hooks to optimize communication.
-Besides, the hook interface can also support user-defined communication
-strategies for more advanced use cases.
+يتم توفير بعض هوكات الاتصال المدمجة،
+يمكن للمستخدمين بسهولة تطبيق أي من هذه الهوكات لتحسين الاتصال.
+بالإضافة إلى ذلك، يمكن أيضًا أن يدعم واجهة هوك استراتيجيات اتصال محددة من قبل المستخدم لحالات الاستخدام المتقدمة.
 
-How to Use a Communication Hook?
---------------------------------
+كيفية استخدام هوك الاتصال؟
+---------------------
 
-To use a communication hook, the user just needs to let the DDP model register
-the hook before the training loop as below.
+لاستخدام هوك الاتصال، يحتاج المستخدم فقط إلى السماح لنموذج DDP بتسجيل
+الهوك قبل حلقة التدريب كما هو موضح أدناه.
 
 :func:`torch.nn.parallel.DistributedDataParallel.register_comm_hook`
 
-What Does a Communication Hook Operate On?
-------------------------------------------
+ما الذي يعمل عليه هوك الاتصال؟
+------------------------
 
-A communication hook provides a flexible way to allreduce gradients.
-Therefore, it mainly operates on the gradients on each replica before allreduce,
-which are bucketized to increase the overlap between communication and computation.
-Particularly, :class:`torch.distributed.GradBucket` represents a bucket of gradient tensors to be allreduced.
+يوفر هوك الاتصال طريقة مرنة ل allreduce التدرجات.
+لذلك، فهو يعمل بشكل أساسي على التدرجات على كل نسخة قبل allreduce،
+التي يتم تجميعها في دلاء لزيادة التداخل بين الاتصال والحساب.
+وعلى وجه الخصوص، :class:`torch.distributed.GradBucket` يمثل دلو من تنسورات التدرج التي سيتم allreduce.
 
 .. autoclass:: torch.distributed.GradBucket
 
@@ -34,83 +32,79 @@ Particularly, :class:`torch.distributed.GradBucket` represents a bucket of gradi
 .. autofunction:: torch.distributed.GradBucket.set_buffer
 .. autofunction:: torch.distributed.GradBucket.parameters
 
-Default Communication Hooks
----------------------------
+هوكات الاتصال الافتراضية
+------------------
 
-Default communication hooks are simple **stateless** hooks, so the input state
-in ``register_comm_hook`` is either a process group or ``None``.
-The input ``bucket`` is a :class:`torch.distributed.GradBucket` object.
+هوكات الاتصال الافتراضية هي هوكات بسيطة **عديمة الحالة**، لذلك حالة الإدخال
+في ``register_comm_hook`` هي إما مجموعة عمليات أو ``None``.
+يكون إدخال ``bucket`` عبارة عن كائن :class:`torch.distributed.GradBucket`.
 
 .. currentmodule:: torch.distributed.algorithms.ddp_comm_hooks.default_hooks
 .. autofunction:: allreduce_hook
 .. autofunction:: fp16_compress_hook
 .. autofunction:: bf16_compress_hook
 
-Additionally, a communication hook wrapper is provided to support :meth:`~fp16_compress_hook` or :meth:`~bf16_compress_hook` as a wrapper,
-which can be combined with other communication hooks.
+بالإضافة إلى ذلك، يتم توفير غلاف هوك الاتصال لدعم :meth:`~fp16_compress_hook` أو :meth:`~bf16_compress_hook` كغلاف،
+والذي يمكن دمجه مع هوكات الاتصال الأخرى.
 
 .. autofunction:: fp16_compress_wrapper
 .. autofunction:: bf16_compress_wrapper
 
-PowerSGD Communication Hook
+هوك PowerSGD
 ---------------------------
 
-PowerSGD (`Vogels et al., NeurIPS 2019 <https://arxiv.org/abs/1905.13727>`_)
-is a gradient compression algorithm, which can provide very high compression
-rates and accelerate bandwidth-bound distributed training.
-This algorithm needs to maintain both some hyperparameters and the internal
-state. Therefore, PowerSGD communication hook is a **stateful** hook,
-and the user needs to provide a state object defined as below.
+PowerSGD (`Vogels et al.، NeurIPS 2019 <https://arxiv.org/abs/1905.13727>`_)
+هو خوارزمية ضغط التدرج، والتي يمكن أن توفر معدلات ضغط عالية جدًا وتسريع التدريب الموزع المحدود بالنطاق الترددي.
+تحتاج هذه الخوارزمية إلى الحفاظ على كل من بعض فرط المعلمات وحالة الداخلية. لذلك، PowerSGD هوك الاتصال هو هوك **ذو حالة**،
+ويحتاج المستخدم إلى توفير كائن الحالة المحدد أدناه.
 
-PowerSGD State
+حالة PowerSGD
 ^^^^^^^^^^^^^^^^
 
 .. currentmodule:: torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook
 .. autoclass:: PowerSGDState
 
-PowerSGD Hooks
+هوكات PowerSGD
 ^^^^^^^^^^^^^^^^
 
 .. warning ::
-    PowerSGD typically requires extra memory of the same size as the model's
-    gradients to enable error feedback, which can compensate for biased
-    compressed communication and improve accuracy.
+    عادةً ما يتطلب PowerSGD ذاكرة إضافية بنفس حجم تدرجات النموذج لتمكين التغذية الراجعة للأخطاء، والتي يمكن أن تعوض عن الاتصال المضغوط المتحيز وتحسين الدقة.
 
 .. warning ::
-    PowerSGD hooks may conflict with `Apex automatic mixed precision package <https://github.com/NVIDIA/apex>`_.
-    Please use PyTorch `native automatic mixed precision package <https://pytorch.org/docs/stable/amp.html>`_
-    instead.
+    قد تتعارض هوكات PowerSGD مع `حزمة Apex automatic mixed precision <https://github.com/NVIDIA/apex>`_.
+    يرجى استخدام PyTorch `native automatic mixed precision package <https://pytorch.org/docs/stable/amp.html>`_
+    بدلا من ذلك.
 
 .. autofunction:: powerSGD_hook
 .. autofunction:: batched_powerSGD_hook
 
-Debugging Communication Hooks
------------------------------
+هوكات تصحيح الأخطاء
+---------------
 
-As the name implies, debugging communication hooks are **only** used for debugging and performance optimization purpose.
+كما يوحي الاسم، يتم استخدام هوكات تصحيح الأخطاء **فقط** لأغراض تصحيح الأخطاء وتحسين الأداء.
 
 .. currentmodule:: torch.distributed.algorithms.ddp_comm_hooks.debugging_hooks
 
 .. warning ::
-    Debugging communication hooks do not necessarily output the correct results.
+    لا تخرج هوكات تصحيح الأخطاء بالضرورة النتائج الصحيحة.
 
 .. autofunction:: noop_hook
 
-Checkpointing of Communication Hooks
-------------------------------------
+تسجيل حالة هوكات الاتصال
+------------------
 
 .. currentmodule:: torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook
 
-A stateful communication hook can be saved as a part of model checkpointing to enable trainer restarts.
-To make a hook serializable, ``__setstate__`` and ``__getstate__`` should be defined.
+يمكن حفظ هوك الاتصال ذي الحالة كجزء من تسجيل نقاط نموذج الاتصال لتمكين إعادة تشغيل المدرب.
+لجعل هوك قابلًا للتسلسل، يجب تعريف ``__setstate__`` و ``__getstate__``.
 
 .. warning ::
-    ``__getstate__`` should exclude non-serializable attributes from a returned dictionary.
+    يجب أن يستبعد ``__getstate__`` السمات غير القابلة للتسلسل من قاموس تمت إعادته.
 
 .. warning ::
-    ``__setstate__`` should properly initialize non-serializable attributes, excluded from a provided ``state``.
+    يجب أن يقوم ``__setstate__`` بتأسيس سمات غير متسلسلة بشكل صحيح، مستبعدة من حالة "مقدمة".
 
-:class:`PowerSGDState` has ``__setstate__`` and ``__getstate__`` implemented and can be used as a reference.
+:class:`PowerSGDState` لديها ``__setstate__`` و ``__getstate__`` المنفذة ويمكن استخدامها كمرجع.
 
 .. class:: PowerSGDState
     :noindex:
@@ -118,7 +112,7 @@ To make a hook serializable, ``__setstate__`` and ``__getstate__`` should be def
     .. automethod:: PowerSGDState.__getstate__
     .. automethod:: PowerSGDState.__setstate__
 
-Here is a simple, end-to-end example of saving and reloading PowerSGD state and hook.
+فيما يلي مثال بسيط وشامل لحفظ وإعادة تحميل حالة PowerSGD وهوك.
 
 ::
 
@@ -205,11 +199,11 @@ Here is a simple, end-to-end example of saving and reloading PowerSGD state and 
         world_size = n_gpus
         run_demo(demo_serialization, world_size)
 
-Acknowledgements
-----------------
+الشكر والتقدير
+----------
 
-Many thanks to PowerSGD paper author **Thijs Vogels** for the code review on
-PowerSGD communication hook, as well as the
-`comparison experiments <https://observablehq.com/@tvogels/powersgd-benchmark>`_,
-which show that the performance of PowerSGD communication hook is on par with
-the implementation in the original `paper <https://arxiv.org/abs/1905.13727>`_.
+شكرًا جزيلاً لمؤلف ورقة PowerSGD **Thijs Vogels** على مراجعة الكود لـ
+هوك اتصال PowerSGD، بالإضافة إلى
+`تجارب المقارنة <https://observablehq.com/@tvogels/powersgd-benchmark>`_،
+والتي تظهر أن أداء هوك اتصال PowerSGD يعادل
+التنفيذ في `الأصل <https://arxiv.org/abs/1905.13727>`_.
