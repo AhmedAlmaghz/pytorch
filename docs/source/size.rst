@@ -1,12 +1,11 @@
 torch.Size
-===================================
+============
 
-:class:`torch.Size` is the result type of a call to :func:`torch.Tensor.size`. It describes the size of all dimensions
-of the original tensor. As a subclass of :class:`tuple`, it supports common sequence operations like indexing and
-length.
+:class: `torch.Size` هو نوع نتيجة استدعاء الدالة :func: `torch.Tensor.size`. يصف حجم جميع أبعاد
+النسخة الأصلية من المصفوفة. وباعتبارها فئة فرعية من :class: `tuple`، فهي تدعم العمليات التسلسلية الشائعة مثل الفهرسة
+والطول.
 
-
-Example::
+مثال::
 
     >>> x = torch.ones(10, 20, 30)
     >>> s = x.size()
@@ -16,8 +15,6 @@ Example::
     20
     >>> len(s)
     3
-
-
 
 .. autoclass:: torch.Size
    :members:
