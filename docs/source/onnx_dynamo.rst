@@ -1,5 +1,5 @@
-TorchDynamo-based ONNX Exporter
-===============================
+مُصدِّر ONNX المستند إلى TorchDynamo
+================================
 
 .. automodule:: torch.onnx
   :noindex:
@@ -8,47 +8,47 @@ TorchDynamo-based ONNX Exporter
     :depth: 3
 
 .. warning::
-  The ONNX exporter for TorchDynamo is a rapidly evolving beta technology.
+  مُصدِّر ONNX لـ TorchDynamo هو تقنية تجريبية سريعة التطور.
 
-Overview
+نظرة عامة
 --------
 
-The ONNX exporter leverages TorchDynamo engine to hook into Python's frame evaluation API
-and dynamically rewrite its bytecode into an FX Graph.
-The resulting FX Graph is then polished before it is finally translated into an ONNX graph.
+يستفيد مُصدِّر ONNX من محرك TorchDynamo للربط مع واجهة برمجة تطبيقات تقييم الإطارات في بايثون
+وإعادة كتابة بايت كود الخاص بها ديناميكيًا إلى رسم بياني لـ FX.
+يتم بعد ذلك تحسين الرسم البياني لـ FX قبل ترجمته في النهاية إلى رسم بياني لـ ONNX.
 
-The main advantage of this approach is that the `FX graph <https://pytorch.org/docs/stable/fx.html>`_ is captured using
-bytecode analysis that preserves the dynamic nature of the model instead of using traditional static tracing techniques.
+الميزة الرئيسية لهذا النهج هي أن `رسم FX <https://pytorch.org/docs/stable/fx.html>`_ يتم التقاطه باستخدام
+تحليل بايت كود الذي يحافظ على الطبيعة الديناميكية للنموذج بدلاً من استخدام تقنيات التتبع الثابتة التقليدية.
 
-The exporter is designed to be modular and extensible. It is composed of the following components:
+تم تصميم المُصدِّر ليكون نمطيًا وقابلاً للتوسعة. وهو يتكون من المكونات التالية:
 
-  - **ONNX Exporter**: :class:`Exporter` main class that orchestrates the export process.
-  - **ONNX Export Options**: :class:`ExportOptions` has a set of options that control the export process.
-  - **ONNX Registry**: :class:`OnnxRegistry` is the registry of ONNX operators and functions.
-  - **FX Graph Extractor**: :class:`FXGraphExtractor` extracts the FX graph from the PyTorch model.
-  - **Fake Mode**: :class:`ONNXFakeContext` is a context manager that enables fake mode for large scale models.
-  - **ONNX Program**: :class:`ONNXProgram` is the output of the exporter that contains the exported ONNX graph and diagnostics.
-  - **ONNX Program Serializer**: :class:`ONNXProgramSerializer` serializes the exported model to a file.
-  - **ONNX Diagnostic Options**: :class:`DiagnosticOptions` has a set of options that control the diagnostics emitted by the exporter.
+  - **مُصدِّر ONNX**: :class:`Exporter` الفئة الرئيسية التي تقوم بتنسيق عملية التصدير.
+  - **خيارات تصدير ONNX**: :class:`ExportOptions` لديه مجموعة من الخيارات التي تتحكم في عملية التصدير.
+  - **سجل ONNX**: :class:`OnnxRegistry` هو سجل مشغلات ONNX والوظائف.
+  - **مستخرج رسم FX**: :class:`FXGraphExtractor` يستخرج رسم FX من نموذج PyTorch.
+  - **وضع التزييف**: :class:`ONNXFakeContext` هو مدير سياق يسمح بوضع التزييف للنماذج واسعة النطاق.
+  - **برنامج ONNX**: :class:`ONNXProgram` هو ناتج المُصدِّر الذي يحتوي على الرسم البياني لـ ONNX المصدَّر والتشخيصات.
+  - **مُسلسل برنامج ONNX**: :class:`ONNXProgramSerializer` يقوم بتهيئة النموذج المصدَّر إلى ملف.
+  - **خيارات التشخيص ONNX**: :class:`DiagnosticOptions` لديه مجموعة من الخيارات التي تتحكم في التشخيصات التي يصدرها المُصدِّر.
 
-Dependencies
-------------
+التبعيات
+------
 
-The ONNX exporter depends on extra Python packages:
+يعتمد مُصدِّر ONNX على حزم بايثون الإضافية:
 
   - `ONNX <https://onnx.ai>`_
   - `ONNX Script <https://onnxscript.ai>`_
 
-They can be installed through `pip <https://pypi.org/project/pip/>`_:
+يمكن تثبيتها من خلال `pip <https://pypi.org/project/pip/>`_:
 
 .. code-block:: bash
 
   pip install --upgrade onnx onnxscript
 
-A simple example
-----------------
+مثال بسيط
+--------
 
-See below a demonstration of exporter API in action with a simple Multilayer Perceptron (MLP) as example:
+انظر أدناه توضيحًا لواجهة برمجة تطبيقات المُصدِّر في العمل مع شبكة عصبية متعددة الطبقات كمثال بسيط:
 
 .. code-block:: python
 
@@ -77,61 +77,61 @@ See below a demonstration of exporter API in action with a simple Multilayer Per
   tensor_x = torch.rand((97, 8), dtype=torch.float32)
   onnx_program = torch.onnx.dynamo_export(model, tensor_x)
 
-As the code above shows, all you need is to provide :func:`torch.onnx.dynamo_export` with an instance of the model and its input.
-The exporter will then return an instance of :class:`torch.onnx.ONNXProgram` that contains the exported ONNX graph along with extra information.
+كما يوضح الكود أعلاه، كل ما تحتاجه هو تزويد :func:`torch.onnx.dynamo_export` بمثيل للنموذج وإدخاله.
+بعد ذلك، سيعيد المُصدِّر مثيلًا لـ :class:`torch.onnx.ONNXProgram` يحتوي على الرسم البياني لـ ONNX المصدَّر بالإضافة إلى معلومات إضافية.
 
-The in-memory model available through ``onnx_program.model_proto`` is an ``onnx.ModelProto`` object in compliance with the `ONNX IR spec <https://github.com/onnx/onnx/blob/main/docs/IR.md>`_.
-The ONNX model may then be serialized into a `Protobuf file <https://protobuf.dev/>`_ using the :meth:`torch.onnx.ONNXProgram.save` API.
+يمكن الوصول إلى النموذج الموجود في الذاكرة من خلال ``onnx_program.model_proto`` وهو كائن ``onnx.ModelProto`` متوافق مع `مواصفات ONNX IR <https://github.com/onnx/onnx/blob/main/docs/IR.md>`_.
+بعد ذلك، يمكن تهيئة نموذج ONNX إلى ملف `Protobuf <https://protobuf.dev/>`_ باستخدام واجهة برمجة التطبيقات :meth:`torch.onnx.ONNXProgram.save`.
 
 .. code-block:: python
 
   onnx_program.save("mlp.onnx")
 
-Inspecting the ONNX model using GUI
+فحص نموذج ONNX باستخدام واجهة المستخدم الرسومية
 -----------------------------------
 
-You can view the exported model using `Netron <https://netron.app/>`__.
+يمكنك عرض النموذج المصدَّر باستخدام `Netron <https://netron.app/>`__.
 
 .. image:: _static/img/onnx/onnx_dynamo_mlp_model.png
     :width: 40%
-    :alt: MLP model as viewed using Netron
+    :alt: نموذج MLP كما هو موضح باستخدام Netron
 
-Note that each layer is represented in a rectangular box with a *f* icon in the top right corner.
+لاحظ أن كل طبقة ممثلة في مربع مستطيل مع أيقونة "f" في الزاوية اليمنى العليا.
 
 .. image:: _static/img/onnx/onnx_dynamo_mlp_model_function_highlight.png
     :width: 40%
-    :alt: ONNX function highlighted on MLP model
+    :alt: وظيفة ONNX مميزة في نموذج MLP
 
-By expanding it, the function body is shown.
+عن طريق توسيعه، يتم عرض جسم الوظيفة.
 
 .. image:: _static/img/onnx/onnx_dynamo_mlp_model_function_body.png
     :width: 50%
-    :alt: ONNX function body
+    :alt: جسم وظيفة ONNX
 
-The function body is a sequence of ONNX operators or other functions.
+جسم الوظيفة هو تسلسل لمشغلات ONNX أو وظائف أخرى.
 
-Diagnosing issues with SARIF
+تشخيص المشكلات باستخدام SARIF
 ----------------------------
 
-ONNX diagnostics goes beyond regular logs through the adoption of
-`Static Analysis Results Interchange Format (aka SARIF) <https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html>`__
-to help users debug and improve their model using a GUI, such as
-Visual Studio Code's `SARIF Viewer <https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer>`_.
+تتجاوز تشخيصات ONNX السجلات العادية من خلال اعتماد
+`تنسيق نتائج التحليل الثابت (المعروف باسم SARIF) <https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html>`__
+لمساعدة المستخدمين في تصحيح أخطاء نموذجهم وتحسينه باستخدام واجهة المستخدم الرسومية، مثل
+`عارض SARIF <https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer>`_ في Visual Studio Code.
 
-The main advantages are:
+المزايا الرئيسية هي:
 
-  - The diagnostics are emitted in machine parseable `Static Analysis Results Interchange Format (SARIF) <https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html>`__.
-  - A new clearer, structured way to add new and keep track of diagnostic rules.
-  - Serve as foundation for more future improvements consuming the diagnostics.
+  - يتم إصدار التشخيصات بتنسيق قابل للتحليل الآلي `تنسيق نتائج التحليل الثابت (SARIF) <https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html>`__.
+  - طريقة جديدة أوضح وأكثر تنظيماً لإضافة قواعد تشخيصية جديدة وتتبعها.
+  - تعمل كقاعدة لمزيد من التحسينات المستقبلية التي تستخدم التشخيصات.
 
 .. toctree::
    :maxdepth: 1
-   :caption: ONNX Diagnostic SARIF Rules
+   :caption: قواعد SARIF لتشخيص ONNX
    :glob:
 
    generated/onnx_dynamo_diagnostics_rules/*
 
-API Reference
+مرجع واجهة برمجة التطبيقات
 -------------
 
 .. autofunction:: torch.onnx.dynamo_export
