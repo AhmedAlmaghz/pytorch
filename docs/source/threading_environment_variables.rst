@@ -1,13 +1,13 @@
 .. _threading_environment_variables:
 
-Threading Environment Variables
-===============================
+متغيرات بيئة الخيوط
+==================
 .. list-table::
   :header-rows: 1
 
-  * - Variable
-    - Description
+  * - المتغير
+    - الوصف
   * - ``OMP_NUM_THREADS``
-    - Sets the maximum number of threads to use for OpenMP parallel regions.
+    - يحدد العدد الأقصى للخيوط التي سيتم استخدامها في المناطق الموازية OpenMP.
   * - ``MKL_NUM_THREADS``
-    - Sets the maximum number of threads to use for the Intel MKL library. Note that MKL_NUM_THREADS takes precedence over ``OMP_NUM_THREADS``.
+    - يحدد العدد الأقصى للخيوط التي سيتم استخدامها في مكتبة Intel MKL. لاحظ أن لـ MKL_NUM_THREADS الأسبقية على ``OMP_NUM_THREADS``.
