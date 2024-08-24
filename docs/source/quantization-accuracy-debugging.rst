@@ -1,87 +1,57 @@
-Quantization Accuracy Debugging
--------------------------------
+تحديد أخطاء دقة التكميم وإصلاحها
+----------------------
 
-This document provides high level strategies for improving quantization
-accuracy. If a quantized model has error compared to the original model,
-we can categorize the error into:
+تقدم هذه الوثيقة استراتيجيات عامة لتحسين دقة التكميم. إذا كان هناك خطأ في النموذج المكّمم مقارنة بالنموذج الأصلي، فيمكننا تصنيف الخطأ إلى:
 
-1. **data insensitive error** - caused by intrinsic model quantization error,
-   large portion of input data has large error
-2. **data sensitive error** - caused by outlier input data, small
-   portion of input data has large error
-3. **implementation error** - quantized kernel is not matching reference implementation
+1. **خطأ غير حساس للبيانات** - ينتج عن خطأ تكميم متأصل في النموذج، حيث يكون لجزء كبير من بيانات الإدخال خطأ كبير.
+2. **خطأ حساس للبيانات** - ينتج عن بيانات إدخال شاذة، حيث يكون لجزء صغير من بيانات الإدخال خطأ كبير.
+3. **خطأ في التنفيذ** - عندما لا يتطابق الكيرنل المكّمم مع التنفيذ المرجعي.
 
-Data insensitive error
-~~~~~~~~~~~~~~~~~~~~~~
+الخطأ غير الحساس للبيانات
+~~~~~~~~~~~~~~~~~~
 
-General tips
-^^^^^^^^^^^^
+نصائح عامة
+^^^^^^^^
 
-1. For PTQ, ensure that the data you are calibrating with is representative
-   of your dataset. For example, for a classification problem a general
-   guideline is to have multiple samples in every category, and the overall
-   number of samples should be at least 100. There is no penalty for
-   calibrating with more data other than calibration time.
-2. If your model has Conv-BN or Linear-BN patterns, consider fusing them.
-   If you are using FX graph mode quantization, this is done automatically
-   by the workflow. If you are using Eager mode quantization, you can do
-   this manually with the ``torch.ao.quantization.fuse_modules`` API.
-3. Increase the precision of dtype of the problematic ops. Usually, fp32
-   will have the highest accuracy, followed by fp16, followed by dynamically
-   quantized int8, followed by statically quantized int8.
+1. بالنسبة لتقنية PTQ، تأكد من أن البيانات التي تقوم بمعايرتها تمثيلية لمجموعة بياناتك. على سبيل المثال، بالنسبة لمشكلة التصنيف، تتمثل الإرشادات العامة في وجود عينات متعددة في كل فئة، وأن يكون العدد الإجمالي للعينات 100 على الأقل. لا توجد عقوبة للمعايرة باستخدام المزيد من البيانات بخلاف وقت المعايرة.
+2. إذا كان نموذجك يحتوي على أنماط Conv-BN أو Linear-BN، ففكر في دمجها. إذا كنت تستخدم وضع الرسم البياني FX للتكميم، فإن سير العمل يقوم بذلك تلقائيًا. إذا كنت تستخدم وضع Eager للتكميم، فيمكنك القيام بذلك يدويًا باستخدام واجهة برمجة التطبيقات ``torch.ao.quantization.fuse_modules``.
+3. زيادة دقة النوع dtype للعمليات المشكلة. عادة، سيكون لـ fp32 أعلى دقة، يليه fp16، ثم التكميم الديناميكي int8، ثم التكميم الثابت int8.
 
-   1. Note: this is trading off performance for accuracy.
-   2. Note: availability of kernels per dtype per op can vary by backend.
-   3. Note: dtype conversions add an additional performance cost. For example,
+   1. ملاحظة: هذا يتطلب موازنة بين الأداء والدقة.
+   2. ملاحظة: قد تختلف توفر الكيرنلات لكل نوع ولعملية حسابية لكل backend.
+   3. ملاحظة: تضيف تحويلات النوع dtype تكلفة أداء إضافية. على سبيل المثال،
       ``fp32_op -> quant -> int8_op -> dequant -> fp32_op -> quant -> int8_op -> dequant``
-      will have a performance penalty compared to
+      سيكون لها عقوبة أداء مقارنة بـ
       ``fp32_op -> fp32_op -> quant -> int8_op -> int8_op -> dequant``
-      because of a higher number of required dtype conversions.
+      بسبب ارتفاع عدد تحويلات النوع dtype المطلوبة.
 
-4. If you are using PTQ, consider using QAT to recover some of the accuracy loss
-   from quantization.
+4. إذا كنت تستخدم PTQ، ففكر في استخدام QAT لاسترداد بعض فقدان الدقة الناتج عن التكميم.
 
-Int8 quantization tips
-^^^^^^^^^^^^^^^^^^^^^^
+نصائح تكميم int8
+^^^^^^^^^^^^^^
 
-1. If you are using per-tensor weight quantization, consider using per-channel
-   weight quantization.
-2. If you are doing inference on `fbgemm`, ensure that you set the `reduce_range`
-   argument to `False` if your CPU is Cooperlake or newer, and to `True` otherwise.
-3. Audit the input activation distribution variation across different samples.
-   If this variation is high, the layer may be suitable for dynamic quantization
-   but not static quantization.
+1. إذا كنت تستخدم تكميم وزن per-tensor، ففكر في استخدام تكميم وزن per-channel.
+2. إذا كنت تقوم بالاستدلال على `fbgemm`، فتأكد من تعيين وسيط `reduce_range` إلى `False` إذا كانت وحدة المعالجة المركزية الخاصة بك Cooperlake أو أحدث، وإلى `True` في الحالات الأخرى.
+3. تدقيق توزيع تنشيط الإدخال عبر عينات مختلفة. إذا كان هذا التباين مرتفعًا، فقد تكون الطبقة مناسبة للتكميم الديناميكي ولكن ليس للتكميم الثابت.
 
-Data sensitive error
-~~~~~~~~~~~~~~~~~~~~
+الخطأ الحساس للبيانات
+~~~~~~~~~~~~~~~
 
-If you are using static quantization and a small portion of your input data is
-resulting in high quantization error, you can try:
+إذا كنت تستخدم التكميم الثابت ومجموعة صغيرة من بيانات الإدخال لديك تؤدي إلى خطأ تكميم مرتفع، فيمكنك تجربة ما يلي:
 
-1. Adjust your calibration dataset to make it more representative of your
-   inference dataset.
-2. Manually inspect (using Numeric Suite) which layers have high quantization
-   error. For these layers, consider leaving them in floating point or adjusting
-   the observer settings to choose a better scale and zero_point.
+1. ضبط مجموعة بيانات المعايرة الخاصة بك لجعلها أكثر تمثيلاً لمجموعة بيانات الاستدلال الخاصة بك.
+2. التفتيش اليدوي (باستخدام Numeric Suite) للطبقات التي تحتوي على خطأ تكميم مرتفع. بالنسبة لهذه الطبقات، ضع في اعتبارك تركها في النقطة العائمة أو ضبط إعدادات المراقب لتحديد مقياس أفضل ونقطة الصفر.
 
+خطأ في التنفيذ
+~~~~~~~~~~
 
-Implementation error
-~~~~~~~~~~~~~~~~~~~~
+إذا كنت تستخدم تكميم PyTorch مع backend الخاص بك، فقد ترى اختلافات بين التنفيذ المرجعي لعملية ما (مثل ``dequant -> op_fp32 -> quant``) وتنفيذ العملية المكّممة (مثل ``op_int8``) على الأجهزة المستهدفة. قد يعني هذا أحد أمرين:
 
-If you are using PyTorch quantization with your own backend
-you may see differences between the reference implementation of an
-operation (such as ``dequant -> op_fp32 -> quant``) and the quantized implementation
-(such as `op_int8`) of the op on the target hardware. This could mean one of two things:
+1. الاختلافات (عادة ما تكون صغيرة) متوقعة بسبب السلوك المحدد لنواة الهدف على الأجهزة المستهدفة مقارنة بـ fp32/cpu. أحد أمثلة ذلك هو التراكم في نوع بيانات صحيح. ما لم تضمن النواة التطابق التام مع التنفيذ المرجعي، فإن هذا متوقع.
+2. تحتوي النواة على الأجهزة المستهدفة على مشكلة في الدقة. في هذه الحالة، تواصل مع مطور النواة.
 
-1. the differences (usually small) are expected due to specific behavior of
-   the target kernel on the target hardware compared to fp32/cpu. An example of this
-   is accumulating in an integer dtype. Unless the kernel guarantees bitwise
-   equivalency with the reference implementation, this is expected.
-2. the kernel on the target hardware has an accuracy issue. In this case, reach
-   out to the kernel developer.
-
-Numerical Debugging Tooling (prototype)
----------------------------------------
+أدوات التصحيح العددي (النموذج الأولي)
+---------------------------
 
 .. toctree::
     :hidden:
@@ -90,9 +60,9 @@ Numerical Debugging Tooling (prototype)
     torch.ao.ns._numeric_suite_fx
 
 .. warning ::
-     Numerical debugging tooling is early prototype and subject to change.
+     أدوات التصحيح العددي هي نموذج أولي مبكر وقد تتغير.
 
 * :ref:`torch_ao_ns_numeric_suite`
-  Eager mode numeric suite
+  مجموعة الأرقام في وضع Eager
 * :ref:`torch_ao_ns_numeric_suite_fx`
-  FX numeric suite
+  مجموعة FX الرقمية
