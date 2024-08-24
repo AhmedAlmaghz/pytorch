@@ -6,7 +6,7 @@ torch.signal
 .. automodule:: torch.signal
 .. currentmodule:: torch.signal
 
-The `torch.signal` module, modeled after SciPy's `signal <https://docs.scipy.org/doc/scipy/reference/signal.html>`_ module.
+تم تصميم وحدة `torch.signal` على غرار وحدة `signal <https://docs.scipy.org/doc/scipy/reference/signal.html>`_ في SciPy.
 
 torch.signal.windows
 --------------------
