@@ -1,21 +1,19 @@
 .. _cpu-threading-torchscript-inference:
 
-CPU threading and TorchScript inference
-=================================================
+خيوطية المعالجة المركزية واستنتاج TorchScript
+=====================================
 
-PyTorch allows using multiple CPU threads during TorchScript model inference.
-The following figure shows different levels of parallelism one would find in a
-typical application:
+يسمح PyTorch باستخدام خيوط معالجة مركزية متعددة أثناء استنتاج نموذج TorchScript.
+يوضح الشكل التالي مستويات مختلفة من التوازي التي قد نجدها في تطبيق نموذجي:
 
 .. image:: cpu_threading_torchscript_inference.svg
    :width: 75%
 
-One or more inference threads execute a model's forward pass on the given inputs.
-Each inference thread invokes a JIT interpreter that executes the ops
-of a model inline, one by one. A model can utilize a ``fork`` TorchScript
-primitive to launch an asynchronous task. Forking several operations at once
-results in a task that is executed in parallel. The ``fork`` operator returns a
-``Future`` object which can be used to synchronize on later, for example:
+يقوم خيط استدلال واحد أو أكثر بتنفيذ تمرير للأمام للنموذج على المدخلات المعطاة.
+يقوم كل خيط استدلال باستدعاء مترجم JIT الذي ينفذ عمليات النموذج
+داخل السطر، واحدة تلو الأخرى. يمكن للنموذج أن يستخدم "fork" TorchScript
+بدائي لإطلاق مهمة غير متزامنة. يؤدي تشويك عدة عمليات في نفس الوقت
+ينتج عنه مهمة يتم تنفيذها بشكل متوازي. ويعيد مشغل "الشوك" كائن "مستقبل" الذي يمكن استخدامه للتناغم في وقت لاحق، على سبيل المثال:
 
 .. code-block:: python
 
@@ -25,96 +23,95 @@ results in a task that is executed in parallel. The ``fork`` operator returns a
 
     @torch.jit.script
     def forward(x):
-        # launch compute_z asynchronously:
+        # إطلاق compute_z بشكل غير متزامن:
         fut = torch.jit._fork(compute_z, x)
-        # execute the next operation in parallel to compute_z:
+        # تنفيذ العملية التالية بالتوازي مع compute_z:
         y = torch.mm(x, self.w_y)
-        # wait for the result of compute_z:
+        # الانتظار حتى انتهاء compute_z:
         z = torch.jit._wait(fut)
         return y + z
 
 
-PyTorch uses a single thread pool for the inter-op parallelism, this thread pool
-is shared by all inference tasks that are forked within the application process.
+يستخدم PyTorch بركة خيوط واحدة للتوازي بين العمليات، ويتم مشاركة بركة الخيوط هذه
+بواسطة جميع مهام الاستدلال التي يتم تشويكها داخل عملية التطبيق.
 
-In addition to the inter-op parallelism, PyTorch can also utilize multiple threads
-within the ops (`intra-op parallelism`). This can be useful in many cases,
-including element-wise ops on large tensors, convolutions, GEMMs, embedding
-lookups and others.
+بالإضافة إلى التوازي بين العمليات، يمكن لـ PyTorch أيضًا استخدام خيوط متعددة
+داخل العمليات ('التوازي داخل العمليات'). يمكن أن يكون هذا مفيدًا في العديد من الحالات،
+بما في ذلك العمليات الحسابية لكل عنصر على المصفوفات الكبيرة، والتحويلات، وGEMMs، وعمليات البحث عن التعيينات، وغيرها.
 
 
-Build options
+خيارات البناء
 -------------
 
-PyTorch uses an internal ATen library to implement ops. In addition to that,
-PyTorch can also be built with support of external libraries, such as MKL_ and MKL-DNN_,
-to speed up computations on CPU.
+يستخدم PyTorch مكتبة ATen الداخلية لتنفيذ العمليات. بالإضافة إلى ذلك،
+يمكن أيضًا بناء PyTorch مع دعم المكتبات الخارجية، مثل MKL_ و MKL-DNN_،
+لتسريع العمليات الحسابية على وحدة المعالجة المركزية.
 
-ATen, MKL and MKL-DNN support intra-op parallelism and depend on the
-following parallelization libraries to implement it:
+تدعم مكتبات ATen و MKL و MKL-DNN التوازي داخل العمليات وتعتمد على
+مكتبات الموازاة التالية لتنفيذها:
 
-* OpenMP_ - a standard (and a library, usually shipped with a compiler), widely used in external libraries;
-* TBB_ - a newer parallelization library optimized for task-based parallelism and concurrent environments.
+* OpenMP_ - معيار (ومكتبة، عادة ما يتم شحنه مع المترجم)، يستخدم على نطاق واسع في المكتبات الخارجية؛
+* TBB_ - مكتبة موازاة أحدث تم تحسينها للتوازي القائم على المهام والبيئات المتزامنة.
 
-OpenMP historically has been used by a large number of libraries. It is known
-for a relative ease of use and support for loop-based parallelism and other primitives.
+تاريخيا، تم استخدام OpenMP من قبل عدد كبير من المكتبات. إنه معروف
+بالسهولة النسبية للاستخدام ودعم التوازي القائم على الحلقات والبدائيات الأخرى.
 
-TBB is used to a lesser extent in external libraries, but, at the same time,
-is optimized for the concurrent environments. PyTorch's TBB backend guarantees that
-there's a separate, single, per-process intra-op thread pool used by all of the
-ops running in the application.
+يتم استخدام TBB إلى حد أقل في المكتبات الخارجية، ولكن، في نفس الوقت،
+تمت تهيئته للبيئات المتزامنة. تضمن مؤخرة TBB الخاصة بـ PyTorch أنه
+يوجد بركة خيوط منفصلة وأحادية لكل عملية داخل العملية
+يتم استخدامه من قبل جميع العمليات التي تعمل في التطبيق.
 
-Depending of the use case, one might find one or another parallelization
-library a better choice in their application.
+اعتمادًا على حالة الاستخدام، قد يجد المرء أن مكتبة الموازاة أو الأخرى
+خيار أفضل في تطبيقهم.
 
-PyTorch allows selecting of the parallelization backend used by ATen and other
-libraries at the build time with the following build options:
+يسمح PyTorch باختيار مؤخرة الموازاة التي تستخدمها مكتبة ATen والمكتبات الأخرى
+في وقت البناء مع خيارات البناء التالية:
 
 +------------+------------------------+-----------------------------+----------------------------------------+
-| Library    | Build Option           | Values                      | Notes                                  |
+| المكتبة    | خيار البناء           | القيم                       | ملاحظات                                  |
 +============+========================+=============================+========================================+
-| ATen       | ``ATEN_THREADING``     | ``OMP`` (default), ``TBB``  |                                        |
+| ATen       | ``ATEN_THREADING``     | ``OMP`` (افتراضي)، ``TBB``  |                                        |
 +------------+------------------------+-----------------------------+----------------------------------------+
-| MKL        | ``MKL_THREADING``      | (same)                      | To enable MKL use ``BLAS=MKL``         |
+| MKL        | ``MKL_THREADING``      | (نفس الشيء)                | لتمكين MKL استخدم ``BLAS=MKL``         |
 +------------+------------------------+-----------------------------+----------------------------------------+
-| MKL-DNN    | ``MKLDNN_CPU_RUNTIME`` | (same)                      | To enable MKL-DNN use ``USE_MKLDNN=1`` |
+| MKL-DNN    | ``MKLDNN_CPU_RUNTIME`` | (نفس الشيء)                | لتمكين MKL-DNN استخدم ``USE_MKLDNN=1`` |
 +------------+------------------------+-----------------------------+----------------------------------------+
 
-It is recommended not to mix OpenMP and TBB within one build.
+من المستحسن عدم خلط OpenMP و TBB داخل بناء واحد.
 
-Any of the ``TBB`` values above require ``USE_TBB=1`` build setting (default: OFF).
-A separate setting ``USE_OPENMP=1`` (default: ON) is required for OpenMP parallelism.
+يتطلب أي من قيم "TBB" أعلاه إعداد البناء "USE_TBB=1" (افتراضي: OFF).
+يتم استخدام إعداد منفصل "USE_OPENMP=1" (افتراضي: ON) للتوازي OpenMP.
 
-Runtime API
------------
+واجهة برمجة التطبيقات في وقت التشغيل
+--------------------------
 
-The following API is used to control thread settings:
+تُستخدم واجهة برمجة التطبيقات التالية للتحكم في إعدادات الخيوط:
 
 +------------------------+-----------------------------------------------------------+---------------------------------------------------------+
-| Type of parallelism    | Settings                                                  | Notes                                                   |
+| نوع التوازي           | الإعدادات                                                  | ملاحظات                                                   |
 +========================+===========================================================+=========================================================+
-| Inter-op parallelism   | ``at::set_num_interop_threads``,                          | Default number of threads: number of CPU cores.         |
+| التوازي بين العمليات  | ``at::set_num_interop_threads``،                          | عدد الخيوط الافتراضي: عدد وحدات المعالجة المركزية.         |
 |                        | ``at::get_num_interop_threads`` (C++)                     |                                                         |
 |                        |                                                           |                                                         |
-|                        | ``set_num_interop_threads``,                              |                                                         |
-|                        | ``get_num_interop_threads`` (Python, :mod:`torch` module) |                                                         |
+|                        | ``set_num_interop_threads``،                              |                                                         |
+|                        | ``get_num_interop_threads`` (بايثون، :mod:`torch` module) |                                                         |
 +------------------------+-----------------------------------------------------------+                                                         |
-| Intra-op parallelism   | ``at::set_num_threads``,                                  |                                                         |
+| التوازي داخل العمليات  | ``at::set_num_threads``،                                  |                                                         |
 |                        | ``at::get_num_threads`` (C++)                             |                                                         |
-|                        | ``set_num_threads``,                                      |                                                         |
-|                        | ``get_num_threads`` (Python, :mod:`torch` module)         |                                                         |
+|                        | ``set_num_threads``،                                      |                                                         |
+|                        | ``get_num_threads`` (بايثون، :mod:`torch` module)         |                                                         |
 |                        |                                                           |                                                         |
-|                        | Environment variables:                                    |                                                         |
-|                        | ``OMP_NUM_THREADS`` and ``MKL_NUM_THREADS``               |                                                         |
+|                        | متغيرات البيئة:                                    |                                                         |
+|                        | ``OMP_NUM_THREADS`` و ``MKL_NUM_THREADS``               |                                                         |
 +------------------------+-----------------------------------------------------------+---------------------------------------------------------+
 
-For the intra-op parallelism settings, ``at::set_num_threads``, ``torch.set_num_threads`` always take precedence
-over environment variables, ``MKL_NUM_THREADS`` variable takes precedence over ``OMP_NUM_THREADS``.
+بالنسبة لإعدادات التوازي داخل العمليات، فإن ``at::set_num_threads``، ``torch.set_num_threads`` لها الأسبقية دائمًا
+على متغيرات البيئة، ويأخذ متغير "MKL_NUM_THREADS" الأسبقية على "OMP_NUM_THREADS".
 
-Tuning the number of threads
-----------------------------
+ضبط عدد الخيوط
+------------
 
-The following simple script shows how a runtime of matrix multiplication changes with the number of threads:
+يوضح النص البرمجي البسيط التالي كيف يتغير وقت تشغيل الضرب المصفوفة مع عدد الخيوط:
 
 .. code-block:: python
 
@@ -125,36 +122,36 @@ The following simple script shows how a runtime of matrix multiplication changes
         torch.set_num_threads(t)
         r = timeit.timeit(setup = "import torch; x = torch.randn(1024, 1024); y = torch.randn(1024, 1024)", stmt="torch.mm(x, y)", number=100)
         runtimes.append(r)
-    # ... plotting (threads, runtimes) ...
+    # ... التخطيط (الخيوط، runtimes) ...
 
-Running the script on a system with 24 physical CPU cores (Xeon E5-2680, MKL and OpenMP based build) results in the following runtimes:
+ينتج عن تشغيل النص البرمجي على نظام به 24 نواة معالجة مركزية فعلية (Xeon E5-2680، بناء OpenMP و MKL) أوقات التشغيل التالية:
 
 .. image:: cpu_threading_runtimes.svg
    :width: 75%
 
-The following considerations should be taken into account when tuning the number of intra- and inter-op threads:
+يجب مراعاة الاعتبارات التالية عند ضبط عدد الخيوط داخل العمليات والتوازي بين العمليات:
 
-* When choosing the number of threads one needs to avoid `oversubscription` (using too many threads, leads to performance degradation). For example, in an application that uses a large application thread pool or heavily relies on
-  inter-op parallelism, one might find disabling intra-op parallelism as a possible option (i.e. by calling ``set_num_threads(1)``);
+* عند اختيار عدد الخيوط، يجب تجنب 'الاشتراك المفرط' (استخدام عدد كبير جدًا من الخيوط، مما يؤدي إلى تدهور الأداء). على سبيل المثال، في تطبيق يستخدم بركة خيوط تطبيق كبيرة أو يعتمد اعتمادًا كبيرًا على
+  التوازي بين العمليات، فقد يجد المرء تعطيل التوازي داخل العمليات كخيار ممكن (أي عن طريق استدعاء ``set_num_threads(1)``)؛
 
-* In a typical application one might encounter a trade off between `latency` (time spent on processing an inference request) and `throughput` (amount of work done per unit of time). Tuning the number of threads can be a useful
-  tool to adjust this trade off in one way or another. For example, in latency critical applications one might want to increase the number of intra-op threads to process each request as fast as possible. At the same time, parallel implementations
-  of ops may add an extra overhead that increases amount work done per single request and thus reduces the overall throughput.
+* في تطبيق نموذجي، قد تواجه مقايضة بين 'الانتظار' (الوقت المستغرق لمعالجة طلب الاستدلال) و'السرعة' (كمية العمل المنجز لكل وحدة زمنية). يمكن أن يكون ضبط عدد الخيوط أداة مفيدة
+  لتعديل هذه المقايضة بطريقة أو بأخرى. على سبيل المثال، في التطبيقات الحساسة للانتظار، قد يرغب المرء في زيادة عدد الخيوط داخل العمليات لمعالجة كل طلب بأسرع ما يمكن. وفي الوقت نفسه، قد تضيف التنفيذات المتوازية
+  للعمليات الحسابية عبئًا إضافيًا يزيد من مقدار العمل المنجز لكل طلب فردي، مما يقلل من السرعة الإجمالية.
 
 .. warning::
-    OpenMP does not guarantee that a single per-process intra-op thread
-    pool is going to be used in the application. On the contrary, two different application or inter-op
-    threads may use different OpenMP thread pools for intra-op work.
-    This might result in a large number of threads used by the application.
-    Extra care in tuning the number of threads is needed to avoid
-    oversubscription in multi-threaded applications in OpenMP case.
+    لا يضمن OpenMP استخدام بركة خيوط منفصلة وأحادية لكل عملية داخل العملية
+    سيتم استخدامه في التطبيق. على العكس من ذلك، قد يستخدم خيطان تطبيقان أو خيطان بين العمليات
+    قد تستخدم برك خيوط OpenMP مختلفة للعمل داخل العمليات.
+    قد يؤدي هذا إلى استخدام عدد كبير من الخيوط بواسطة التطبيق.
+    هناك حاجة إلى عناية إضافية في ضبط عدد الخيوط لتجنب
+    الاشتراك المفرط في التطبيقات متعددة الخيوط في حالة OpenMP.
 
 .. note::
-    Pre-built PyTorch releases are compiled with OpenMP support.
+    يتم تجميع إصدارات PyTorch المسبقة البناء مع دعم OpenMP.
 
 .. note::
-    ``parallel_info`` utility prints information about thread settings and can be used for debugging.
-    Similar output can be also obtained in Python with ``torch.__config__.parallel_info()`` call.
+    تقوم أداة ``parallel_info`` بطباعة معلومات حول إعدادات الخيوط ويمكن استخدامها للتصحيح.
+    يمكن الحصول على إخراج مشابه في بايثون باستخدام مكالمة ``torch.__config__.parallel_info()``.
 
 .. _OpenMP: https://www.openmp.org/
 .. _TBB: https://github.com/intel/tbb
