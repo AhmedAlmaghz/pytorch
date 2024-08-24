@@ -1,52 +1,50 @@
-PyTorch 2.0 Performance Dashboard
-=================================
+لوحة أداء PyTorch 2.0
+=======================
 
-**Author:** `Bin Bao <https://github.com/desertfire>`__ and `Huy Do <https://github.com/huydhn>`__
+**المؤلف:** `Bin Bao <https://github.com/desertfire>`__ و `Huy Do <https://github.com/huydhn>`__
 
-PyTorch 2.0's performance is tracked nightly on this `dashboard <https://hud.pytorch.org/benchmark/compilers>`__.
-The performance collection runs on 12 GCP A100 nodes every night. Each node contains a 40GB A100 Nvidia GPU and
-a 6-core 2.2GHz Intel Xeon CPU. The corresponding CI workflow file can be found
-`here <https://github.com/pytorch/pytorch/blob/main/.github/workflows/inductor-perf-test-nightly.yml>`__.
+يتم تتبع أداء PyTorch 2.0 يوميًا على هذا `اللوحة <https://hud.pytorch.org/benchmark/compilers>`__.
+تتم عمليات جمع الأداء على 12 عقدة GCP A100 كل ليلة. تحتوي كل عقدة على وحدة معالجة رسومات Nvidia A100 سعة 40 جيجابايت
+ومعالج Intel Xeon بستة أنوية بسرعة 2.2 جيجاهرتز. يمكن العثور على ملف سير عمل CI المقابل
+`هنا <https://github.com/pytorch/pytorch/blob/main/.github/workflows/inductor-perf-test-nightly.yml>`__.
 
-How to read the dashboard?
----------------------------
+كيفية قراءة اللوحة؟
+----------------
 
-The landing page shows tables for all three benchmark suites we measure, ``TorchBench``, ``Huggingface``, and ``TIMM``,
-and graphs for one benchmark suite with the default setting. For example, the default graphs currently show the AMP
-training performance trend in the past 7 days for ``TorchBench``. Droplists on the top of that page can be
-selected to view tables and graphs with different options. In addition to the pass rate, there are 3 key
-performance metrics reported there: ``Geometric mean speedup``, ``Mean compilation time``, and
-``Peak memory footprint compression ratio``.
-Both ``Geometric mean speedup`` and ``Peak memory footprint compression ratio`` are compared against
-the PyTorch eager performance, and the larger the better. Each individual performance number on those tables can be clicked,
-which will bring you to a view with detailed numbers for all the tests in that specific benchmark suite.
+تُظهر صفحة الهبوط جداول لأجنحة المعايير الثلاثة التي نقيسها، `` TorchBench ``، و `` Huggingface ``، و `` TIMM ``،
+والرسوم البيانية لمجموعة معايير واحدة مع الإعداد الافتراضي. على سبيل المثال، تعرض الرسوم البيانية الافتراضية حاليًا اتجاه أداء AMP
+في الأيام السبعة الماضية لـ `` TorchBench ``. يمكن تحديد قوائم التمرير في أعلى تلك الصفحة
+لعرض الجداول والرسوم البيانية بخيارات مختلفة. بالإضافة إلى معدل النجاح، هناك 3 مقاييس أداء رئيسية يتم الإبلاغ عنها هناك: `` متوسط السرعة الهندسي ``،
+"متوسط وقت التجميع"، ونسبة "ضغط ذروة استخدام الذاكرة".
+يتم مقارنة كل من "متوسط السرعة الهندسي" و "نسبة ضغط ذروة استخدام الذاكرة"
+بأداء PyTorch eager، وكلما كان ذلك أفضل. يمكن النقر فوق كل رقم أداء فردي في تلك الجداول،
+والذي سيأخذك إلى طريقة عرض مع أرقام مفصلة لجميع الاختبارات في مجموعة المعايير المحددة تلك.
 
-What is measured on the dashboard?
------------------------------------
+ماذا يتم قياسه على اللوحة؟
+---------------------
 
-All the dashboard tests are defined in this
-`function <https://github.com/pytorch/pytorch/blob/3e18d3958be3dfcc36d3ef3c481f064f98ebeaf6/.ci/pytorch/test.sh#L305>`__.
-The exact test configurations are subject to change, but at the moment, we measure both inference and training
-performance with AMP precision on the three benchmark suites. We also measure different settings of TorchInductor,
-including ``default``, ``with_cudagraphs (default + cudagraphs)``, and ``dynamic (default + dynamic_shapes)``.
+جميع اختبارات اللوحة محددة في هذا
+`الدالة <https://github.com/pytorch/pytorch/blob/3e18d3958be3dfcc36d3ef3c481f064f98ebeaf6/.ci/pytorch/test.sh#L305>`__.
+تكون تكوينات الاختبار الدقيقة عرضة للتغيير، ولكن في الوقت الحالي، نقيس أداء الاستدلال والتدريب
+مع دقة AMP في أجنحة المعايير الثلاثة. كما نقيس إعدادات مختلفة لـ TorchInductor،
+بما في ذلك `` default ``، و `` with_cudagraphs (default + cudagraphs) ``، و `` dynamic (default + dynamic_shapes) ``.
 
-Can I check if my PR affects TorchInductor's performance on the dashboard before merging?
------------------------------------------------------------------------------------------
+هل يمكنني التحقق مما إذا كان PR الخاص بي يؤثر على أداء TorchInductor على اللوحة قبل الدمج؟
+-----------------------------------------------------------------------
 
-Individual dashboard runs can be triggered manually by clicking the ``Run workflow`` button
-`here <https://github.com/pytorch/pytorch/actions/workflows/inductor-perf-test-nightly.yml>`__
-and submitting with your PR's branch selected. This will kick off a whole dashboard run with your PR's changes.
-Once it is done, you can check the results by selecting the corresponding branch name and commit ID
-on the performance dashboard UI. Be aware that this is an expensive CI run. With the limited
-resources, please use this functionality wisely.
+يمكن تشغيل لوحة القيادة الفردية يدويًا بالنقر فوق الزر "تشغيل سير العمل"
+`هنا <https://github.com/pytorch/pytorch/actions/workflows/inductor-perf-test-nightly.yml>`__
+وإرسالها مع فرع PR الخاص بك محددًا. سيبدأ هذا تشغيل لوحة كاملة بتنفيذ تغييراتك.
+بمجرد الانتهاء من ذلك، يمكنك التحقق من النتائج عن طريق تحديد اسم الفرع ومعرف الالتزام المقابل
+في واجهة مستخدم لوحة الأداء. كن على علم بأن هذا تشغيل CI مكلف. مع الموارد المحدودة، يرجى استخدام هذه الوظيفة بحكمة.
 
-How can I run any performance test locally?
---------------------------------------------
+كيف يمكنني تشغيل أي اختبار للأداء محليًا؟
+---------------------------------
 
-The exact command lines used during a complete dashboard run can be found in any recent CI run logs.
-The `workflow page <https://github.com/pytorch/pytorch/actions/workflows/inductor-perf-test-nightly.yml>`__
-is a good place to look for logs from some of the recent runs.
-In those logs, you can search for lines like
-``python benchmarks/dynamo/huggingface.py --performance --cold-start-latency --inference --amp --backend inductor --disable-cudagraphs --device cuda``
-and run them locally if you have a GPU working with PyTorch 2.0.
-``python benchmarks/dynamo/huggingface.py -h`` will give you a detailed explanation on options of the benchmarking script.
+يمكن العثور على سطور الأوامر الدقيقة المستخدمة أثناء تشغيل لوحة كاملة في سجلات أي تشغيل CI حديث.
+`صفحة سير العمل <https://github.com/pytorch/pytorch/actions/workflows/inductor-perf-test-nightly.yml>`__
+مكان جيد للبحث عن سجلات بعض التشغيلات الأخيرة.
+في تلك السجلات، يمكنك البحث عن أسطر مثل
+`` python benchmarks/dynamo/huggingface.py --performance --cold-start-latency --inference --amp --backend inductor --disable-cudagraphs --device cuda``
+وتشغيلها محليًا إذا كان لديك وحدة معالجة رسومات (GPU) تعمل مع PyTorch 2.0.
+سيقدم `` python benchmarks/dynamo/huggingface.py -h `` لك تفسيرًا مفصلاً لخيارات برنامج المعايير.
