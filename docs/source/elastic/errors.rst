@@ -1,12 +1,12 @@
 .. _elastic_errors-api:
 
-Error Propagation
-==================
+انتشار الخطأ
+=============
 
 .. automodule:: torch.distributed.elastic.multiprocessing.errors
 
-Methods and Classes
----------------------
+الدوال والفئات
+-------------
 
 .. currentmodule:: torch.distributed.elastic.multiprocessing.errors
 
@@ -14,6 +14,12 @@ Methods and Classes
 
 .. autoclass:: ChildFailedError
 
+    استثناء يتم إلقاؤه عندما يفشل أحد العمليات الفرعية.
+
 .. autoclass:: ErrorHandler
 
+    معالج الأخطاء المسؤول عن التعامل مع الأخطاء التي تحدث في العمليات الفرعية.
+
 .. autoclass:: ProcessFailure
+
+    استثناء يتم إلقاؤه عندما تفشل إحدى العمليات.
