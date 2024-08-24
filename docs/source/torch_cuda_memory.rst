@@ -1,60 +1,62 @@
+بالتأكيد! فيما يلي النص المترجم إلى اللغة العربية مع الحفاظ على تنسيق ReStructuredText:
+
 .. _torch_cuda_memory:
 
-Understanding CUDA Memory Usage
+فهم استخدام ذاكرة CUDA
 ===============================
-To debug CUDA memory use, PyTorch provides a way to generate memory snapshots that record the state of allocated CUDA memory
-at any point in time, and optionally record the history of allocation events that led up to that snapshot.
+يوفر PyTorch طريقة لتوليد لقطات ذاكرة CUDA لاستكشاف أخطاء استخدام ذاكرة CUDA، والتي تسجل حالة ذاكرة CUDA المخصصة
+في أي وقت، ويمكنها أيضًا تسجيل تاريخ أحداث التخصيص التي أدت إلى تلك اللقطة.
 
-The generated snapshots can then be drag and dropped onto the interactiver viewer hosted at `pytorch.org/memory_viz <https://pytorch.org/memory_viz>`_ which
-can be used to explore the snapshot.
+يمكن بعد ذلك سحب اللقطات وإفلاتها في المشاهد التفاعلي المستضاف في pytorch.org/memory_viz والذي
+يمكن استخدامه لاستكشاف اللقطة.
 
-Generating a Snapshot
+إنشاء لقطة
 =====================
-The common pattern for recording a snapshot is to enable memory history, run the code to be observed, and then save a file with a pickled snapshot:
+النمط الشائع لتسجيل لقطة هو تمكين تاريخ الذاكرة، وتشغيل التعليمات البرمجية التي سيتم ملاحظتها، ثم حفظ ملف مع لقطة مخللة:
 
 .. code-block:: python
 
-   # enable memory history, which will
-   # add tracebacks and event history to snapshots
+   # تمكين تاريخ الذاكرة، والذي سيضيف
+   # آثار المكدس وتاريخ الأحداث إلى لقطات
    torch.cuda.memory._record_memory_history()
 
    run_your_code()
    torch.cuda.memory._dump_snapshot("my_snapshot.pickle")
 
-Using the visualizer
+استخدام المشاهد
 ====================
 
-Open `pytorch.org/memory_viz <https://pytorch.org/memory_viz>`_ and drag/drop the pickled snapshot file into the visualizer.
-The visualizer is a javascript application that runs locally on your computer. It does not upload any snapshot data.
+افتح pytorch.org/memory_viz واسحب/أفلت ملف اللقطة المخلل في المشاهد.
+المشاهد هو تطبيق JavaScript يعمل محليًا على جهاز الكمبيوتر الخاص بك. لا يقوم بتحميل أي بيانات لقطة.
 
 
-Active Memory Timeline
+جدول زمني للذاكرة النشطة
 ----------------------
 
-The Active Memory Timeline shows all the live tensors over time in the snapshot on a particular GPU. Pan/Zoom over the plot to look at smaller allocations.
-Mouse over allocated blocks to see a stack trace for when that block was allocated, and details like its address. The detail slider can be adjusted to
-render fewer allocations and improve performance when there is a lot of data.
+يعرض الجدول الزمني للذاكرة النشطة جميع المنسوجات الحية بمرور الوقت في اللقطة على وحدة معالجة الرسومات (GPU) معينة. قم بالتمرير/التكبير فوق المخطط للاطلاع على المخصصات الأصغر.
+حرك المؤشر فوق الكتل المخصصة لعرض أثر المكدس عندما تم تخصيص هذا الكتلة، وتفاصيل مثل عنوانها. يمكن ضبط شريط التمرير التفصيلي
+لتصيير عدد أقل من المخصصات وتحسين الأداء عند وجود الكثير من البيانات.
 
-.. image:: _static/img/torch_cuda_memory/active_memory_timeline.png
+.. image:: _static/img/torch_cuda_memory/active_memory_timeline_ar.png
 
 
-Allocator State History
+تاريخ حالة المخصص
 -----------------------
 
-The Allocator State History shows individual allocator events in a timeline on the left. Select an event in the timeline to see a visual summary of the
-allocator state at that event. This summary shows each individual segment returned from cudaMalloc and how it is split up into blocks of individual allocations
-or free space. Mouse over segments and blocks to see the stack trace when the memory was allocated. Mouse over events to see the stack trace when the event occurred,
-such as when a tensor was freed. Out of memory errors are reported as OOM events. Looking at the state of memory during an OOM may provide insight into why
-an allocation failed even though reserved memory still exists.
+يعرض تاريخ حالة المخصص أحداث المخصص الفردية في جدول زمني على اليسار. حدد حدثًا في الجدول الزمني لعرض ملخص مرئي لـ
+حالة المخصص في هذا الحدث. يوضح هذا الملخص كل جزء فردي تم إرجاعه من cudaMalloc وكيفية تقسيمه إلى كتل من المخصصات الفردية
+أو مساحة خالية. حرك المؤشر فوق المقاطع والكتل لعرض أثر المكدس عندما تم تخصيص الذاكرة. حرك المؤشر فوق الأحداث لعرض أثر المكدس عندما حدث الحدث،
+مثل عندما تم تحرير منسوج. يتم الإبلاغ عن أخطاء الذاكرة غير الكافية (OOM) على أنها أحداث OOM. قد يوفر فحص حالة الذاكرة أثناء حدوث OOM نظرة ثاقبة حول سبب
+فشل التخصيص على الرغم من وجود ذاكرة محجوزة.
 
-.. image:: _static/img/torch_cuda_memory/allocator_state_history.png
+.. image:: _static/img/torch_cuda_memory/allocator_state_history_ar.png
 
-The stack trace information also reports the address at which an allocation occurred.
-The address b7f064c000000_0 refers to the (b)lock at address 7f064c000000 which is the "_0"th time this address was allocated.
-This unique string can be looked up in the Active Memory Timeline and searched
-in the Active State History to examine the memory state when a tensor was allocated or freed.
+تقارير معلومات أثر المكدس أيضًا عنوان التخصيص.
+يشير العنوان b7f064c000000_0 إلى (b) lock في العنوان 7f064c000000 والذي يعد المرة "_0" التي تم فيها تخصيص هذا العنوان.
+يمكن البحث عن هذه السلسلة الفريدة في الجدول الزمني للذاكرة النشطة والبحث عنها
+في تاريخ الحالة النشطة لفحص حالة الذاكرة عندما تم تخصيص منسوج أو تحريره.
 
-Snapshot API Reference
+مرجع واجهة برمجة التطبيقات (API) للقطات
 ======================
 
 .. currentmodule:: torch.cuda.memory
