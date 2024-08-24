@@ -2,52 +2,48 @@
 
 .. _tensor-view-doc:
 
-Tensor Views
-=============
+عرض الموتينات (Tensor Views)
+============================
 
-PyTorch allows a tensor to be a ``View`` of an existing tensor. View tensor shares the same underlying data
-with its base tensor. Supporting ``View`` avoids explicit data copy, thus allows us to do fast and memory efficient
-reshaping, slicing and element-wise operations.
+يسمح PyTorch بأن يكون الموتينور (tensor) عرضاً (View) لموتينور موجود مسبقاً. يشارك موتينور العرض نفس البيانات الأساسية مع الموتينور الأساسي الخاص به. وبدعم العرض، يتم تجنب النسخ الصريح للبيانات، مما يسمح لنا بإجراء عمليات إعادة تشكيل وتقطيع وعمليات عنصر-حكيمة سريعة وفعالة في الذاكرة.
 
-For example, to get a view of an existing tensor ``t``, you can call ``t.view(...)``.
+على سبيل المثال، للحصول على عرض لموتينور موجود مسبقاً "t"، يمكنك استدعاء "t.view(...)".
 
 ::
 
     >>> t = torch.rand(4, 4)
     >>> b = t.view(2, 8)
-    >>> t.storage().data_ptr() == b.storage().data_ptr()  # `t` and `b` share the same underlying data.
+    >>> t.storage().data_ptr() == b.storage().data_ptr()  # `t` and `b` يتشاركان نفس البيانات الأساسية.
     True
-    # Modifying view tensor changes base tensor as well.
+    # تعديل موتينور العرض يغير الموتينور الأساسي أيضاً.
     >>> b[0][0] = 3.14
     >>> t[0][0]
     tensor(3.14)
 
-Since views share underlying data with its base tensor, if you edit the data
-in the view, it will be reflected in the base tensor as well.
+نظراً لأن العروض تشارك البيانات الأساسية مع الموتينور الأساسي الخاص بها، إذا قمت بتعديل البيانات في العرض، فسيتم عكس ذلك في الموتينور الأساسي أيضاً.
 
-Typically a PyTorch op returns a new tensor as output, e.g. :meth:`~torch.Tensor.add`.
-But in case of view ops, outputs are views of input tensors to avoid unnecessary data copy.
-No data movement occurs when creating a view, view tensor just changes the way
-it interprets the same data. Taking a view of contiguous tensor could potentially produce a non-contiguous tensor.
-Users should pay additional attention as contiguity might have implicit performance impact.
-:meth:`~torch.Tensor.transpose` is a common example.
+عادةً ما تقوم عملية PyTorch بإرجاع موتينور جديد كناتج، على سبيل المثال: :meth:`~torch.Tensor.add`.
+ولكن في حالة عمليات العرض، تكون النواتج عروضاً للموتينورات المدخلة لتجنب نسخ البيانات غير الضروري.
+لا يحدث نقل للبيانات عند إنشاء عرض، حيث يقوم موتينور العرض فقط بتغيير طريقة تفسير نفس البيانات. وقد يؤدي أخذ عرض لموتينور متجاور إلى إنتاج موتينور غير متجاور.
+يجب على المستخدمين إيلاء اهتمام إضافي حيث قد يكون للتجاور تأثير ضمني على الأداء.
+:meth:`~torch.Tensor.transpose` هو مثال شائع على ذلك.
 
 ::
 
     >>> base = torch.tensor([[0, 1],[2, 3]])
     >>> base.is_contiguous()
     True
-    >>> t = base.transpose(0, 1)  # `t` is a view of `base`. No data movement happened here.
-    # View tensors might be non-contiguous.
+    >>> t = base.transpose(0, 1)  # `t` هو عرض لـ `base`. لم يحدث نقل للبيانات هنا.
+    # قد تكون موتينورات العرض غير متجاورة.
     >>> t.is_contiguous()
     False
-    # To get a contiguous tensor, call `.contiguous()` to enforce
-    # copying data when `t` is not contiguous.
+    # للحصول على موتينور متجاور، قم باستدعاء `.contiguous()` لفرض
+    # نسخ البيانات عندما لا يكون `t` متجاوراً.
     >>> c = t.contiguous()
 
-For reference, here’s a full list of view ops in PyTorch:
+وللإشارة، إليك قائمة كاملة بعمليات العرض في PyTorch:
 
-- Basic slicing and indexing op, e.g. ``tensor[0, 2:, 1:7:2]`` returns a view of base ``tensor``, see note below.
+- عملية التقطيع والفهرسة الأساسية، على سبيل المثال "tensor[0, 2:, 1:7:2]" تعيد عرضاً للموتينور الأساسي "tensor"، راجع الملاحظة أدناه.
 - :meth:`~torch.Tensor.adjoint`
 - :meth:`~torch.Tensor.as_strided`
 - :meth:`~torch.Tensor.detach`
@@ -82,19 +78,18 @@ For reference, here’s a full list of view ops in PyTorch:
 - :meth:`~torch.Tensor.swapaxes`
 - :meth:`~torch.Tensor.swapdims`
 - :meth:`~torch.Tensor.chunk`
-- :meth:`~torch.Tensor.indices` (sparse tensor only)
-- :meth:`~torch.Tensor.values`  (sparse tensor only)
+- :meth:`~torch.Tensor.indices` (لموتينورات متفرقة فقط)
+- :meth:`~torch.Tensor.values`  (لموتينورات متفرقة فقط)
 
 .. note::
-   When accessing the contents of a tensor via indexing, PyTorch follows Numpy behaviors
-   that basic indexing returns views, while advanced indexing returns a copy.
-   Assignment via either basic or advanced indexing is in-place. See more examples in
-   `Numpy indexing documentation <https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html>`_.
+   عند الوصول إلى محتويات موتينور عبر الفهرسة، يتبع PyTorch سلوكيات Numpy التي تعيد الفهرسة الأساسية عروضاً، في حين تعيد الفهرسة المتقدمة نسخة.
+   التخصيص عبر الفهرسة الأساسية أو المتقدمة يكون في المكان. راجع المزيد من الأمثلة في
+   `وثائق فهرسة Numpy <https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html>`_.
 
-It's also worth mentioning a few ops with special behaviors:
+من الجدير بالذكر أيضاً أن هناك بعض العمليات ذات السلوكيات الخاصة:
 
-- :meth:`~torch.Tensor.reshape`, :meth:`~torch.Tensor.reshape_as` and :meth:`~torch.Tensor.flatten` can return either a view or new tensor, user code shouldn't rely on whether it's view or not.
-- :meth:`~torch.Tensor.contiguous` returns **itself** if input tensor is already contiguous, otherwise it returns a new contiguous tensor by copying data.
+- :meth:`~torch.Tensor.reshape`، :meth:`~torch.Tensor.reshape_as` و :meth:`~torch.Tensor.flatten` يمكن أن تعيد إما عرض أو موتينور جديد، وينبغي لرمز المستخدم ألا يعتمد على ما إذا كان عرضاً أم لا.
+- :meth:`~torch.Tensor.contiguous` تعيد **نفسها** إذا كان الموتينور المدخل متجاوراً بالفعل، وإلا فإنها تعيد موتينور متجاوراً جديداً عن طريق نسخ البيانات.
 
-For a more detailed walk-through of PyTorch internal implementation,
-please refer to `ezyang's blogpost about PyTorch Internals <http://blog.ezyang.com/2019/05/pytorch-internals/>`_.
+للحصول على دليل تفصيلي أكثر لتنفيذ PyTorch الداخلي،
+يرجى الرجوع إلى `منشور مدونة ezyang حول داخليات PyTorch <http://blog.ezyang.com/2019/05/pytorch-internals/>`_.
