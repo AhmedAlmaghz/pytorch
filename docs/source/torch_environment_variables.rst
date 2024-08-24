@@ -1,28 +1,25 @@
-.. _torch_environment_variables:
+:المتغيرات البيئية في تورتش:
+================================================
 
-Torch Environment Variables
-===============================
+يستفيد PyTorch من المتغيرات البيئية لتعديل مختلف الإعدادات التي تؤثر على سلوكه أثناء التشغيل.
+توفر هذه المتغيرات تحكمًا في الوظائف الرئيسية، مثل عرض تتبع المكدس C++ عند مواجهة أخطاء، ومزامنة تنفيذ نوى CUDA،
+وتحديد عدد الخيوط لمهام المعالجة الموازية، والمزيد.
 
-PyTorch leverages environment variables for adjusting various settings that influence its runtime behavior.
-These variables offer control over key functionalities, such as displaying the C++ stack trace upon encountering errors, synchronizing the execution of CUDA kernels,
-specifying the number of threads for parallel processing tasks and many more.
+علاوة على ذلك، يعتمد PyTorch على عدة مكتبات عالية الأداء، مثل MKL وcuDNN،
+التي تستخدم أيضًا متغيرات بيئية لتعديل وظائفها.
+يتيح التفاعل بين هذه الإعدادات بيئة تطوير قابلة للتخصيص للغاية يمكن تحسينها
+من أجل الكفاءة والتصحيح وإدارة موارد الكمبيوتر.
 
-Moreover, PyTorch leverages several high-performance libraries, such as MKL and cuDNN,
-which also utilize environment variables to modify their functionality.
-This interplay of settings allows for a highly customizable development environment that can be
-optimized for efficiency, debugging, and computational resource management.
-
-Please note that while this documentation covers a broad spectrum of environment variables relevant to PyTorch and its associated libraries, it is not exhaustive.
-If you find anything in this documentation that is missing, incorrect, or could be improved, please let us know by filing an issue or opening a pull request.
-
+يرجى ملاحظة أنه في حين أن هذه الوثيقة تغطي طيفًا واسعًا من المتغيرات البيئية ذات الصلة بـ PyTorch والمكتبات المرتبطة بها، إلا أنها ليست شاملة.
+إذا وجدت أي شيء في هذه الوثائق ناقصًا أو غير صحيح أو يمكن تحسينه، يرجى إعلامنا من خلال إرسال مشكلة أو فتح طلب سحب.
 
 .. toctree::
    :maxdepth: 1
 
-   threading_environment_variables
-   cuda_environment_variables
-   mps_environment_variables
-   debugging_environment_variables
-   miscellaneous_environment_variables
+   متغيرات_البيئة_للخيوط
+   متغيرات_البيئة_CUDA
+   متغيرات_البيئة_MPS
+   متغيرات_البيئة_للتصحيح
+   متغيرات_البيئة_المتنوعة
    logging
-   torch_nccl_environment_variables
+   متغيرات_بيئة_Torch_NCCL
