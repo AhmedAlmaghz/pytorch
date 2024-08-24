@@ -1,24 +1,16 @@
-Custom Backends
-===============
+الواجهات الخلفية المخصصة
+========================
 
-Overview
+نظرة عامة
 --------
 
-``torch.compile`` provides a straightforward method to enable users
-to define custom backends.
+تتيح ``torch.compile`` طريقة مباشرة للمستخدمين لتعريف الواجهات الخلفية المخصصة.
 
-A backend function has the contract
-``(gm: torch.fx.GraphModule, example_inputs: List[torch.Tensor]) -> Callable``.
+لدى الوظيفة الخلفية عقد ``(gm: torch.fx.GraphModule, example_inputs: List[torch.Tensor]) -> Callable``.
 
-Backend functions can be called by TorchDynamo, the graph tracing component of ``torch.compile``,
-after tracing an FX graph and are
-expected to return a compiled function that is equivalent to the traced FX graph.
-The returned callable should have the same contract as the ``forward`` function of the original ``torch.fx.GraphModule``
-passed into the backend:
-``(*args: torch.Tensor) -> List[torch.Tensor]``.
+يمكن استدعاء الوظائف الخلفية بواسطة TorchDynamo، وهو مكون تتبع الرسوم البيانية في ``torch.compile``، بعد تتبع رسم بياني لـ FX، ومن المتوقع أن تعيد وظيفة مجمعة مكافئة للرسم البياني FX الذي تم تتبعه. يجب أن يكون للدالة القابلة للاستدعاء التي تم إرجاعها نفس عقد دالة ``forward`` لـ ``torch.fx.GraphModule`` الأصلي الذي تم تمريره إلى الواجهة الخلفية: ``(*args: torch.Tensor) -> List[torch.Tensor]``.
 
-In order for TorchDynamo to call your backend, pass your backend function as the ``backend`` kwarg in
-``torch.compile``. For example,
+لكي يستدعي TorchDynamo الواجهة الخلفية الخاصة بك، قم بتمرير وظيفة الواجهة الخلفية الخاصة بك كوسيط اسمه ``backend`` في ``torch.compile``. على سبيل المثال،
 
 .. code-block:: python
 
@@ -36,12 +28,12 @@ In order for TorchDynamo to call your backend, pass your backend function as the
     def g(...):
         ...
 
-See below for more examples.
+راجع أدناه للحصول على مزيد من الأمثلة.
 
-Registering Custom Backends
+تسجيل الواجهات الخلفية المخصصة
 ---------------------------
 
-You can register your backend using the ``register_backend`` decorator, for example,
+يمكنك تسجيل الواجهة الخلفية الخاصة بك باستخدام الديكور ``register_backend``، على سبيل المثال،
 
 .. code-block:: python
 
@@ -51,16 +43,14 @@ You can register your backend using the ``register_backend`` decorator, for exam
     def my_compiler(gm, example_inputs):
         ...
 
-Besides the ``register_backend`` decorator, if your backend is in another python package, you could also register your
-backend through entry points of python package, which provides a way for a package to register a plugin for another one.
+بالإضافة إلى الديكور ``register_backend``، إذا كانت الواجهة الخلفية الخاصة بك في حزمة Python أخرى، فيمكنك أيضًا تسجيل الواجهة الخلفية الخاصة بك من خلال نقاط الدخول لحزمة Python، والتي توفر طريقة لحزمة لتسجيل إضافة لآخر.
 
 .. hint::
 
-    You can learn more about ``entry_points`` in the
-    `python packaging documentation <https://setuptools.pypa.io/en/latest/userguide/entry_point.html>`__.
+    يمكنك معرفة المزيد حول ``entry_points`` في
+    `وثائق تغليف Python <https://setuptools.pypa.io/en/latest/userguide/entry_point.html>`__.
 
-To register your backend through ``entry_points``, you could add your backend function to the ``torch_dynamo_backends`` entry point group in the
-``setup.py`` file of your package like:
+لتسجيل الواجهة الخلفية الخاصة بك من خلال ``entry_points``، يمكنك إضافة وظيفة الواجهة الخلفية الخاصة بك إلى مجموعة نقاط الدخول ``torch_dynamo_backends`` في ملف ``setup.py`` لحزمتك مثل:
 
 .. code-block:: python
 
@@ -73,42 +63,31 @@ To register your backend through ``entry_points``, you could add your backend fu
         ...
     )
 
-Please replace the ``my_compiler`` before ``=`` to the name of your backend's name and replace the part after ``=`` to
-the module and function name of your backend function.
-The entry point will be added to your python environment after the installation of the package.
-When you call ``torch.compile(model, backend="my_compiler")``, PyTorch would first search the backend named ``my_compiler``
-that has been registered with ``register_backend``. If not found, it will continue to search in all backends registered
-via ``entry_points``.
+يرجى استبدال ``my_compiler`` قبل ``=`` باسم الواجهة الخلفية الخاصة بك واستبدال الجزء بعد ``=`` باسم الوحدة النمطية ووظيفة وظيفة الواجهة الخلفية الخاصة بك. سيتم إضافة نقطة الدخول إلى بيئة Python الخاصة بك بعد تثبيت الحزمة.
 
-Registration serves two purposes:
+عند استدعاء ``torch.compile(model, backend="my_compiler")``، سيبحث PyTorch أولاً عن الواجهة الخلفية التي تم تسميتها ``my_compiler`` والتي تم تسجيلها باستخدام ``register_backend``. إذا لم يتم العثور عليه، فسيستمر في البحث في جميع الواجهات الخلفية المسجلة عبر ``entry_points``.
 
-* You can pass a string containing your backend function's name to ``torch.compile`` instead of the function itself,
-  for example, ``torch.compile(model, backend="my_compiler")``.
-* It is required for use with the `minifier <https://pytorch.org/docs/main/torch.compiler_troubleshooting.html>`__. Any generated
-  code from the minifier must call your code that registers your backend function, typically through an ``import`` statement.
+يخدم التسجيل غرضين:
 
-Custom Backends after AOTAutograd
+* يمكنك تمرير سلسلة تحتوي على اسم وظيفة الواجهة الخلفية الخاصة بك إلى ``torch.compile`` بدلاً من الوظيفة نفسها، على سبيل المثال، ``torch.compile(model، backend="my_compiler")``.
+* مطلوب للاستخدام مع `minifier <https://pytorch.org/docs/main/torch.compiler_troubleshooting.html>`__. يجب أن يدعو أي كود تم إنشاؤه بواسطة minifier كودك الذي يسجل وظيفة الواجهة الخلفية الخاصة بك، عادةً من خلال عبارة ``import``.
+
+الواجهات الخلفية المخصصة بعد AOTAutograd
 ---------------------------------
 
-It is possible to define custom backends that are called by AOTAutograd rather than TorchDynamo.
-This is useful for 2 main reasons:
+من الممكن تعريف الواجهات الخلفية المخصصة التي يستدعيها AOTAutograd بدلاً من TorchDynamo.
+هذا مفيد لسببين رئيسيين:
 
-* Users can define backends that support model training, as AOTAutograd can generate the backward graph for compilation.
-* AOTAutograd produces FX graphs consisting of `core Aten ops <https://pytorch.org/docs/main/torch.compiler_ir.html#core-aten-ir>`__. As a result,
-  custom backends only need to support the core Aten opset, which is a significantly smaller opset than the entire torch/Aten opset.
+* يمكن للمستخدمين تعريف الواجهات الخلفية التي تدعم تدريب النموذج، حيث يمكن لـ AOTAutograd إنشاء الرسم البياني الخلفي للتجميع.
+* ينتج AOTAutograd رسومًا بيانية FX تتكون من `عمليات Aten الأساسية <https://pytorch.org/docs/main/torch.compiler_ir.html#core-aten-ir>`__. ونتيجة لذلك، تحتاج الواجهات الخلفية المخصصة فقط إلى دعم مجموعة التعليمات الأساسية Aten، والتي تعد مجموعة تعليمات أصغر بكثير من مجموعة تعليمات torch/Aten بأكملها.
 
-Wrap your backend with
-``torch._dynamo.backends.common.aot_autograd`` and use ``torch.compile`` with the ``backend`` kwarg as before.
-Backend functions wrapped by ``aot_autograd`` should have the same contract as before.
+قم بلف وظيفة الواجهة الخلفية الخاصة بك باستخدام ``torch._dynamo.backends.common.aot_autograd`` واستخدم ``torch.compile`` مع وسيط اسمه ``backend`` كما هو موضح سابقًا. يجب أن يكون للوظائف الخلفية الملفوفة بواسطة ``aot_autograd`` نفس العقد كما هو الحال من قبل.
 
-Backend functions are passed to ``aot_autograd`` through the ``fw_compiler`` (forward compiler)
-or ``bw_compiler`` (backward compiler) kwargs. If ``bw_compiler`` is not specified, the backward compile function
-defaults to the forward compile function.
+يتم تمرير وظائف الواجهة الخلفية إلى ``aot_autograd`` من خلال وسيطات ``fw_compiler`` (مُجمِّع التقديم) أو ``bw_compiler`` (مُجمِّع الخلف). إذا لم يتم تحديد ``bw_compiler``، فإن وظيفة التجميع الخلفي الافتراضية هي نفس وظيفة التجميع الأمامي.
 
-One caveat is that AOTAutograd requires compiled functions returned by backends to be "boxed". This can be done by wrapping
-the compiled function with ``functorch.compile.make_boxed_func``.
+التحذير الوحيد هو أن AOTAutograd يتطلب أن تكون الوظائف المجمعة التي تعيدها الواجهات الخلفية "معلبة". يمكن القيام بذلك عن طريق لف الوظيفة المجمعة مع ``functorch.compile.make_boxed_func``.
 
-For example,
+على سبيل المثال،
 
 .. code-block:: python
 
@@ -118,23 +97,20 @@ For example,
     def my_compiler(gm, example_inputs):
         return make_boxed_func(gm.forward)
 
-    my_backend = aot_autograd(fw_compiler=my_compiler)  # bw_compiler=my_compiler
+    my_backend = aot_autograd(fw_compiler=my_compiler) # bw_compiler=my_compiler
 
     model_opt = torch.compile(model, backend=my_backend)
 
-Examples
+أمثلة
 --------
 
-Debugging Backend
+واجهة خلفية التصحيح
 ^^^^^^^^^^^^^^^^^
 
-If you want to better understand what is going on during a
-compilation, you can create a custom compiler, which is referred to as
-backend in this section, that will print pretty print the fx
-``GraphModule`` extracted from Dynamo’s bytecode analysis
-and return a ``forward()`` callable.
+إذا كنت تريد فهم ما يحدث بشكل أفضل أثناء التجميع، فيمكنك إنشاء مجمع مخصص، والذي يشار إليه باسم الواجهة الخلفية في هذا القسم، والذي سيطبع بشكل جميل طباعة وحدة نمطية ``GraphModule`` fx المستخرجة من تحليل بايتكود Dynamo
+وإرجاع دالة ``forward()``.
 
-For example:
+على سبيل المثال:
 
 .. code-block:: python
 
@@ -143,7 +119,7 @@ For example:
     def my_compiler(gm: torch.fx.GraphModule, example_inputs: List[torch.Tensor]):
         print("my_compiler() called with FX graph:")
         gm.graph.print_tabular()
-        return gm.forward  # return a python callable
+        return gm.forward # return a python callable
     @torch.compile(backend=my_compiler)
     def fn(x, y):
         a = torch.cos(x)
@@ -151,7 +127,7 @@ For example:
         return a + b
     fn(torch.randn(10), torch.randn(10))
 
-Running the above example produces the following output:
+ينتج عن تشغيل المثال أعلاه الإخراج التالي:
 
 ::
 
@@ -165,7 +141,7 @@ Running the above example produces the following output:
     call_function  add     <built-in function add>                                 (cos, sin)  {}
     output         output  output                                                  ((add,),)   {}
 
-This works for ``torch.nn.Module`` as well as shown below:
+هذا يعمل لـ ``torch.nn.Module`` أيضًا كما هو موضح أدناه:
 
 .. code-block:: python
 
@@ -174,7 +150,7 @@ This works for ``torch.nn.Module`` as well as shown below:
     def my_compiler(gm: torch.fx.GraphModule, example_inputs: List[torch.Tensor]):
         print("my_compiler() called with FX graph:")
         gm.graph.print_tabular()
-        return gm.forward  # return a python callable
+        return gm.forward # return a python callable
     class MockModule(torch.nn.Module):
         def __init__(self):
             super().__init__()
@@ -185,7 +161,7 @@ This works for ``torch.nn.Module`` as well as shown below:
     optimized_mod = torch.compile(mod, backend=my_compiler)
     optimized_mod(torch.randn(10))
 
-Let’s take a look at one more example with control flow:
+دعونا نلقي نظرة على مثال آخر مع تدفق التحكم:
 
 .. code-block:: python
 
@@ -194,7 +170,7 @@ Let’s take a look at one more example with control flow:
     def my_compiler(gm: torch.fx.GraphModule, example_inputs: List[torch.Tensor]):
         print("my_compiler() called with FX graph:")
         gm.graph.print_tabular()
-        return gm.forward  # return a python callable
+        return gm.forward # return a python callable
     @torch.compile(backend=my_compiler)
     def toy_example(a, b):
         x = a / (torch.abs(a) + 1)
@@ -204,7 +180,7 @@ Let’s take a look at one more example with control flow:
     for _ in range(100):
         toy_example(torch.randn(10), torch.randn(10))
 
-Running this example produces the following output:
+ينتج عن تشغيل هذا المثال الإخراج التالي:
 
 ::
 
@@ -214,38 +190,13 @@ Running this example produces the following output:
     placeholder    a        a                                                       ()                {}
     placeholder    b        b                                                       ()                {}
     call_function  abs_1    <built-in method abs of type object at 0x7f8d259298a0>  (a,)              {}
-    call_function  add      <built-in function add>                                 (abs_1, 1)        {}
-    call_function  truediv  <built-in function truediv>                             (a, add)          {}
-    call_method    sum_1    sum                                                     (b,)              {}
-    call_function  lt       <built-in function lt>                                  (sum_1, 0)        {}
-    output         output   output                                                  ((truediv, lt),)  {}
+    call_function  add      <built-
 
-    my_compiler() called with FX graph:
-    opcode         name    target                   args         kwargs
-    -------------  ------  -----------------------  -----------  --------
-    placeholder    b       b                        ()           {}
-    placeholder    x       x                        ()           {}
-    call_function  mul     <built-in function mul>  (b, -1)      {}
-    call_function  mul_1   <built-in function mul>  (x, mul)     {}
-    output         output  output                   ((mul_1,),)  {}
-
-    my_compiler() called with FX graph:
-    opcode         name    target                   args       kwargs
-    -------------  ------  -----------------------  ---------  --------
-    placeholder    b       b                        ()         {}
-    placeholder    x       x                        ()         {}
-    call_function  mul     <built-in function mul>  (x, b)     {}
-    output         output  output                   ((mul,),)  {}
-
-    The order of the last two graphs is nondeterministic depending
-    on which one is encountered first by the just-in-time compiler.
-
-Speedy Backend
+واجهة خلفية سريعة
 ^^^^^^^^^^^^^^
 
-Integrating a custom backend that offers superior performance is also
-easy and we’ll integrate a real one
-with `optimize_for_inference <https://pytorch.org/docs/stable/generated/torch.jit.optimize_for_inference.html>`__:
+من السهل أيضًا دمج الواجهة الخلفية المخصصة التي توفر أداءً متفوقًا، وسندمج واحدة حقيقية
+مع `optimize_for_inference <https://pytorch.org/docs/stable/generated/torch.jit.optimize_for_inference.html>`__:
 
 .. code-block:: python
 
@@ -253,7 +204,7 @@ with `optimize_for_inference <https://pytorch.org/docs/stable/generated/torch.ji
         scripted = torch.jit.script(gm)
         return torch.jit.optimize_for_inference(scripted)
 
-And then you should be able to optimize any existing code with:
+بعد ذلك، يجب أن تتمكن من تحسين أي كود موجود باستخدام:
 
 .. code-block:: python
 
@@ -261,12 +212,11 @@ And then you should be able to optimize any existing code with:
     def code_to_accelerate():
         ...
 
-Composable Backends
+الواجهات الخلفية القابلة للتركيب
 ^^^^^^^^^^^^^^^^^^^
 
-TorchDynamo includes many backends, which can be listed with
-``torch._dynamo.list_backends()``. You can combine these backends
-together with the following code:
+يتضمن TorchDynamo العديد من الواجهات الخلفية، والتي يمكن إدراجها باستخدام
+``torch._dynamo.list_backends()``. يمكنك دمج هذه الواجهات الخلفية معًا باستخدام الكود التالي:
 
 .. code-block:: python
 
