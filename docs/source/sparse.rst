@@ -5,59 +5,38 @@
 .. _sparse-docs:
 
 torch.sparse
-============
+=================
+تحذير
+======
 
-.. warning::
+واجهة برمجة التطبيقات PyTorch للتوابع المتقطعة هي حاليًا في مرحلة البيتا وقد تتغير في المستقبل القريب. نرحب بجميع طلبات الميزات وتقارير الأخطاء والاقتراحات العامة كقضايا على GitHub.
 
-  The PyTorch API of sparse tensors is in beta and may change in the near future.
-  We highly welcome feature requests, bug reports and general suggestions as GitHub issues.
+لماذا ومتى تستخدم التفرقة
+++++++++++++++++++
 
-Why and when to use sparsity
-++++++++++++++++++++++++++++
+بشكل افتراضي، يقوم PyTorch بتخزين عناصر :class: `torch.Tensor` بشكل متجاور في الذاكرة المادية. يؤدي هذا إلى تنفيذ فعال لمختلف خوارزميات معالجة المصفوفة التي تتطلب الوصول السريع إلى العناصر.
 
-By default, PyTorch stores :class:`torch.Tensor` elements contiguously in
-physical memory. This leads to efficient implementations of various array
-processing algorithms that require fast access to elements.
+الآن، قد يقرر بعض المستخدمين تمثيل البيانات مثل مصفوفات المجاورة للرسم البياني، أو الأوزان المقصوصة أو نقاط السحب بواسطة المتوترات التي *معظم قيم العناصر فيها تساوي الصفر*. ندرك أن هذه هي تطبيقات مهمة ونهدف إلى توفير تحسينات للأداء لهذه الحالات الاستخدامية من خلال تنسيقات التخزين المتقطعة.
 
-Now, some users might decide to represent data such as graph adjacency
-matrices, pruned weights or points clouds by Tensors whose *elements are
-mostly zero valued*. We recognize these are important applications and aim
-to provide performance optimizations for these use cases via sparse storage formats.
+تم تطوير تنسيقات التخزين المتقطعة المختلفة مثل COO وCSR/CSC وsemi-structured وLIL، إلخ. على مر السنين. على الرغم من اختلافها في التخطيطات الدقيقة، إلا أنها جميعًا تضغط البيانات من خلال التمثيل الفعال لعناصر القيمة الصفرية.
 
-Various sparse storage formats such as COO, CSR/CSC, semi-structured, LIL, etc. have been
-developed over the years. While they differ in exact layouts, they all
-compress data through efficient representation of zero valued elements.
-We call the uncompressed values *specified* in contrast to *unspecified*,
-compressed elements.
+نطلق على القيم غير المضغوطة اسم *محددة* على عكس العناصر المضغوطة، غير المحددة.
 
-By compressing repeat zeros sparse storage formats aim to save memory
-and computational resources on various CPUs and GPUs. Especially for high
-degrees of sparsity or highly structured sparsity this can have significant
-performance implications. As such sparse storage formats can be seen as a
-performance optimization.
+من خلال ضغط أصفار متكررة، تهدف تنسيقات التخزين المتقطعة إلى توفير الذاكرة والموارد الحسابية على وحدات المعالجة المركزية ووحدات معالجة الرسومات المختلفة. خاصة بالنسبة لدرجات عالية من التفرقة أو التفرقة المنظمة للغاية، يمكن أن يكون لهذا آثار كبيرة على الأداء. وبالتالي، يمكن اعتبار تنسيقات التخزين المتقطعة كتحسين للأداء.
 
-Like many other performance optimization sparse storage formats are not
-always advantageous. When trying sparse formats for your use case
-you might find your execution time to increase rather than decrease.
+مثل العديد من تحسينات الأداء الأخرى، قد لا تكون تنسيقات التخزين المتقطعة مفيدة دائمًا. عند تجربة التنسيقات المتقطعة لحالتك الاستخدامية، قد تجد أن وقت التنفيذ يزيد بدلاً من أن ينقص.
 
-Please feel encouraged to open a GitHub issue if you analytically
-expected to see a stark increase in performance but measured a
-degradation instead. This helps us prioritize the implementation
-of efficient kernels and wider performance optimizations.
+يرجى الشعور بالتشجيع على فتح قضية GitHub إذا كنت تتوقع من الناحية التحليلية رؤية زيادة كبيرة في الأداء ولكنك قمت بقياس التدهور بدلاً من ذلك. يساعدنا هذا في تحديد أولويات تنفيذ نوى فعالة وتحسينات أداء أوسع.
 
-We make it easy to try different sparsity layouts, and convert between them,
-without being opinionated on what's best for your particular application.
+نجعل من السهل تجربة تخطيطات التفرقة المختلفة، والتحويل بينها، دون أن يكون لدينا رأي بشأن ما هو الأفضل لتطبيقك المحدد.
 
-Functionality overview
+نظرة عامة على الوظائف
 ++++++++++++++++++++++
 
-We want it to be straightforward to construct a sparse Tensor from a
-given dense Tensor by providing conversion routines for each layout.
+نريد أن يكون من السهل إنشاء Tensor متقطع من Tensor كثيف معين من خلال توفير روتينات التحويل لكل تخطيط.
 
-In the next example we convert a 2D Tensor with default dense (strided)
-layout to a 2D Tensor backed by the COO memory layout. Only values and
-indices of non-zero elements are stored in this case.
-
+في المثال التالي، نقوم بتحويل Tensor ثنائي الأبعاد بتنسيق كثيف (متدرج) افتراضي إلى Tensor ثنائي الأبعاد مدعوم بتنسيق الذاكرة COO. في هذه الحالة، يتم تخزين قيم وفهارس العناصر غير الصفرية فقط.
+::
     >>> a = torch.tensor([[0, 2.], [3, 0]])
     >>> a.to_sparse()
     tensor(indices=tensor([[0, 1],
@@ -65,22 +44,18 @@ indices of non-zero elements are stored in this case.
            values=tensor([2., 3.]),
            size=(2, 2), nnz=2, layout=torch.sparse_coo)
 
-PyTorch currently supports :ref:`COO<sparse-coo-docs>`, :ref:`CSR<sparse-csr-docs>`,
-:ref:`CSC<sparse-csc-docs>`, :ref:`BSR<sparse-bsr-docs>`, and :ref:`BSC<sparse-bsc-docs>`.
+يدعم PyTorch حاليًا :ref: `COO <sparse-coo-docs>`__، :ref: `CSR <sparse-csr-docs>`__، :ref: `CSC <sparse-csc-docs>`__، :ref: `BSR <sparse-bsr-docs>`__، و:ref: `BSC <sparse-bsc-docs>`__.
 
-We also have a prototype implementation to support :ref: `semi-structured sparsity<sparse-semi-structured-docs>`.
-Please see the references for more details.
+لدينا أيضًا تنفيذ نموذجي لدعم :ref: `التفرقة شبه المنظمة <sparse-semi-structured-docs>`__. يرجى الاطلاع على المراجع لمزيد من التفاصيل.
 
-Note that we provide slight generalizations of these formats.
+لاحظ أننا نقدم تعميمات طفيفة لهذه التنسيقات.
 
-Batching: Devices such as GPUs require batching for optimal performance and
-thus we support batch dimensions.
+الدفعات: تتطلب الأجهزة مثل وحدات معالجة الرسومات (GPU) الدفعات لتحقيق الأداء الأمثل، وبالتالي فإننا ندعم أبعاد الدفعات.
 
-We currently offer a very simple version of batching where each component of a sparse format
-itself is batched. This also requires the same number of specified elements per batch entry.
-In this example we construct a 3D (batched) CSR Tensor from a 3D dense Tensor.
+نقدم حاليًا إصدارًا بسيطًا جدًا من الدفعات حيث يتم تجميع كل مكون من مكونات التنسيق المتقطع نفسه. يتطلب هذا أيضًا نفس عدد العناصر المحددة لكل إدخال دفعي. في هذا المثال، نقوم ببناء Tensor ثلاثي الأبعاد (مجمّع) بتنسيق CSR من Tensor ثلاثي الأبعاد كثيف.
 
-    >>> t = torch.tensor([[[1., 0], [2., 3.]], [[4., 0], [5., 6.]]])
+::
+    >>> t = torch.tensor([[[1.، 0]، [2.، 3.]], [[4.، 0]، [5.، 6.]]])
     >>> t.dim()
     3
     >>> t.to_sparse_csr()
@@ -88,23 +63,17 @@ In this example we construct a 3D (batched) CSR Tensor from a 3D dense Tensor.
                                 [0, 1, 3]]),
            col_indices=tensor([[0, 0, 1],
                                [0, 0, 1]]),
-           values=tensor([[1., 2., 3.],
-                          [4., 5., 6.]]), size=(2, 2, 2), nnz=3,
+           values=tensor([[1.، 2.، 3.]،
+                          [4.، 5.، 6.]])، size=(2، 2، 2)، nnz=3،
            layout=torch.sparse_csr)
 
 
-Dense dimensions: On the other hand, some data such as Graph embeddings might be
-better viewed as sparse collections of vectors instead of scalars.
+الأبعاد الكثيفة: من ناحية أخرى، قد يكون من الأفضل النظر إلى بعض البيانات، مثل Graph embeddings، على أنها مجموعات متقطعة من المتجهات بدلاً من المقاييس.
 
-In this example we create a 3D Hybrid COO Tensor with 2 sparse and 1 dense dimension
-from a 3D strided Tensor. If an entire row in the 3D strided Tensor is zero, it is
-not stored. If however any of the values in the row are non-zero, they are stored
-entirely. This reduces the number of indices since we need one index one per row instead
-of one per element. But it also increases the amount of storage for the values. Since
-only rows that are *entirely* zero can be emitted and the presence of any non-zero
-valued elements cause the entire row to be stored.
+في هذا المثال، نقوم بإنشاء Tensor ثلاثي الأبعاد بتنسيق Hybrid COO مع بعدين متفرقين وبعد كثيف واحد من Tensor ثلاثي الأبعاد متدرج. إذا كان صف بأكمله في Tensor ثلاثي الأبعاد متدرج يساوي صفرًا، فلن يتم تخزينه. ومع ذلك، إذا كانت أي من القيم في الصف غير صفرية، فسيتم تخزينها بالكامل. يقلل هذا من عدد الفهارس نظرًا لأننا نحتاج إلى فهرس واحد لكل صف بدلاً من واحد لكل عنصر. ولكنه يزيد أيضًا من كمية التخزين للقيم. نظرًا لأنه يمكن فقط إهمال الصفوف التي تكون *تمامًا* صفرًا وأن وجود أي عناصر ذات قيمة غير صفرية يتسبب في تخزين الصف بأكمله.
 
-    >>> t = torch.tensor([[[0., 0], [1., 2.]], [[0., 0], [3., 4.]]])
+::
+    >>> t = torch.tensor([[[0.، 0]، [1.، 2.]], [[0.، 0]، [3.، 4.]]])
     >>> t.to_sparse(sparse_dim=2)
     tensor(indices=tensor([[0, 1],
                            [1, 1]]),
@@ -113,147 +82,130 @@ valued elements cause the entire row to be stored.
            size=(2, 2, 2), nnz=2, layout=torch.sparse_coo)
 
 
-Operator overview
+نظرة عامة على المشغل
 +++++++++++++++++
 
-Fundamentally, operations on Tensor with sparse storage formats behave the same as
-operations on Tensor with strided (or other) storage formats. The particularities of
-storage, that is the physical layout of the data, influences the performance of
-an operation but should not influence the semantics.
+من الناحية الأساسية، فإن العمليات على Tensor بتنسيقات التخزين المتقطعة تتصرف بنفس طريقة العمليات على Tensor بتنسيقات التخزين المتدرجة (أو غيرها). تؤثر خصوصيات التخزين، أي التخطيط المادي للبيانات، على أداء عملية ما ولكن لا يجب أن تؤثر على الدلالات.
 
 
-We are actively increasing operator coverage for sparse tensors. Users should not
-expect support same level of support as for dense Tensors yet.
-See our :ref:`operator<sparse-ops-docs>` documentation for a list.
+نعمل بنشاط على زيادة تغطية المشغل للمتوترات المتقطعة. لا ينبغي للمستخدمين أن يتوقعوا نفس مستوى الدعم كما هو الحال بالنسبة للمتوترات الكثيفة بعد.
 
-    >>> b = torch.tensor([[0, 0, 1, 2, 3, 0], [4, 5, 0, 6, 0, 0]])
+راجع وثائق :ref: `operator <sparse-ops-docs>`__ للحصول على قائمة.
+::
+    >>> b = torch.tensor([[0، 0، 1، 2، 3، 0]، [4، 5، 0، 6، 0، 0]])
     >>> b_s = b.to_sparse_csr()
     >>> b_s.cos()
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-    RuntimeError: unsupported tensor layout: SparseCsr
+    Traceback (أحدث استدعاء أولاً):
+      File "<stdin>"، line 1، in <module>
+    RuntimeError: تخطيط Tensor غير مدعوم: SparseCsr
     >>> b_s.sin()
-    tensor(crow_indices=tensor([0, 3, 6]),
-           col_indices=tensor([2, 3, 4, 0, 1, 3]),
-           values=tensor([ 0.8415,  0.9093,  0.1411, -0.7568, -0.9589, -0.2794]),
-           size=(2, 6), nnz=6, layout=torch.sparse_csr)
+    tensor(crow_indices=tensor([0، 3، 6])،
+           col_indices=tensor([2، 3، 4، 0، 1، 3])،
+           values=tensor([0.8415، 0.9093، 0.1411، -0.7568، -0.9589، -0.2794])،
+           size=(2، 6)، nnz=6، layout=torch.sparse_csr)
 
-As shown in the example above, we don't support non-zero preserving unary
-operators such as cos. The output of a non-zero preserving unary operation
-will not be able to take advantage of sparse storage formats to the same
-extent as the input and potentially result in a catastrophic increase in memory.
-We instead rely on the user to explicitly convert to a dense Tensor first and
-then run the operation.
-
+كما هو موضح في المثال أعلاه، لا ندعم المشغلين أحاديين غير الصفر مثل cos. لن تتمكن نتيجة عملية أحادية غير صحيحة من الاستفادة من تنسيقات التخزين المتقطعة بنفس القدر مثل الإدخال وقد تؤدي إلى زيادة كارثية في الذاكرة. نعتمد بدلاً من ذلك على المستخدم لتحويله بشكل صريح إلى Tensor كثيف أولاً ثم تشغيل العملية.
+::
     >>> b_s.to_dense().cos()
-    tensor([[ 1.0000, -0.4161],
-            [-0.9900,  1.0000]])
+    tensor([[1.0000، -0.4161]،
+            [-0.9900، 1.0000]])
 
-We are aware that some users want to ignore compressed zeros for operations such
-as `cos` instead of preserving the exact semantics of the operation. For this we
-can point to torch.masked and its MaskedTensor, which is in turn also backed and
-powered by sparse storage formats and kernels.
+نحن ندرك أن بعض المستخدمين يريدون تجاهل الأصفار المضغوطة للعمليات مثل `cos` بدلاً من الحفاظ على الدلالات الدقيقة للعملية. لهذا يمكننا الإشارة إلى torch.masked وMaskedTensor الخاص به، والذي يتم تشغيله بدوره أيضًا بواسطة تنسيقات التخزين المتقطعة والنوى.
 
-Also note that, for now, the user doesn't have a choice of the output layout. For example,
-adding a sparse Tensor to a regular strided Tensor results in a strided Tensor. Some
-users might prefer for this to stay a sparse layout, because they know the result will
-still be sufficiently sparse.
-
+لاحظ أيضًا أنه، في الوقت الحالي، لا يملك المستخدم خيار تخطيط الإخراج. على سبيل المثال، يؤدي إضافة Tensor متقطع إلى Tensor متدرج عادي إلى Tensor متدرج. قد يفضل بعض المستخدمين أن يظل هذا متقطعًا، لأنهم يعرفون أن النتيجة ستظل متقطعة بدرجة كافية.
+::
     >>> a + b.to_sparse()
-    tensor([[0., 3.],
-            [3., 0.]])
+    tensor([[0.، 3.]،
+            [3.، 0.]])
 
-We acknowledge that access to kernels that can efficiently produce different output
-layouts can be very useful. A subsequent operation might significantly benefit from
-receiving a particular layout. We are working on an API to control the result layout
-and recognize it is an important feature to plan a more optimal path of execution for
-any given model.
+نحن ندرك أن الوصول إلى نوى يمكنها إنتاج تخطيطات إخراج مختلفة يمكن أن يكون مفيدًا جدًا. قد تستفيد العملية اللاحقة بشكل كبير من تلقي تخطيط معين. نعمل على واجهة برمجة تطبيقات للتحكم في تخطيط النتيجة ونعترف بأنها ميزة مهمة لتخطيط مسار تنفيذ أكثر مثالية لأي نموذج معين.
 
 .. _sparse-semi-structured-docs:
 
-Sparse Semi-Structured Tensors
-++++++++++++++++++++++++++++++
+المتوترات المتقطعة شبه المنظمة
+++++++++++++++++++++++
 
-.. warning::
+.. تحذير ::
 
-   Sparse semi-structured tensors are currently a prototype feature and subject to change. Please feel free to open an issue to report a bug or if you have feedback to share.
+   المتوترات المتقطعة شبه المنظمة هي ميزة نموذج أولي حاليًا وقد تتغير. لا تتردد في فتح قضية للإبلاغ عن خطأ أو إذا كان لديك ملاحظات لمشاركتها.
 
-Semi-Structured sparsity is a sparse data layout that was first introduced in NVIDIA's Ampere architecture. It is also referred to as **fine-grained structured sparsity** or **2:4 structured sparsity**.
+التفرقة شبه المنظمة هي تخطيط بيانات متقطع تم تقديمه لأول مرة في بنية Ampere من NVIDIA. يُشار إليها أيضًا باسم **التفرقة المنظمة الدقيقة** أو **التفرقة المنظمة 2:4**.
 
-This sparse layout stores `n` elements out of every `2n` elements, with `n` being determined by the width of the Tensor's data type (dtype). The most frequently used dtype is float16, where `n=2`, thus the term "2:4 structured sparsity."
+يقوم هذا التخطيط المتقطع بتخزين `n` عنصر من كل `2n` عنصر، حيث يتم تحديد `n` بواسطة عرض نوع بيانات Tensor (dtype). نوع البيانات الأكثر استخدامًا هو float16، حيث `n=2`، وبالتالي مصطلح "التفرقة المنظمة 2:4".
 
-Semi-structured sparsity is explained in greater detail in `this NVIDIA blog post <https://developer.nvidia.com/blog/exploiting-ampere-structured-sparsity-with-cusparselt>`_.
+تم شرح التفرقة شبه المنظمة بالتفصيل في `منشور مدونة NVIDIA هذا <https://developer.nvidia.com/blog/exploiting-ampere-structured-sparsity-with-cusparselt>`__.
 
-In PyTorch, semi-structured sparsity is implemented via a Tensor subclass.
-By subclassing, we can override ``__torch_dispatch__`` , allowing us to use faster sparse kernels when performing matrix multiplication.
-We can also store the tensor in it's compressed form inside the subclass to reduce memory overhead.
+في PyTorch، يتم تنفيذ التفرقة شبه المنظمة عبر Subclass Tensor.
 
-In this compressed form, the sparse tensor is stored by retaining only the *specified* elements and some metadata, which encodes the mask.
+من خلال التفرقة، يمكننا تجاوز ``__torch_dispatch__``، مما يسمح لنا باستخدام نوى متقطعة أسرع عند إجراء ضرب المصفوفة.
 
-.. note::
-    The specified elements and metadata mask of a semi-structured sparse tensor are stored together in a single
-    flat compressed tensor. They are appended to each other to form a contiguous chunk of memory.
+يمكننا أيضًا تخزين المتوتر في شكله المضغوط داخل Subclass لتقليل النفقات العامة للذاكرة.
 
-    compressed tensor = [ specified elements of original tensor |   metadata_mask ]
+في هذا الشكل المضغوط، يتم تخزين المتوتر المتقطع عن طريق الاحتفاظ فقط بالعناصر *المحددة* وبعض البيانات الوصفية، والتي ترمّز القناع.
 
-    For an original tensor of size `(r, c)` we expect the first `m * k // 2` elements to be the kept elements
-    and the rest of the tensor is metadata.
+.. ملاحظة ::
 
-    In order to make it easier for the user to view the specified elements
-    and mask, one can use ``.indices()`` and ``.values()`` to access the mask and specified elements respectively.
+   يتم تخزين العناصر المحددة والبيانات الوصفية للقناع لمتوتر شبه منظم متقطع معًا في Tensor مضغوط واحد. يتم ضمها إلى بعضها البعض لتشكيل كتلة متجاورة من الذاكرة.
 
+   Tensor المضغوط = [عناصر محددة للمتوتر الأصلي | قناع البيانات الوصفية]
 
-    - ``.values()`` returns the specified elements in a tensor of size `(r, c//2)` and with the same dtype as the dense matrix.
+   بالنسبة إلى Tensor بحجم `(r، c)`، نتوقع أن تكون العناصر `m * k // 2` الأولى هي العناصر المحتفظ بها
+   والباقي عبارة عن بيانات وصفية.
 
-    - ``.indices()`` returns the metadata_mask in a tensor of size `(r, c//2 )` and with element type ``torch.int16`` if dtype is torch.float16 or torch.bfloat16, and element type ``torch.int32`` if dtype is torch.int8.
+   لتسهيل الأمر على المستخدم لعرض العناصر المحددة
+   والقناع، يمكنك استخدام ``.indices()`` و ``.values()`` للوصول إلى القناع والعناصر المحددة على التوالي.
 
 
-For 2:4 sparse tensors, the metadata overhead is minor - just 2 bits per specified element.
+   - ``.values()`` يعيد العناصر المحددة في Tensor بحجم `(r، c // 2)` وبنفس النوع مثل المصفوفة الكثيفة.
 
-.. note::
-  It's important to note that ``torch.float32`` is only supported for 1:2 sparsity. Therefore, it does not follow the same formula as above.
-
-Here, we break down how to calculate the compression ratio ( size dense / size sparse) of a 2:4 sparse tensor.
-
-Let `(r, c) = tensor.shape` and `e = bitwidth(tensor.dtype)`, so `e = 16` for ``torch.float16`` and ``torch.bfloat16`` and `e = 8` for ``torch.int8``.
-
-.. math::
-  M_{dense} = r \times c \times e \\
-  M_{sparse} = M_{specified} + M_{metadata} = r \times \frac{c}{2} \times e + r \times \frac{c}{2} \times 2 = \frac{rce}{2} + rc =rce(\frac{1}{2} +\frac{1}{e})
-
-Using these calculations, we can determine the total memory footprint for both the original dense and the new sparse representation.
-
-This gives us a simple formula for the compression ratio, which is dependent only on the bitwidth of the tensor datatype.
-
-.. math::
-  C = \frac{M_{sparse}}{M_{dense}} =  \frac{1}{2} + \frac{1}{e}
-
-By using this formula, we find that the compression ratio is 56.25% for ``torch.float16`` or ``torch.bfloat16``, and 62.5% for ``torch.int8``.
-
-Constructing Sparse Semi-Structured Tensors
--------------------------------------------
-
-You can transform a dense tensor into a sparse semi-structured tensor by simply using the ``torch.to_sparse_semi_structured`` function.
-
-Please also note that we only support CUDA tensors since hardware compatibility for semi-structured sparsity is limited to NVIDIA GPUs.
+   - ``.indices()`` يعيد قناع البيانات الوصفية في Tensor بحجم `(r، c // 2)` ونوع العنصر ``torch.int16`` إذا كان النوع dtype هو torch.float16 أو torch.bfloat16، ونوع العنصر ``torch.int32`` إذا كان النوع dtype هو torch.int8.
 
 
-The following datatypes are supported for semi-structured sparsity. Note that each datatype has its own shape constraints and compression factor.
+بالنسبة للمتوترات المتقطعة 2:4، فإن النفقات العامة للبيانات الوصفية طفيفة - مجرد 2 بت لكل عنصر محدد.
+
+.. ملاحظة ::
+
+   من المهم ملاحظة أن ``torch.float32`` مدعوم فقط للتفرقة 1:2. لذلك، لا يتبع نفس الصيغة الموضحة أعلاه.
+
+هنا، نقوم بتفصيل كيفية حساب نسبة الضغط (حجم الكثيف / حجم المتقطع) لمتوتر 2:4 متقطع.
+
+دع `(r، c) = tensor.shape` و `e = bitwidth (tensor.dtype)`، لذا `e = 16` لـ ``torch.float16`` و ``torch.bfloat16`` و `e = 8` لـ ``torch.int8``.
+
+.. math ::
+
+   M_ {dense} = r \ times c \ times e \\
+   M_ {sparse} = M_ {specified} + M_ {metadata} = r \ times \ frac {c} {2} \ times e + r \ times \ frac {c} {2} \ times 2 = \ frac {rce} {2} + rc = rce (\ frac {1} {2} + \ frac {1} {e})
+
+باستخدام هذه الحسابات، يمكننا تحديد البصمة الكلية للذاكرة لكل من التمثيل الكثيف الأصلي والتمثيل المتقطع الجديد.
+
+هذا يعطينا صيغة بسيطة لنسبة الضغط، والتي تعتمد فقط على عرض بت نوع بيانات المتوتر.
+
+.. math ::
+
+   C = \ frac {M_ {sparse}} {M_ {dense}} = \ frac {1} {2} + \ frac {1} {e}
+
+باستخدام هذه الصيغة، نجد أن نسبة الضغط تبلغ 56.25٪ لـ ``torch.float16`` أو ``torch.bfloat16``، و 62.5٪ لـ ``torch.int8``.
+
+بناء المتوترات المتقطعة شبه المنظمة
+يمكنك تحويل مصفوفة كثيفة إلى مصفوفة شبه منظمة نادرة ببساطة باستخدام دالة ``torch.to_sparse_semi_structured``.
+
+يرجى ملاحظة أننا ندعم فقط المصفوفات CUDA حيث أن التوافق مع الأجهزة لقابلية الضغط شبه المنظمة محدود في وحدات معالجة الرسومات NVIDIA.
+
+تُدعم أنواع البيانات التالية لقابلية الضغط شبه المنظمة. لاحظ أن لكل نوع بيانات قيوده الخاصة على الشكل وعامل الضغط.
 
 .. csv-table::
-   :header: "PyTorch dtype", "Shape Constraints", "Compression Factor", "Sparsity Pattern"
+   :header: "نوع بيانات PyTorch", "قيود الشكل", "عامل الضغط", "نمط الضغط"
    :widths: 15, 45, 10, 10
    :delim: ;
 
-   ``torch.float16``; Tensor must be 2D and (r, c) must both be a positive multiple of 64;9/16;2:4
-   ``torch.bfloat16``; Tensor must be 2D and (r, c) must both be a positive multiple of 64;9/16;2:4
-   ``torch.int8``; Tensor must be 2D and (r, c) must both be a positive multiple of 128;10/16;2:4
+   ``torch.float16``; يجب أن تكون المصفوفة ثنائية الأبعاد ويجب أن يكون كل من (r, c) مضاعفًا إيجابيًا لـ 64؛9/16؛2:4
+   ``torch.bfloat16``; يجب أن تكون المصفوفة ثنائية الأبعاد ويجب أن يكون كل من (r, c) مضاعفًا إيجابيًا لـ 64؛9/16؛2:4
+   ``torch.int8``; يجب أن تكون المصفوفة ثنائية الأبعاد ويجب أن يكون كل من (r, c) مضاعفًا إيجابيًا لـ 128؛10/16؛2:4
 
-
-To construct a semi-structured sparse tensor, start by creating a regular dense tensor that adheres to a 2:4 (or semi-structured) sparse format.
-To do this we  tile a small 1x4 strip to create a 16x16 dense float16 tensor.
-Afterwards, we can call ``to_sparse_semi_structured`` function to compress it for accelerated inference.
-
+لإنشاء مصفوفة نادرة شبه منظمة، ابدأ بإنشاء مصفوفة كثيفة عادية تلتزم بتنسيق 2:4 (أو شبه منظم).
+للقيام بذلك، نقوم ببلاط قطاع صغير 1x4 لإنشاء مصفوفة كثيفة float16 بحجم 16x16.
+بعد ذلك، يمكننا استدعاء دالة ``to_sparse_semi_structured`` لضغطها من أجل الاستدلال المعجل.
+::
     >>> from torch.sparse import to_sparse_semi_structured
     >>> A = torch.Tensor([0, 0, 1, 1]).tile((128, 32)).half().cuda()
     tensor([[0., 0., 1.,  ..., 0., 1., 1.],
@@ -279,10 +231,10 @@ Afterwards, we can call ``to_sparse_semi_structured`` function to compress it fo
             [-4370, -4370, -4370,  ..., -4370, -4370, -4370]], device='cuda:0',
     dtype=torch.int16))
 
-Sparse Semi-Structured Tensor Operations
-----------------------------------------
+العمليات شبه المنظمة للمصفوفات النادرة
+-------------------------------
 
-Currently, the following operations are supported for semi-structured sparse tensors:
+تدعم العمليات التالية حاليًا المصفوفات النادرة شبه المنظمة:
 
 - torch.addmm(bias, dense, sparse.t())
 - torch.mm(dense, sparse)
@@ -291,8 +243,8 @@ Currently, the following operations are supported for semi-structured sparse ten
 - aten.t.default(sparse)
 - aten.t.detach(sparse)
 
-To use these ops, simply pass the output of ``to_sparse_semi_structured(tensor)``  instead of using ``tensor`` once your tensor has 0s in a semi-structured sparse format, like this:
-
+لاستخدام هذه العمليات، مرر ببساطة إخراج ``to_sparse_semi_structured(tensor)`` بدلاً من استخدام ``tensor`` بمجرد أن تكون المصفوفة الخاصة بك تحتوي على أصفار بتنسيق ضغط شبه منظم، كما يلي:
+::
     >>> a = torch.Tensor([0, 0, 1, 1]).tile((64, 16)).half().cuda()
     >>> b = torch.rand(64, 64).half().cuda()
     >>> c = torch.mm(a, b)
@@ -300,66 +252,45 @@ To use these ops, simply pass the output of ``to_sparse_semi_structured(tensor)`
     >>> torch.allclose(c, torch.mm(a_sparse, b))
     True
 
-Accelerating nn.Linear with semi-structured sparsity
-----------------------------------------------------
-You can accelerate the linear layers in your model if the weights are already semi-structured sparse with just a few lines of code:
-
+تسريع nn.Linear مع الضغط شبه المنظم
+----------------------------------
+يمكنك تسريع الطبقات الخطية في نموذجك إذا كانت الأوزان شبه منظمة بالفعل باستخدام الضغط النادر في بضع سطور فقط من التعليمات البرمجية:
+::
     >>> input = torch.rand(64, 64).half().cuda()
     >>> mask = torch.Tensor([0, 0, 1, 1]).tile((64, 16)).cuda().bool()
     >>> linear = nn.Linear(64, 64).half().cuda()
     >>> linear.weight = nn.Parameter(to_sparse_semi_structured(linear.weight.masked_fill(~mask, 0)))
 
-
 .. _sparse-coo-docs:
 
-Sparse COO tensors
+مصفوفات COO النادرة
 ++++++++++++++++++
 
-PyTorch implements the so-called Coordinate format, or COO
-format, as one of the storage formats for implementing sparse
-tensors.  In COO format, the specified elements are stored as tuples
-of element indices and the corresponding values. In particular,
+ينفذ PyTorch ما يسمى بتنسيق الإحداثيات، أو تنسيق COO، كواحد من تنسيقات التخزين لتنفيذ المصفوفات النادرة. في تنسيق COO، يتم تخزين العناصر المحددة كمجموعات من مؤشرات العناصر والقيم المقابلة. على وجه التحديد،
 
-  - the indices of specified elements are collected in ``indices``
-    tensor of size ``(ndim, nse)`` and with element type
-    ``torch.int64``,
+  - يتم جمع مؤشرات العناصر المحددة في مصفوفة ``indices`` بحجم ``(ndim، nse)`` ونوع عنصر ``torch.int64``،
 
-  - the corresponding values are collected in ``values`` tensor of
-    size ``(nse,)`` and with an arbitrary integer or floating point
-    number element type,
+  - يتم جمع القيم المقابلة في مصفوفة ``values`` بحجم ``(nse)`` ونوع عنصر عدد صحيح أو نقطة عائمة عشوائي،
 
-where ``ndim`` is the dimensionality of the tensor and ``nse`` is the
-number of specified elements.
+حيث ``ndim`` هو أبعاد المصفوفة و ``nse`` هو عدد العناصر المحددة.
 
 .. note::
 
-   The memory consumption of a sparse COO tensor is at least ``(ndim *
-   8 + <size of element type in bytes>) * nse`` bytes (plus a constant
-   overhead from storing other tensor data).
+   تبلغ استهلاك ذاكرة مصفوفة COO النادرة 8 بايت على الأقل ``(ndim * 8 + <حجم نوع العنصر بالبايت>) * nse`` بايت (بالإضافة إلى ثابت
 
-   The memory consumption of a strided tensor is at least
-   ``product(<tensor shape>) * <size of element type in bytes>``.
+   تبلغ استهلاك ذاكرة المصفوفة ذات الخطوة على الأقل ``product(<شكل المصفوفة>) * <حجم نوع العنصر بالبايت>``.
 
-   For example, the memory consumption of a 10 000 x 10 000 tensor
-   with 100 000 non-zero 32-bit floating point numbers is at least
-   ``(2 * 8 + 4) * 100 000 = 2 000 000`` bytes when using COO tensor
-   layout and ``10 000 * 10 000 * 4 = 400 000 000`` bytes when using
-   the default strided tensor layout. Notice the 200 fold memory
-   saving from using the COO storage format.
+   على سبيل المثال، تبلغ استهلاك ذاكرة مصفوفة 10000 × 10000 مع 100000 من الأرقام العشرية ذات 32 بت على الأقل ``(2 * 8 + 4) * 100000 = 2000000`` بايت عند استخدام تنسيق مصفوفة COO و ``10000 * 10000 * 4 = 400000000`` بايت عند استخدام تنسيق المصفوفة ذات الخطوة الافتراضية. لاحظ توفير الذاكرة بمقدار 200 ضعف من استخدام تنسيق التخزين COO.
 
-Construction
-------------
+البناء
+----
 
-A sparse COO tensor can be constructed by providing the two tensors of
-indices and values, as well as the size of the sparse tensor (when it
-cannot be inferred from the indices and values tensors) to a function
-:func:`torch.sparse_coo_tensor`.
+يمكن بناء مصفوفة COO نادرة عن طريق توفير المصفوفتين من المؤشرات والقيم، بالإضافة إلى حجم المصفوفة النادرة (عندما لا يمكن استنتاجها من المصفوفات والمصفوفات) إلى دالة :func: `torch.sparse_coo_tensor`.
 
-Suppose we want to define a sparse tensor with the entry 3 at location
-(0, 2), entry 4 at location (1, 0), and entry 5 at location (1, 2).
-Unspecified elements are assumed to have the same value, fill value,
-which is zero by default. We would then write:
-
+لنفترض أننا نريد تحديد مصفوفة نادرة مع الإدخال 3 في الموقع
+(0، 2)، الإدخال 4 في الموقع (1، 0)، والإدخال 5 في الموقع (1، 2).
+يفترض أن العناصر غير المحددة لها نفس القيمة، وهي قيمة التعبئة، والتي تكون صفرًا بشكل افتراضي. ثم نكتب:
+::
     >>> i = [[0, 1, 1],
              [2, 0, 2]]
     >>> v =  [3, 4, 5]
@@ -373,21 +304,20 @@ which is zero by default. We would then write:
     tensor([[0, 0, 3],
             [4, 0, 5]])
 
-Note that the input ``i`` is NOT a list of index tuples.  If you want
-to write your indices this way, you should transpose before passing them to
-the sparse constructor:
-
+لاحظ أن الإدخال "i" ليس قائمة من مجموعات المؤشرات. إذا كنت تريد
+لإدخال مؤشراتك بهذه الطريقة، فيجب عليك نقلها قبل تمريرها إلى
+منشئ المصفوفة النادرة:
+::
     >>> i = [[0, 2], [1, 0], [1, 2]]
     >>> v =  [3,      4,      5    ]
     >>> s = torch.sparse_coo_tensor(list(zip(*i)), v, (2, 3))
-    >>> # Or another equivalent formulation to get s
+    >>> # أو صيغة مكافئة أخرى للحصول على s
     >>> s = torch.sparse_coo_tensor(torch.tensor(i).t(), v, (2, 3))
-    >>> torch.sparse_coo_tensor(i.t(), v, torch.Size([2,3])).to_dense()
+    >>> torch.sparse_coo_tensor(i.t(), v، torch.Size([2،3])).to_dense()
     tensor([[0, 0, 3],
             [4, 0, 5]])
 
-An empty sparse COO tensor can be constructed by specifying its size
-only:
+يمكن بناء مصفوفة COO نادرة فارغة عن طريق تحديد حجمها فقط:
 
     >>> torch.sparse_coo_tensor(size=(2, 3))
     tensor(indices=tensor([], size=(2, 0)),
@@ -396,35 +326,27 @@ only:
 
 .. _sparse-hybrid-coo-docs:
 
-Sparse hybrid COO tensors
+مصفوفات COO الهجينة النادرة
 -------------------------
 
-PyTorch implements an extension of sparse tensors with scalar values
-to sparse tensors with (contiguous) tensor values. Such tensors are
-called hybrid tensors.
+ينفذ PyTorch امتدادًا للمصفوفات النادرة ذات القيم القياسية
+إلى المصفوفات النادرة ذات القيم (المتصلة) للمصفوفات. تسمى هذه المصفوفات بالمصفوفات الهجينة.
 
-PyTorch hybrid COO tensor extends the sparse COO tensor by allowing
-the ``values`` tensor to be a multi-dimensional tensor so that we
-have:
+توسع مصفوفة PyTorch الهجينة COO مصفوفة COO النادرة من خلال السماح
+تكون مصفوفة "القيم" متعددة الأبعاد بحيث يكون لدينا:
 
-  - the indices of specified elements are collected in ``indices``
-    tensor of size ``(sparse_dims, nse)`` and with element type
-    ``torch.int64``,
+  - يتم جمع مؤشرات العناصر المحددة في مصفوفة ``indices`` بحجم ``(sparse_dims، nse)`` ونوع عنصر ``torch.int64``،
 
-  - the corresponding (tensor) values are collected in ``values``
-    tensor of size ``(nse, dense_dims)`` and with an arbitrary integer
-    or floating point number element type.
+  - يتم جمع القيم (المصفوفة) المقابلة في مصفوفة ``values`` بحجم ``(nse، dense_dims)`` ونوع عنصر عدد صحيح أو نقطة عائمة عشوائي.
 
 .. note::
 
-   We use (M + K)-dimensional tensor to denote a N-dimensional sparse
-   hybrid tensor, where M and K are the numbers of sparse and dense
-   dimensions, respectively, such that M + K == N holds.
+   نستخدم مصفوفة (M + K)-dimensional للإشارة إلى مصفوفة N-dimensional نادرة هجينة، حيث M و K هما عدد الأبعاد النادرة والكثيفة، على التوالي، بحيث تكون M + K == N صحيحة.
 
-Suppose we want to create a (2 + 1)-dimensional tensor with the entry
-[3, 4] at location (0, 2), entry [5, 6] at location (1, 0), and entry
-[7, 8] at location (1, 2). We would write
-
+لنفترض أننا نريد إنشاء مصفوفة (2 + 1) الأبعاد مع الإدخال
+[3، 4] في الموقع (0، 2)، الإدخال [5، 6] في الموقع (1، 0)، والإدخال
+[7، 8] في الموقع (1، 2). نكتب
+::
     >>> i = [[0, 1, 1],
              [2, 0, 2]]
     >>> v =  [[3, 4], [5, 6], [7, 8]]
@@ -445,45 +367,39 @@ Suppose we want to create a (2 + 1)-dimensional tensor with the entry
              [0, 0],
              [7, 8]]])
 
-In general, if ``s`` is a sparse COO tensor and ``M =
-s.sparse_dim()``, ``K = s.dense_dim()``, then we have the following
-invariants:
+بشكل عام، إذا كانت "s" مصفوفة COO نادرة و "M =
+s.sparse_dim()``، ``K = s.dense_dim()``، ثم لدينا الدعائم التالية:
 
-  - ``M + K == len(s.shape) == s.ndim`` - dimensionality of a tensor
-    is the sum of the number of sparse and dense dimensions,
-  - ``s.indices().shape == (M, nse)`` - sparse indices are stored
-    explicitly,
-  - ``s.values().shape == (nse,) + s.shape[M : M + K]`` - the values
-    of a hybrid tensor are K-dimensional tensors,
-  - ``s.values().layout == torch.strided`` - values are stored as
-    strided tensors.
+  - ``M + K == len(s.shape) == s.ndim`` - أبعاد المصفوفة
+    هو مجموع عدد الأبعاد النادرة والكثيفة،
+  - ``s.indices().shape == (M, nse)`` - يتم تخزين مؤشرات نادرة بشكل صريح،
+  - ``s.values().shape == (nse,) + s.shape[M : M + K]`` - القيم
+    من المصفوفة الهجينة هي مصفوفات K-dimensional،
+  - ``s.values().layout == torch.strided`` - يتم تخزين القيم كمصفوفات ذات خطوة.
 
 .. note::
 
-   Dense dimensions always follow sparse dimensions, that is, mixing
-   of dense and sparse dimensions is not supported.
+   تتبع الأبعاد الكثيفة دائمًا الأبعاد النادرة، أي أن مزج
+   الأبعاد النادرة والكثيفة غير مدعوم.
 
 .. note::
 
-   To be sure that a constructed sparse tensor has consistent indices,
-   values, and size, the invariant checks can be enabled per tensor
-   creation via ``check_invariants=True`` keyword argument, or
-   globally using :class:`torch.sparse.check_sparse_tensor_invariants`
-   context manager instance. By default, the sparse tensor invariants
-   checks are disabled.
+   للتأكد من أن المصفوفة النادرة المُنشأة بها مؤشرات وقيم وحجم متسق، يمكن تمكين فحوصات الدعائم لكل إنشاء مصفوفة عبر ``check_invariants=True``
+   حجة، أو
+   عالميًا باستخدام مثيل :class: `torch.sparse.check_sparse_tensor_invariants`
+   مدير السياق. بشكل افتراضي، يتم تعطيل فحوصات الدعائم للمصفوفة النادرة.
 
 .. _sparse-uncoalesced-coo-docs:
 
-Uncoalesced sparse COO tensors
+مصفوفات COO النادرة غير المدمجة
 ------------------------------
 
-PyTorch sparse COO tensor format permits sparse *uncoalesced* tensors,
-where there may be duplicate coordinates in the indices; in this case,
-the interpretation is that the value at that index is the sum of all
-duplicate value entries. For example, one can specify multiple values,
-``3`` and ``4``, for the same index ``1``, that leads to an 1-D
-uncoalesced tensor:
-
+يسمح تنسيق مصفوفة COO النادرة في PyTorch بمصفوفات نادرة *غير مدمجة*،
+حيث قد تكون هناك مؤشرات مكررة في المؤشرات؛ في هذه الحالة،
+التفسير هو أن القيمة في هذا المؤشر هي مجموع جميع
+إدخالات القيمة المكررة. على سبيل المثال، يمكنك تحديد قيم متعددة،
+"3" و "4"، لنفس المؤشر "1"، مما يؤدي إلى مصفوفة 1-D غير مدمجة:
+::
     >>> i = [[1, 1]]
     >>> v =  [3, 4]
     >>> s=torch.sparse_coo_tensor(i, v, (3,))
@@ -492,641 +408,542 @@ uncoalesced tensor:
            values=tensor(  [3, 4]),
            size=(3,), nnz=2, layout=torch.sparse_coo)
 
-while the coalescing process will accumulate the multi-valued elements
-into a single value using summation:
-
+بينما ستؤدي عملية الدمج إلى تراكم العناصر متعددة القيم
+إلى قيمة واحدة باستخدام الجمع:
+::
     >>> s.coalesce()
     tensor(indices=tensor([[1]]),
            values=tensor([7]),
            size=(3,), nnz=1, layout=torch.sparse_coo)
 
-In general, the output of :meth:`torch.Tensor.coalesce` method is a
-sparse tensor with the following properties:
+بشكل عام، فإن إخراج طريقة :meth: `torch.Tensor.coalesce` عبارة عن مصفوفة نادرة ذات الخصائص التالية:
 
-- the indices of specified tensor elements are unique,
-- the indices are sorted in lexicographical order,
-- :meth:`torch.Tensor.is_coalesced()` returns ``True``.
+- مؤشرات العناصر المحددة في المصفوفة فريدة من نوعها،
+- يتم فرز المؤشرات بترتيب معجمي،
+- :meth: `torch.Tensor.is_coalesced()` إرجاع ``صحيح``.
 
 .. note::
 
-  For the most part, you shouldn't have to care whether or not a
-  sparse tensor is coalesced or not, as most operations will work
-  identically given a sparse coalesced or uncoalesced tensor.
+  في الغالب، لا ينبغي أن تهتم بما إذا كانت المصفوفة النادرة مدمجة أم لا، حيث تعمل معظم العمليات بنفس الطريقة
+  سواء كان ذلك بالنظر إلى المصفوفة النادرة المدمجة أو غير المدمجة.
 
-  However, some operations can be implemented more efficiently on
-  uncoalesced tensors, and some on coalesced tensors.
+  ومع ذلك، يمكن تنفيذ بعض العمليات بكفاءة أكبر على
+  المصفوفات النادرة غير المدمجة، والبعض الآخر على المصفوفات المدمجة.
 
-  For instance, addition of sparse COO tensors is implemented by
-  simply concatenating the indices and values tensors:
-
-    >>> a = torch.sparse_coo_tensor([[1, 1]], [5, 6], (2,))
-    >>> b = torch.sparse_coo_tensor([[0, 0]], [7, 8], (2,))
-    >>> a + b
-    tensor(indices=tensor([[0, 0, 1, 1]]),
-           values=tensor([7, 8, 5, 6]),
-           size=(2,), nnz=4, layout=torch.sparse_coo)
-
-  If you repeatedly perform an operation that can produce duplicate
-  entries (e.g., :func:`torch.Tensor.add`), you should occasionally
-  coalesce your sparse tensors to prevent them from growing too large.
-
-  On the other hand, the lexicographical ordering of indices can be
-  advantageous for implementing algorithms that involve many element
-  selection operations, such as slicing or matrix products.
-
-Working with sparse COO tensors
+  على سبيل المثال، تتم إضافة المصفوفات النادرة COO عن طريق
+  ببساطة ضم مؤشرات المصفوفات وقيمها:
+::
+    >>> a = torch.sparse_coo_tensor([[1, 1]]، [5، 6]، (2))
+    >>> b = torch.sparse_coo_tensor([[0، 0]]، [7
+???????????????????
 -------------------------------
 
-Let's consider the following example:
+لنأخذ المثال التالي في الاعتبار:
 
-    >>> i = [[0, 1, 1],
-             [2, 0, 2]]
-    >>> v =  [[3, 4], [5, 6], [7, 8]]
-    >>> s = torch.sparse_coo_tensor(i, v, (2, 3, 2))
+>>> i = [[[0, 1, 1],
+...      [2, 0, 2]]]
+>>> v = [[[3, 4], [5, 6], [7, 8]]]
+>>> s = torch.sparse_coo_tensor(i, v, (2, 3, 2))
 
-As mentioned above, a sparse COO tensor is a :class:`torch.Tensor`
-instance and to distinguish it from the `Tensor` instances that use
-some other layout, one can use :attr:`torch.Tensor.is_sparse` or
-:attr:`torch.Tensor.layout` properties:
+كما ذكرنا سابقًا، فإن Tensor COO المتناثر هو: class:`torch.Tensor`
+مثيل وللتمييز بينه وبين مثيلات Tensor التي تستخدم
+بعض التخطيطات الأخرى، يمكن استخدام: attr:`torch.Tensor.is_sparse` أو
+:attr:`torch.Tensor.layout` الخصائص:
+::
+>>> isinstance(s, torch.Tensor)
+صحيح
+>>> s.is_sparse
+صحيح
+>>> s.layout == torch.sparse_coo
+صحيح
 
-    >>> isinstance(s, torch.Tensor)
-    True
-    >>> s.is_sparse
-    True
-    >>> s.layout == torch.sparse_coo
-    True
+يمكن الحصول على عدد الأبعاد المتناثرة والكثيفة باستخدام
+الطرق: meth:`torch.Tensor.sparse_dim` و
+:meth:`torch.Tensor.dense_dim`، على التوالي. على سبيل المثال:
+::
+>>> s.sparse_dim()، s.dense_dim()
+(2، 1)
 
-The number of sparse and dense dimensions can be acquired using
-methods :meth:`torch.Tensor.sparse_dim` and
-:meth:`torch.Tensor.dense_dim`, respectively. For instance:
-
-    >>> s.sparse_dim(), s.dense_dim()
-    (2, 1)
-
-
-If ``s`` is a sparse COO tensor then its COO format data can be
-acquired using methods :meth:`torch.Tensor.indices()` and
+إذا كان "s" هو Tensor COO متناثر، فيمكن
+يمكن الحصول على تنسيق بيانات COO باستخدام الطرق: meth:`torch.Tensor.indices()` و
 :meth:`torch.Tensor.values()`.
 
 .. note::
 
-  Currently, one can acquire the COO format data only when the tensor
-  instance is coalesced:
-
+  حاليًا، يمكن الحصول على تنسيق بيانات COO فقط عندما يكون مثيل tensor
+  تم تجميعه:
+::
     >>> s.indices()
-    RuntimeError: Cannot get indices on an uncoalesced tensor, please call .coalesce() first
+    RuntimeError: لا يمكن الحصول على المؤشرات في tensor غير مجمع، يرجى استدعاء .coalesce() أولاً
 
-  For acquiring the COO format data of an uncoalesced tensor, use
-  :func:`torch.Tensor._values()` and :func:`torch.Tensor._indices()`:
-
+  للحصول على تنسيق بيانات COO لمثيل tensor غير مجمع، استخدم
+  :func:`torch.Tensor._values()` و: func:`torch.Tensor._indices()`:
+::
     >>> s._indices()
-    tensor([[0, 1, 1],
-            [2, 0, 2]])
+    tensor([[0, 1, 1]،
+            [2، 0، 2]])
 
-  .. See https://github.com/pytorch/pytorch/pull/45695 for a new API.
+  .. راجع https://github.com/pytorch/pytorch/pull/45695 للحصول على واجهة برمجة التطبيقات الجديدة.
 
-  .. warning::
-    Calling :meth:`torch.Tensor._values()` will return a *detached* tensor.
-    To track gradients, :meth:`torch.Tensor.coalesce().values()` must be
-    used instead.
+  .. تحذير::
+    سيؤدي استدعاء: meth:`torch.Tensor._values()` إلى إرجاع tensor *منفصل*.
+    لتتبع التدرجات، يجب استخدام: meth:`torch.Tensor.coalesce().values()` بدلاً من ذلك.
 
-Constructing a new sparse COO tensor results a tensor that is not
-coalesced:
+إن إنشاء Tensor COO متناثر جديد ينتج عنه tensor غير مجمع:
 
-    >>> s.is_coalesced()
-    False
+>>> s.is_coalesced()
+خطأ
 
-but one can construct a coalesced copy of a sparse COO tensor using
-the :meth:`torch.Tensor.coalesce` method:
+ولكن يمكن إنشاء نسخة مجمعة من Tensor COO المتناثر باستخدام
+:meth:`torch.Tensor.coalesce` الطريقة:
 
-    >>> s2 = s.coalesce()
-    >>> s2.indices()
-    tensor([[0, 1, 1],
-           [2, 0, 2]])
+>>> s2 = s.coalesce()
+>>> s2.indices()
+tensor([[0, 1, 1]،
+           [2، 0، 2]])
 
-When working with uncoalesced sparse COO tensors, one must take into
-an account the additive nature of uncoalesced data: the values of the
-same indices are the terms of a sum that evaluation gives the value of
-the corresponding tensor element. For example, the scalar
-multiplication on a sparse uncoalesced tensor could be implemented by
-multiplying all the uncoalesced values with the scalar because ``c *
-(a + b) == c * a + c * b`` holds. However, any nonlinear operation,
-say, a square root, cannot be implemented by applying the operation to
-uncoalesced data because ``sqrt(a + b) == sqrt(a) + sqrt(b)`` does not
-hold in general.
+عند العمل مع تنسورات COO متناثرة غير مجمعة، يجب مراعاة الطبيعة التراكمية للبيانات غير المجمعة: قيم المؤشرات نفسها هي شروط مجموع أن تقييم يعطي قيمة عنصر tensor المقابل. على سبيل المثال، يمكن تنفيذ الضرب القياسي في tensor متناثر غير مجمع عن طريق ضرب جميع القيم غير المجمعة في المقياس لأن "c * (a + b) == c * a + c * b" صحيح. ومع ذلك، فإن أي عملية غير خطية، مثل الجذر التربيعي، لا يمكن تنفيذها عن طريق تطبيق العملية على البيانات غير المجمعة لأن "sqrt(a + b) == sqrt(a) + sqrt(b)" لا
+يحمل بشكل عام.
 
-Slicing (with positive step) of a sparse COO tensor is supported only
-for dense dimensions. Indexing is supported for both sparse and dense
-dimensions:
+يتم دعم الشرائح (بخطوة إيجابية) من tensor COO المتناثر فقط
+بالنسبة للأبعاد الكثيفة. يتم دعم الفهرسة لكل من الأبعاد المتناثرة والكثيفة:
+::
+>>> s[1]
+tensor(indices=tensor([[0, 2]])،
+           values=tensor([[5, 6]،
+                          [7، 8]])،
+           size=(3, 2)، nnz=2، layout=torch.sparse_coo)
+>>> s[1, 0, 1]
+tensor(6)
+>>> s[1, 0, 1:]
+tensor([6])
 
-    >>> s[1]
-    tensor(indices=tensor([[0, 2]]),
-           values=tensor([[5, 6],
-                          [7, 8]]),
-           size=(3, 2), nnz=2, layout=torch.sparse_coo)
-    >>> s[1, 0, 1]
-    tensor(6)
-    >>> s[1, 0, 1:]
-    tensor([6])
+في PyTorch، لا يمكن تحديد قيمة تعبئة tensor المتناثر بشكل صريح ويُفترض أنها صفر بشكل عام. ومع ذلك، هناك عمليات قد تفسر قيمة التعبئة بشكل مختلف. على سبيل المثال،: func:`torch.sparse.softmax` يحسب softmax بافتراض أن قيمة التعبئة هي سالب اللانهاية.
 
-
-In PyTorch, the fill value of a sparse tensor cannot be specified
-explicitly and is assumed to be zero in general. However, there exists
-operations that may interpret the fill value differently. For
-instance, :func:`torch.sparse.softmax` computes the softmax with the
-assumption that the fill value is negative infinity.
-
-.. See https://github.com/Quansight-Labs/rfcs/tree/pearu/rfc-fill-value/RFC-0004-sparse-fill-value for a new API
+.. راجع https://github.com/Quansight-Labs/rfcs/tree/pearu/rfc-fill-value/RFC-0004-sparse-fill-value لواجهة برمجة تطبيقات جديدة
 
 .. _sparse-compressed-docs:
 
-Sparse Compressed Tensors
-+++++++++++++++++++++++++
+تنسورات مضغوطة متناثرة
++++++++++++++++++++
 
-Sparse Compressed Tensors represents a class of sparse tensors that
-have a common feature of compressing the indices of a certain dimension
-using an encoding that enables certain optimizations on linear algebra
-kernels of sparse compressed tensors. This encoding is based on the
-`Compressed Sparse Row (CSR)`__ format that PyTorch sparse compressed
-tensors extend with the support of sparse tensor batches, allowing
-multi-dimensional tensor values, and storing sparse tensor values in
-dense blocks.
+تمثل تنسورات مضغوطة متناثرة فئة من التنسورات المتناثرة التي لها ميزة مشتركة تتمثل في ضغط مؤشرات بُعد معين باستخدام ترميز يمكّن تحسينات معينة على نوى الجبر الخطي لتنسورات مضغوطة متناثرة. يعتمد هذا الترميز على
+`تنسور الصف المتناثر المضغوط (CSR)`__ تنسيق PyTorch تنسورات مضغوطة متناثرة تمدد مع دعم دفعات tensor متناثرة، مما يسمح بقيم tensor متعددة الأبعاد، وتخزين قيم tensor متناثرة في كتل كثيفة.
 
 __ https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
 
 .. note::
 
-   We use (B + M + K)-dimensional tensor to denote a N-dimensional
-   sparse compressed hybrid tensor, where B, M, and K are the numbers
-   of batch, sparse, and dense dimensions, respectively, such that
-   ``B + M + K == N`` holds. The number of sparse dimensions for
-   sparse compressed tensors is always two, ``M == 2``.
+   نستخدم tensor (B + M + K) الأبعاد للإشارة إلى tensor N الأبعاد
+   tensor متناثر مضغوط، حيث B، M، و K هي أعداد
+   من الأبعاد الدفعية، والمتناثرة، والكثيفة، على التوالي، بحيث
+   "B + M + K == N" يحمل. عدد الأبعاد المتناثرة للتنسورات المضغوطة المتناثرة هو دائمًا اثنان، "M == 2".
 
 .. note::
 
-   We say that an indices tensor ``compressed_indices`` uses CSR
-   encoding if the following invariants are satisfied:
+   نقول إن tensor المؤشرات "compressed_indices" يستخدم ترميز CSR
+   إذا تم استيفاء الدعوات التالية:
 
-   - ``compressed_indices`` is a contiguous strided 32 or 64 bit
-     integer tensor
-   - ``compressed_indices`` shape is ``(*batchsize,
-     compressed_dim_size + 1)`` where ``compressed_dim_size`` is the
-     number of compressed dimensions (e.g. rows or columns)
-   - ``compressed_indices[..., 0] == 0`` where ``...`` denotes batch
-     indices
-   - ``compressed_indices[..., compressed_dim_size] == nse`` where
-     ``nse`` is the number of specified elements
-   - ``0 <= compressed_indices[..., i] - compressed_indices[..., i -
-     1] <= plain_dim_size`` for ``i=1, ..., compressed_dim_size``,
-     where ``plain_dim_size`` is the number of plain dimensions
-     (orthogonal to compressed dimensions, e.g. columns or rows).
+   - "compressed_indices" هو tensor متواصل ذو 32 أو 64 بت
+     نوع صحيح
+   - شكل "compressed_indices" هو "(*batchsize،
+     compressed_dim_size + 1)" حيث "compressed_dim_size" هو
+     عدد الأبعاد المضغوطة (على سبيل المثال، الصفوف أو الأعمدة)
+   - "compressed_indices[..., 0] == 0" حيث "..." تشير إلى مؤشرات دفعية
+   - "compressed_indices[..., compressed_dim_size] == nse" حيث
+     "nse" هو عدد العناصر المحددة
+   - "0 <= compressed_indices[..., i] - compressed_indices[..., i -
+     1] <= plain_dim_size" لـ "i=1، ...، compressed_dim_size"،
+     حيث "plain_dim_size" هو عدد الأبعاد العادية
+     (متعامد مع الأبعاد المضغوطة، على سبيل المثال، الأعمدة أو الصفوف).
 
-   To be sure that a constructed sparse tensor has consistent indices,
-   values, and size, the invariant checks can be enabled per tensor
-   creation via ``check_invariants=True`` keyword argument, or
-   globally using :class:`torch.sparse.check_sparse_tensor_invariants`
-   context manager instance. By default, the sparse tensor invariants
-   checks are disabled.
+   للتأكد من أن tensor المتناثر الذي تم إنشاؤه له مؤشرات وقيم وحجم متسق، يمكن تمكين فحوصات الدعوات لكل إنشاء tensor عبر "check_invariants=True"
+   حجة الكلمة الرئيسية، أو
+   بشكل عام باستخدام: class:`torch.sparse.check_sparse_tensor_invariants`
+   سياق مدير مثيل. بشكل افتراضي، يتم تعطيل فحوصات الدعوات tensor المتناثرة.
 
 .. note::
 
-   The generalization of sparse compressed layouts to N-dimensional
-   tensors can lead to some confusion regarding the count of specified
-   elements. When a sparse compressed tensor contains batch dimensions
-   the number of specified elements will correspond to the number of such
-   elements per-batch. When a sparse compressed tensor has dense dimensions
-   the element considered is now the K-dimensional array. Also for block
-   sparse compressed layouts the 2-D block is considered as the element
-   being specified.  Take as an example a 3-dimensional block sparse
-   tensor, with one batch dimension of length ``b``, and a block
-   shape of ``p, q``. If this tensor has ``n`` specified elements, then
-   in fact we have ``n`` blocks specified per batch. This tensor would
-   have ``values`` with shape ``(b, n, p, q)``. This interpretation of the
-   number of specified elements comes from all sparse compressed layouts
-   being derived from the compression of a 2-dimensional matrix. Batch
-   dimensions are treated as stacking of sparse matrices, dense dimensions
-   change the meaning of the element from a simple scalar value to an
-   array with its own dimensions.
+   يمكن أن يؤدي تعميم التخطيطات المضغوطة المتناثرة إلى تنسورات N الأبعاد
+   إلى بعض الارتباك فيما يتعلق بعدد العناصر المحددة. عندما يحتوي tensor المتناثر المضغوط على أبعاد دفعية، فإن عدد العناصر المحددة
+   ستتوافق مع عدد هذه العناصر لكل دفعة. عندما يكون لدى tensor المتناثر المضغوط أبعاد كثيفة
+   يتم الآن اعتبار العنصر صفيف K الأبعاد. أيضًا بالنسبة لتخطيطات التنسورات المتناثرة المضغوطة، يتم اعتبار الكتلة ثنائية الأبعاد
+   كعنصر يتم تحديده. خذ على سبيل المثال tensor ثلاثي الأبعاد، مع بُعد دفعي واحد بطول "b"، وشكل كتلة "p، q". إذا كان هذا
+   يحتوي على tensor "n" من العناصر المحددة، في الواقع لدينا "n"
+   يتم تحديد الكتل لكل دفعة. سيكون لهذا tensor "values"
+   الشكل "(b، n، p، q)". يأتي هذا التفسير لعدد العناصر المحددة من جميع التخطيطات المضغوطة المتناثرة
+   كونها مشتقة من ضغط مصفوفة ثنائية الأبعاد. يتم التعامل مع أبعاد الدفعات ككومة من المصفوفات المتناثرة، وتغير الأبعاد الكثيفة معنى العنصر من
+   قيمة قياسية بسيطة إلى صفيف بأبعاده الخاصة.
 
 .. _sparse-csr-docs:
 
-Sparse CSR Tensor
+تنسور CSR متناثر
 -----------------
 
-The primary advantage of the CSR format over the COO format is better
-use of storage and much faster computation operations such as sparse
-matrix-vector multiplication using MKL and MAGMA backends.
+الميزة الرئيسية لتنسيق CSR على تنسيق COO هي الاستخدام الأفضل للتخزين وعمليات الحساب الأسرع بكثير مثل الضرب المصفوفة المتناثرة المتجه باستخدام MKL وMAGMA
+الخلفيات.
 
-In the simplest case, a (0 + 2 + 0)-dimensional sparse CSR tensor
-consists of three 1-D tensors: ``crow_indices``, ``col_indices`` and
-``values``:
+في أبسط الحالات، يتكون tensor CSR المتناثر (0 + 2 + 0) الأبعاد من ثلاثة تنسورات أحادية البعد: "crow_indices"، "col_indices" و
+"القيم":
 
-  - The ``crow_indices`` tensor consists of compressed row
-    indices. This is a 1-D tensor of size ``nrows + 1`` (the number of
-    rows plus 1). The last element of ``crow_indices`` is the number
-    of specified elements, ``nse``. This tensor encodes the index in
-    ``values`` and ``col_indices`` depending on where the given row
-    starts. Each successive number in the tensor subtracted by the
-    number before it denotes the number of elements in a given row.
+  - يتكون tensor "crow_indices" من مؤشرات الصف المضغوط. هذا هو
+    1-D tensor من الحجم "nrows + 1" (عدد
+    الصفوف بالإضافة إلى 1). العنصر الأخير من "crow_indices" هو
+    عدد العناصر المحددة، "nse". يقوم هذا tensor بتشفير الفهرس في
+    "القيم" و "col_indices" اعتمادًا على المكان الذي يبدأ فيه الصف المعطى. كل رقم متتالي في
+    tensor مطروحًا من الرقم قبله يشير إلى عدد العناصر في صف معين.
 
-  - The ``col_indices`` tensor contains the column indices of each
-    element. This is a 1-D tensor of size ``nse``.
+  - يحتوي tensor "col_indices" على مؤشرات عمود كل
+    عنصر. هذا هو 1-D tensor من الحجم "nse".
 
-  - The ``values`` tensor contains the values of the CSR tensor
-    elements. This is a 1-D tensor of size ``nse``.
+  - يحتوي tensor "values" على قيم عناصر tensor CSR. هذا هو
+    1-D tensor من الحجم "nse".
 
 .. note::
 
-   The index tensors ``crow_indices`` and ``col_indices`` should have
-   element type either ``torch.int64`` (default) or
-   ``torch.int32``. If you want to use MKL-enabled matrix operations,
-   use ``torch.int32``. This is as a result of the default linking of
-   pytorch being with MKL LP64, which uses 32 bit integer indexing.
+   يجب أن يكون نوع عنصر tensor المؤشر "crow_indices" و "col_indices" إما
+   "torch.int64" (افتراضي) أو
+   "torch.int32". إذا كنت تريد استخدام عمليات المصفوفة الممكّنة من MKL، استخدم
+   "torch.int32". هذا هو نتيجة ربط pytorch الافتراضي بـ MKL LP64، والذي يستخدم 32 بت
+     فهرسة الأعداد الصحيحة.
 
-In the general case, the (B + 2 + K)-dimensional sparse CSR tensor
-consists of two (B + 1)-dimensional index tensors ``crow_indices`` and
-``col_indices``, and of (1 + K)-dimensional ``values`` tensor such
-that
+في الحالة العامة، يتكون tensor CSR المتناثر (B + 2 + K) الأبعاد من مؤشرين (B + 1) الأبعاد
+تنسورات "crow_indices" و "col_indices"، و (1 + K) الأبعاد
+tensor "القيم" بحيث
 
-  - ``crow_indices.shape == (*batchsize, nrows + 1)``
+  - "crow_indices.shape == (*batchsize، nrows + 1)"
 
-  - ``col_indices.shape == (*batchsize, nse)``
+  - "col_indices.shape == (*batchsize، nse)"
 
-  - ``values.shape == (nse, *densesize)``
+  - "values.shape == (nse، *densesize)"
 
-while the shape of the sparse CSR tensor is ``(*batchsize, nrows,
-ncols, *densesize)`` where ``len(batchsize) == B`` and
-``len(densesize) == K``.
-
-.. note::
-
-   The batches of sparse CSR tensors are dependent: the number of
-   specified elements in all batches must be the same. This somewhat
-   artificial constraint allows efficient storage of the indices of
-   different CSR batches.
+في حين أن شكل tensor CSR المتناثر هو "(*batchsize، nrows،
+ncols، *densesize)" حيث "len(batchsize) == B" و
+"len(densesize) == K".
 
 .. note::
 
-   The number of sparse and dense dimensions can be acquired using
-   :meth:`torch.Tensor.sparse_dim` and :meth:`torch.Tensor.dense_dim`
-   methods. The batch dimensions can be computed from the tensor
-   shape: ``batchsize = tensor.shape[:-tensor.sparse_dim() -
+   تعتمد دفعات تنسورات CSR المتناثرة: يجب أن يكون عدد
+   تكون عناصر محددة في جميع الدفعات هي نفسها. هذا القيد الاصطناعي إلى حد ما
+   يسمح بتخزين كفء لمؤشرات دفعات CSR المختلفة.
+
+.. note::
+
+   يمكن الحصول على عدد الأبعاد المتناثرة والكثيفة باستخدام
+   :meth:`torch.Tensor.sparse_dim` و: meth:`torch.Tensor.dense_dim`
+   الطرق. يمكن حساب أبعاد الدفعة من شكل tensor: "batchsize = tensor.shape[:-tensor.sparse_dim() -
    tensor.dense_dim()]``.
 
 .. note::
 
-   The memory consumption of a sparse CSR tensor is at least
-   ``(nrows * 8 + (8 + <size of element type in bytes> *
-   prod(densesize)) * nse) * prod(batchsize)`` bytes (plus a constant
-   overhead from storing other tensor data).
+   تبلغ استهلاك ذاكرة tensor CSR المتناثر على الأقل
+   "(nrows * 8 + (8 + <حجم نوع العنصر بالبايت> *
+   prod(densesize)) * nse) * prod(batchsize)" بايت (بالإضافة إلى ثابت
+   النفقات العامة من تخزين بيانات tensor الأخرى).
 
-   With the same example data of :ref:`the note in sparse COO format
-   introduction<sparse-coo-docs>`, the memory consumption of a 10 000
-   x 10 000 tensor with 100 000 non-zero 32-bit floating point numbers
-   is at least ``(10000 * 8 + (8 + 4 * 1) * 100 000) * 1 = 1 280 000``
-   bytes when using CSR tensor layout. Notice the 1.6 and 310 fold
-   savings from using CSR storage format compared to using the COO and
-   strided formats, respectively.
+   مع نفس بيانات المثال من: ref:`الملاحظة في تنسور COO المتناثر
+   المقدمة<sparse-coo-docs>``، تبلغ استهلاك الذاكرة لمصفوفة 10000 × 10000 مع 100000
+   أرقام عائمة غير صفريين تبلغ 32 بت على الأقل "10000 * 8 + (8 + 4 * 1) * 100 000) * 1 = 1 280 000"
+   بايت عند استخدام تخطيط tensor CSR. لاحظ التوفير 1.6 و 310 مرة من استخدام تنسيقات التخزين CSR وCOO، على التوالي.
 
-Construction of CSR tensors
-'''''''''''''''''''''''''''
+بناء تنسورات CSR
+''''''''''''
 
-Sparse CSR tensors can be directly constructed by using the
-:func:`torch.sparse_csr_tensor` function. The user must supply the row
-and column indices and values tensors separately where the row indices
-must be specified using the CSR compression encoding.  The ``size``
-argument is optional and will be deduced from the ``crow_indices`` and
-``col_indices`` if it is not present.
-
-    >>> crow_indices = torch.tensor([0, 2, 4])
-    >>> col_indices = torch.tensor([0, 1, 0, 1])
-    >>> values = torch.tensor([1, 2, 3, 4])
-    >>> csr = torch.sparse_csr_tensor(crow_indices, col_indices, values, dtype=torch.float64)
+يمكن بناء تنسورات CSR المتناثرة مباشرة عن طريق استخدام
+:func:`torch.sparse_csr_tensor` دالة. يجب على المستخدم توفير مؤشرات الصف والعمود والقيم
+تنسورات بشكل منفصل حيث يجب تحديد مؤشرات الصف باستخدام ترميز الضغط CSR. الحجم
+الحجة اختيارية وسيتم استنتاجها من "crow_indices" و
+"col_indices" إذا لم يكن موجودًا.
+::
+    >>> crow_indices = torch.tensor([0، 2، 4])
+    >>> col_indices = torch.tensor([0، 1، 0، 1])
+    >>> values = torch.tensor([1، 2، 3، 4])
+    >>> csr = torch.sparse_csr_tensor(crow_indices، col_indices، values، dtype=torch.float64)
     >>> csr
-    tensor(crow_indices=tensor([0, 2, 4]),
-           col_indices=tensor([0, 1, 0, 1]),
-           values=tensor([1., 2., 3., 4.]), size=(2, 2), nnz=4,
+    tensor(crow_indices=tensor([0، 2، 4])،
+           col_indices=tensor([0، 1، 0، 1])،
+           values=tensor([1.، 2.، 3.، 4.])، size=(2، 2)، nnz=4،
            dtype=torch.float64)
     >>> csr.to_dense()
-    tensor([[1., 2.],
-            [3., 4.]], dtype=torch.float64)
+    tensor([[1.، 2.]،
+            [3.، 4. ])، dtype=torch.float64)
 
 .. note::
 
-   The values of sparse dimensions in deduced ``size`` is computed
-   from the size of ``crow_indices`` and the maximal index value in
-   ``col_indices``. If the number of columns needs to be larger than
-   in the deduced ``size`` then the ``size`` argument must be
-   specified explicitly.
+   يتم حساب قيم الأبعاد المتناثرة في الحجم المخصّص من حجم "crow_indices" و
+   القيمة القصوى لمؤشر "col_indices". إذا كان عدد الأعمدة بحاجة إلى أن يكون أكبر من
+   في الحجم المخصّص، فيجب تحديد الحجم
+   يجب تحديد الحجة بشكل صريح.
 
-The simplest way of constructing a 2-D sparse CSR tensor from a
-strided or sparse COO tensor is to use
-:meth:`torch.Tensor.to_sparse_csr` method. Any zeros in the (strided)
-tensor will be interpreted as missing values in the sparse tensor:
-
-    >>> a = torch.tensor([[0, 0, 1, 0], [1, 2, 0, 0], [0, 0, 0, 0]], dtype=torch.float64)
+أبسط طريقة لبناء tensor CSR المتناثر ثنائي الأبعاد من
+tensor (strided) أو tensor COO المتناثر هو استخدام
+:meth:`torch.Tensor.to_sparse_csr` الطريقة. سيتم تفسير أي أصفار في tensor (strided)
+كقيم مفقودة في tensor المتناثر:
+::
+    >>> a = torch.tensor([[0، 0، 1، 0]، [1، 2، 0، 0]، [0، 0، 0، 0]]، dtype=torch.float64)
     >>> sp = a.to_sparse_csr()
     >>> sp
-    tensor(crow_indices=tensor([0, 1, 3, 3]),
-          col_indices=tensor([2, 0, 1]),
-          values=tensor([1., 1., 2.]), size=(3, 4), nnz=3, dtype=torch.float64)
+    tensor(crow_indices=tensor([0، 1، 3، 3])،
+          col_indices=tensor([2، 0، 1])،
+          values=tensor([1.، 1.، 2.])، size=(3، 4)، nnz=3، dtype=torch.float64)
 
-CSR Tensor Operations
+عمليات CSR Tensor
 '''''''''''''''''''''
 
-The sparse matrix-vector multiplication can be performed with the
-:meth:`tensor.matmul` method. This is currently the only math operation
-supported on CSR tensors.
-
-    >>> vec = torch.randn(4, 1, dtype=torch.float64)
+يمكن إجراء الضرب المصفوفة المتناثرة المتجه باستخدام
+:meth:`tensor.matmul` الطريقة. هذه هي العملية الرياضية الوحيدة
+يدعم حاليا على تنسورات CSR.
+::
+    >>> vec = torch.randn(4، 1، dtype=torch.float64)
     >>> sp.matmul(vec)
-    tensor([[0.9078],
-            [1.3180],
-            [0.0000]], dtype=torch.float64)
+    tensor([[0.9078]،
+            [1.3180]،
+            [0.0000]]، dtype=torch.float64)
 
 .. _sparse-csc-docs:
 
-Sparse CSC Tensor
------------------
-
-The sparse CSC (Compressed Sparse Column) tensor format implements the
-CSC format for storage of 2 dimensional tensors with an extension to
-supporting batches of sparse CSC tensors and values being
-multi-dimensional tensors.
+تنسور CSC متناثر
+تنسيق CSC النادر (ضغط العمود النادر) ينفذ تنسيق CSC لتخزين التنسورات ثنائية الأبعاد مع تمديد لدعم دفعات من التنسورات CSC النادرة والقيم التي تكون تنسورات متعددة الأبعاد.
 
 .. note::
 
-   Sparse CSC tensor is essentially a transpose of the sparse CSR
-   tensor when the transposition is about swapping the sparse
-   dimensions.
+   التنسور CSC النادرة هي في الأساس تحويل التنسور CSR النادرة عندما يكون التحويل عبارة عن تبديل الأبعاد النادرة.
 
-Similarly to :ref:`sparse CSR tensors <sparse-csr-docs>`, a sparse CSC
-tensor consists of three tensors: ``ccol_indices``, ``row_indices``
-and ``values``:
+على غرار :ref: `التنسورات CSR النادرة <sparse-csr-docs>` ، تتكون التنسور CSC النادرة من ثلاث تنسورات: ``ccol_indices`` ، ``row_indices`` و ``values``:
 
-  - The ``ccol_indices`` tensor consists of compressed column
-    indices. This is a (B + 1)-D tensor of shape ``(*batchsize, ncols + 1)``.
-    The last element is the number of specified
-    elements, ``nse``. This tensor encodes the index in ``values`` and
-    ``row_indices`` depending on where the given column starts. Each
-    successive number in the tensor subtracted by the number before it
-    denotes the number of elements in a given column.
+  - تتكون التنسور ``ccol_indices`` من مؤشرات العمود المضغوطة. هذا هو تنسيق (B + 1) الأبعاد من الشكل ``(*batchsize، ncols + 1)``.
+   العنصر الأخير هو عدد العناصر المحددة، ``nse``. يقوم هذا التنسور بتشفير الفهرس في ``القيم`` و
+   ``row_indices`` اعتمادًا على المكان الذي يبدأ فيه العمود المعطى. يشير كل رقم متتالي في التنسور مطروحًا منه الرقم قبله إلى عدد العناصر في عمود معين.
 
-  - The ``row_indices`` tensor contains the row indices of each
-    element. This is a (B + 1)-D tensor of shape ``(*batchsize, nse)``.
+  - تحتوي التنسور ``row_indices`` على مؤشرات الصف لكل
+    عنصر. هذا هو تنسيق (B + 1) الأبعاد من الشكل ``(*batchsize، nse)``.
 
-  - The ``values`` tensor contains the values of the CSC tensor
-    elements. This is a (1 + K)-D tensor of shape ``(nse, *densesize)``.
+  - تحتوي التنسور ``values`` على قيم عناصر CSC
+    التنسور. هذا هو تنسيق (1 + K) الأبعاد من الشكل ``(nse، *densesize)``.
 
-Construction of CSC tensors
-'''''''''''''''''''''''''''
+بناء تنسرات CSC
+''''''''''
 
-Sparse CSC tensors can be directly constructed by using the
-:func:`torch.sparse_csc_tensor` function. The user must supply the row
-and column indices and values tensors separately where the column indices
-must be specified using the CSR compression encoding.  The ``size``
-argument is optional and will be deduced from the ``row_indices`` and
-``ccol_indices`` tensors if it is not present.
-
-    >>> ccol_indices = torch.tensor([0, 2, 4])
-    >>> row_indices = torch.tensor([0, 1, 0, 1])
-    >>> values = torch.tensor([1, 2, 3, 4])
-    >>> csc = torch.sparse_csc_tensor(ccol_indices, row_indices, values, dtype=torch.float64)
+يمكن بناء تنسرات CSC النادرة مباشرة باستخدام
+:func: `torch.sparse_csc_tensor` الدالة. يجب على المستخدم توفير مؤشرات الصف والعمود والقيم المنفصلة حيث يجب تحديد مؤشرات العمود باستخدام ترميز الضغط CSR. الحجم
+الحجة اختيارية وسيتم استنتاجها من ``row_indices`` و
+``ccol_indices`` التنسورات إذا لم تكن موجودة.
+::
+    >>> ccol_indices = torch.tensor([0، 2، 4])
+    >>> row_indices = torch.tensor([0، 1، 0، 1])
+    >>> values = torch.tensor([1، 2، 3، 4])
+    >>> csc = torch.sparse_csc_tensor(ccol_indices، row_indices، values، dtype=torch.float64)
     >>> csc
-    tensor(ccol_indices=tensor([0, 2, 4]),
-           row_indices=tensor([0, 1, 0, 1]),
-           values=tensor([1., 2., 3., 4.]), size=(2, 2), nnz=4,
-           dtype=torch.float64, layout=torch.sparse_csc)
+    tensor(ccol_indices=tensor([0، 2، 4])،
+           row_indices=tensor([0، 1، 0، 1])،
+           values=tensor([1.، 2.، 3.، 4.])، size=(2، 2)، nnz=4،
+           dtype=torch.float64، layout=torch.sparse_csc)
     >>> csc.to_dense()
-    tensor([[1., 3.],
-            [2., 4.]], dtype=torch.float64)
+    tensor([[1.، 3.]،
+            [2.، 4.]])
 
 .. note::
 
-   The sparse CSC tensor constructor function has the compressed
-   column indices argument before the row indices argument.
+   تحتوي دالة البناء التنسرات CSC النادرة على مؤشرات العمود المضغوطة
+   الحجة قبل مؤشرات الصف الحجة.
 
-The (0 + 2 + 0)-dimensional sparse CSC tensors can be constructed from
-any two-dimensional tensor using :meth:`torch.Tensor.to_sparse_csc`
-method. Any zeros in the (strided) tensor will be interpreted as
-missing values in the sparse tensor:
-
-    >>> a = torch.tensor([[0, 0, 1, 0], [1, 2, 0, 0], [0, 0, 0, 0]], dtype=torch.float64)
+يمكن بناء التنسرات CSC النادرة ذات الأبعاد (0 + 2 + 0) من
+أي تنسور ثنائي الأبعاد باستخدام طريقة :meth: `torch.Tensor.to_sparse_csc`
+طريقة. سيتم تفسير أي أصفار في التنسور (المسطر) على أنها
+قيم مفقودة في التنسور النادرة:
+::
+    >>> a = torch.tensor ([[0، 0، 1، 0]، [1، 2، 0، 0]، [0، 0، 0، 0]]، dtype=torch.float64)
     >>> sp = a.to_sparse_csc()
     >>> sp
-    tensor(ccol_indices=tensor([0, 1, 2, 3, 3]),
-           row_indices=tensor([1, 1, 0]),
-           values=tensor([1., 2., 1.]), size=(3, 4), nnz=3, dtype=torch.float64,
+    tensor(ccol_indices=tensor([0، 1، 2، 3، 3])،
+           row_indices=tensor([1، 1، 0])،
+           values=tensor([1.، 2.، 1.])، size=(3، 4)، nnz=3، dtype=torch.float64،
            layout=torch.sparse_csc)
 
 .. _sparse-bsr-docs:
 
-Sparse BSR Tensor
+التنسورات BSR النادرة
 -----------------
 
-The sparse BSR (Block compressed Sparse Row) tensor format implements the
-BSR format for storage of two-dimensional tensors with an extension to
-supporting batches of sparse BSR tensors and values being blocks of
-multi-dimensional tensors.
+ينفذ تنسيق BSR النادر (سطر الكتلة المضغوط النادر) تنسيق BSR لتخزين التنسورات ثنائية الأبعاد مع تمديد لدعم دفعات من التنسورات BSR النادرة والقيم التي تكون كتل من التنسورات متعددة الأبعاد.
 
-A sparse BSR tensor consists of three tensors: ``crow_indices``,
-``col_indices`` and ``values``:
+تتكون التنسور BSR النادرة من ثلاث تنسورات: ``crow_indices`` ،
+``col_indices`` و ``values``:
 
-  - The ``crow_indices`` tensor consists of compressed row
-    indices. This is a (B + 1)-D tensor of shape ``(*batchsize,
-    nrowblocks + 1)``.  The last element is the number of specified blocks,
-    ``nse``. This tensor encodes the index in ``values`` and
-    ``col_indices`` depending on where the given column block
-    starts. Each successive number in the tensor subtracted by the
-    number before it denotes the number of blocks in a given row.
+  - تتكون التنسور ``crow_indices`` من مؤشرات الصف المضغوطة. هذا هو تنسيق (B + 1) الأبعاد من الشكل ``(*batchsize،
+    nrowblocks + 1)``. العنصر الأخير هو عدد الكتل المحددة،
+    ``nse``. يقوم هذا التنسور بتشفير الفهرس في ``القيم`` و
+    ``col_indices`` اعتمادًا على المكان الذي تبدأ فيه كتلة العمود المعطاة.
+    يشير كل رقم متتالي في التنسور مطروحًا منه الرقم قبله إلى عدد الكتل في صف معين.
 
-  - The ``col_indices`` tensor contains the column block indices of each
-    element. This is a (B + 1)-D tensor of shape ``(*batchsize,
+  - تحتوي التنسور ``col_indices`` على مؤشرات كتلة العمود لكل
+    عنصر. هذا هو تنسيق (B + 1) الأبعاد من الشكل ``(*batchsize،
     nse)``.
 
-  - The ``values`` tensor contains the values of the sparse BSR tensor
-    elements collected into two-dimensional blocks. This is a (1 + 2 +
-    K)-D tensor of shape ``(nse, nrowblocks, ncolblocks,
+  - تحتوي التنسور ``values`` على قيم عناصر التنسور BSR النادرة
+    يتم جمعها في كتل ثنائية الأبعاد. هذا هو تنسيق (1 + 2 +
+    K) الأبعاد من الشكل ``(nse، nrowblocks، ncolblocks،
     *densesize)``.
 
-Construction of BSR tensors
+بناء تنسورات BSR
 '''''''''''''''''''''''''''
 
-Sparse BSR tensors can be directly constructed by using the
-:func:`torch.sparse_bsr_tensor` function. The user must supply the row
-and column block indices and values tensors separately where the row block indices
-must be specified using the CSR compression encoding.
-The ``size`` argument is optional and will be deduced from the ``crow_indices`` and
-``col_indices`` tensors if it is not present.
+يمكن بناء تنسورات BSR النادرة مباشرة باستخدام
+:func: `torch.sparse_bsr_tensor` الدالة. يجب على المستخدم توفير مؤشرات كتلة الصف والعمود والقيم المنفصلة حيث يجب تحديد مؤشرات كتلة الصف باستخدام ترميز الضغط CSR.
+الحجم
+الحجة اختيارية وسيتم استنتاجها من ``crow_indices`` و
+``col_indices`` التنسورات إذا لم تكن موجودة.
 
-    >>> crow_indices = torch.tensor([0, 2, 4])
-    >>> col_indices = torch.tensor([0, 1, 0, 1])
-    >>> values = torch.tensor([[[0, 1, 2], [6, 7, 8]],
-    ...                        [[3, 4, 5], [9, 10, 11]],
-    ...                        [[12, 13, 14], [18, 19, 20]],
-    ...                        [[15, 16, 17], [21, 22, 23]]])
-    >>> bsr = torch.sparse_bsr_tensor(crow_indices, col_indices, values, dtype=torch.float64)
+    >>> crow_indices = torch.tensor([0، 2، 4])
+    >>> col_indices = torch.tensor([0، 1، 0، 1])
+    >>> values = torch.tensor ([[[0، 1، 2]، [6، 7، 8]]،
+    ...                        [[3، 4، 5]، [9، 10، 11]]،
+    ...                        [[12، 13، 14]، [18، 19، 20]]،
+    ...                        [[15، 16، 17]، [21، 22، 23]]])
+    >>> bsr = torch.sparse_bsr_tensor (crow_indices، col_indices، values، dtype=torch.float64)
     >>> bsr
-    tensor(crow_indices=tensor([0, 2, 4]),
-           col_indices=tensor([0, 1, 0, 1]),
-           values=tensor([[[ 0.,  1.,  2.],
-                           [ 6.,  7.,  8.]],
-                          [[ 3.,  4.,  5.],
-                           [ 9., 10., 11.]],
-                          [[12., 13., 14.],
-                           [18., 19., 20.]],
-                          [[15., 16., 17.],
-                           [21., 22., 23.]]]),
-           size=(4, 6), nnz=4, dtype=torch.float64, layout=torch.sparse_bsr)
+    tensor(crow_indices=tensor([0، 2، 4])،
+           col_indices=tensor([0، 1، 0، 1])،
+           values=tensor ([[[0.، 1.، 2.]،
+                           [6.، 7.، 8. ]]]،
+                          [[[3.، 4.، 5.]،
+                           [9.، 10.، 11.]]]]،
+                          [[[12.، 13.، 14.]،
+                           [18.، 19.، 20.]]]]،
+                          [[[15.، 16.، 17.]،
+                           [21.، 22.، 23.]]]]))،
+           size=(4، 6)، nnz=4، dtype=torch.float64، layout=torch.sparse_bsr)
     >>> bsr.to_dense()
-    tensor([[ 0.,  1.,  2.,  3.,  4.,  5.],
-            [ 6.,  7.,  8.,  9., 10., 11.],
-            [12., 13., 14., 15., 16., 17.],
-            [18., 19., 20., 21., 22., 23.]], dtype=torch.float64)
+    tensor([[0.، 1.، 2.، 3.، 4.، 5.]،
+            [6.، 7.، 8.، 9.، 10.، 11.]،
+            [12.، 13.، 14.، 15.، 16.، 17.]،
+            [18.، 19.، 20.، 21.، 22.، 23.]])
 
-The (0 + 2 + 0)-dimensional sparse BSR tensors can be constructed from
-any two-dimensional tensor using :meth:`torch.Tensor.to_sparse_bsr`
-method that also requires the specification of the values block size:
+يمكن بناء تنسورات BSR النادرة ذات الأبعاد (0 + 2 + 0) من
+أي تنسور ثنائي الأبعاد باستخدام طريقة :meth: `torch.Tensor.to_sparse_bsr`
+طريقة تتطلب أيضًا تحديد حجم كتلة القيم:
 
-    >>> dense = torch.tensor([[0, 1, 2, 3, 4, 5],
-    ...                       [6, 7, 8, 9, 10, 11],
-    ...                       [12, 13, 14, 15, 16, 17],
-    ...                       [18, 19, 20, 21, 22, 23]])
-    >>> bsr = dense.to_sparse_bsr(blocksize=(2, 3))
+    >>> dense = torch.tensor ([[0، 1، 2، 3، 4، 5]،
+    ...                       [6، 7، 8، 9، 10، 11]،
+    ...                       [12، 13، 14، 15، 16، 17]،
+    ...                       [18، 19، 20، 21، 22، 23]])
+    >>> bsr = dense.to_sparse_bsr (blocksize = (2، 3))
     >>> bsr
-    tensor(crow_indices=tensor([0, 2, 4]),
-           col_indices=tensor([0, 1, 0, 1]),
-           values=tensor([[[ 0,  1,  2],
-                           [ 6,  7,  8]],
-                          [[ 3,  4,  5],
-                           [ 9, 10, 11]],
-                          [[12, 13, 14],
-                           [18, 19, 20]],
-                          [[15, 16, 17],
-                           [21, 22, 23]]]), size=(4, 6), nnz=4,
+    tensor(crow_indices=tensor([0، 2، 4])،
+           col_indices=tensor([0، 1، 0، 1])،
+           values=tensor ([[[0، 1، 2]،
+                           [6، 7، 8]]]]،
+                          [[[3، 4، 5]،
+                           [9، 10، 11]]]]،
+                          [[[12، 13، 14]،
+                           [18، 19، 20]]]]،
+                          [[[15، 16، 17]،
+                           [21، 22، 23]]]]))، size=(4، 6)، nnz=4،
            layout=torch.sparse_bsr)
 
 .. _sparse-bsc-docs:
 
-Sparse BSC Tensor
+التنسور BSC النادرة
 -----------------
 
-The sparse BSC (Block compressed Sparse Column) tensor format implements the
-BSC format for storage of two-dimensional tensors with an extension to
-supporting batches of sparse BSC tensors and values being blocks of
-multi-dimensional tensors.
+ينفذ تنسيق BSC النادر (ضغط كتلة العمود النادر) تنسيق BSC لتخزين التنسورات ثنائية الأبعاد مع تمديد لدعم دفعات من التنسورات BSC النادرة والقيم التي تكون كتل من التنسورات متعددة الأبعاد.
 
-A sparse BSC tensor consists of three tensors: ``ccol_indices``,
-``row_indices`` and ``values``:
+تتكون التنسور BSC النادرة من ثلاث تنسورات: ``ccol_indices`` ،
+``row_indices`` و ``values``:
 
-  - The ``ccol_indices`` tensor consists of compressed column
-    indices. This is a (B + 1)-D tensor of shape ``(*batchsize,
-    ncolblocks + 1)``.  The last element is the number of specified blocks,
-    ``nse``. This tensor encodes the index in ``values`` and
-    ``row_indices`` depending on where the given row block
-    starts. Each successive number in the tensor subtracted by the
-    number before it denotes the number of blocks in a given column.
+  - تتكون التنسور ``ccol_indices`` من مؤشرات العمود المضغوطة. هذا هو تنسيق (B + 1) الأبعاد من الشكل ``(*batchsize،
+    ncolblocks + 1)``. العنصر الأخير هو عدد الكتل المحددة،
+    ``nse``. يقوم هذا التنسور بتشفير الفهرس في ``القيم`` و
+    ``row_indices`` اعتمادًا على المكان الذي تبدأ فيه كتلة الصف المعطاة.
+    يشير كل رقم متتالي في التنسور مطروحًا منه الرقم قبله إلى عدد الكتل في عمود معين.
 
-  - The ``row_indices`` tensor contains the row block indices of each
-    element. This is a (B + 1)-D tensor of shape ``(*batchsize,
+  - تحتوي التنسور ``row_indices`` على مؤشرات كتلة الصف لكل
+    عنصر. هذا هو تنسيق (B + 1) الأبعاد من الشكل ``(*batchsize،
     nse)``.
 
-  - The ``values`` tensor contains the values of the sparse BSC tensor
-    elements collected into two-dimensional blocks. This is a (1 + 2 +
-    K)-D tensor of shape ``(nse, nrowblocks, ncolblocks,
+  - تحتوي التنسور ``values`` على قيم عناصر التنسور BSC النادرة
+    يتم جمعها في كتل ثنائية الأبعاد. هذا هو تنسيق (1 + 2 +
+    K) الأبعاد من الشكل ``(nse، nrowblocks، ncolblocks،
     *densesize)``.
 
-Construction of BSC tensors
-'''''''''''''''''''''''''''
+بناء تنسورات BSC
+''''''''''''
 
-Sparse BSC tensors can be directly constructed by using the
-:func:`torch.sparse_bsc_tensor` function. The user must supply the row
-and column block indices and values tensors separately where the column block indices
-must be specified using the CSR compression encoding.
-The ``size`` argument is optional and will be deduced from the ``ccol_indices`` and
-``row_indices`` tensors if it is not present.
+يمكن بناء تنسورات BSC النادرة مباشرة باستخدام
+:func: `torch.sparse_bsc_tensor` الدالة. يجب على المستخدم توفير مؤشرات كتلة الصف والعمود والقيم المنفصلة حيث يجب تحديد مؤشرات كتلة العمود باستخدام ترميز الضغط CSR.
+الحجم
+الحجة اختيارية وسيتم استنتاجها من ``ccol_indices`` و
+``row_indices`` التنسورات إذا لم تكن موجودة.
 
-    >>> ccol_indices = torch.tensor([0, 2, 4])
-    >>> row_indices = torch.tensor([0, 1, 0, 1])
-    >>> values = torch.tensor([[[0, 1, 2], [6, 7, 8]],
-    ...                        [[3, 4, 5], [9, 10, 11]],
-    ...                        [[12, 13, 14], [18, 19, 20]],
-    ...                        [[15, 16, 17], [21, 22, 23]]])
-    >>> bsc = torch.sparse_bsc_tensor(ccol_indices, row_indices, values, dtype=torch.float64)
+    >>> ccol_indices = torch.tensor([0، 2، 4])
+    >>> row_indices = torch.tensor([0، 1، 0، 1])
+    >>> values = torch.tensor ([[[0، 1، 2]، [6، 7، 8]]،
+    ...                        [[3، 4، 5]، [9، 10، 11]]،
+    ...                        [[12، 13، 14]، [18، 19، 20]]،
+    ...                        [[15، 16، 17]، [21، 22، 23]]])
+    >>> bsc = torch.sparse_bsc_tensor (ccol_indices، row_indices، values، dtype=torch.float64)
     >>> bsc
-    tensor(ccol_indices=tensor([0, 2, 4]),
-           row_indices=tensor([0, 1, 0, 1]),
-           values=tensor([[[ 0.,  1.,  2.],
-                           [ 6.,  7.,  8.]],
-                          [[ 3.,  4.,  5.],
-                           [ 9., 10., 11.]],
-                          [[12., 13., 14.],
-                           [18., 19., 20.]],
-                          [[15., 16., 17.],
-                           [21., 22., 23.]]]), size=(4, 6), nnz=4,
-           dtype=torch.float64, layout=torch.sparse_bsc)
+    tensor(ccol_indices=tensor([0، 2، 4])،
+           row_indices=tensor([0، 1، 0، 1])،
+           values=tensor ([[[0.، 1.، 2.]،
+                           [6.، 7.، 8. ]]]،
+                          [[[3.، 4.، 5.]،
+                           [9.، 10.، 11.]]]]،
+                          [[[12.، 13.، 14.]،
+                           [18.، 19.، 20.]]]]،
+                          [[[15.، 16.، 17.]،
+                           [21.، 22.، 23.]]]]))، size=(4، 6)، nnz=4،
+           dtype=torch.float64، layout=torch.sparse_bsc)
 
-Tools for working with sparse compressed tensors
-------------------------------------------------
+أدوات للعمل مع التنسورات المضغوطة النادرة
+---------------------------------
 
-All sparse compressed tensors --- CSR, CSC, BSR, and BSC tensors ---
-are conceptionally very similar in that their indices data is split
-into two parts: so-called compressed indices that use the CSR
-encoding, and so-called plain indices that are orthogonal to the
-compressed indices. This allows various tools on these tensors to
-share the same implementations that are parameterized by tensor
-layout.
+جميع التنسورات المضغوطة النادرة - CSR و CSC و BSR و BSC التنسورات -
+مفاهيميا متشابهة للغاية في أن بيانات المؤشرات الخاصة بها مقسمة
+إلى جزأين: ما يسمى المؤشرات المضغوطة التي تستخدم ترميز CSR، و
+ما يسمى المؤشرات العادية التي تكون متعامدة مع
+المؤشرات المضغوطة. يسمح ذلك بمشاركة أدوات مختلفة على هذه التنسورات في نفس التطبيقات التي يتم معلمتها بواسطة تخطيط التنسور.
 
-Construction of sparse compressed tensors
-'''''''''''''''''''''''''''''''''''''''''
+بناء التنسورات المضغوطة النادرة
+'''''''''''''''''''
 
-Sparse CSR, CSC, BSR, and CSC tensors can be constructed by using
-:func:`torch.sparse_compressed_tensor` function that have the same
-interface as the above discussed constructor functions
-:func:`torch.sparse_csr_tensor`, :func:`torch.sparse_csc_tensor`,
-:func:`torch.sparse_bsr_tensor`, and :func:`torch.sparse_bsc_tensor`,
-respectively, but with an extra required ``layout`` argument. The
-following example illustrates a method of constructing CSR and CSC
-tensors using the same input data by specifying the corresponding
-layout parameter to the :func:`torch.sparse_compressed_tensor`
-function:
+يمكن بناء تنسورات CSR و CSC و BSR و CSC النادرة باستخدام
+:func: `torch.sparse_compressed_tensor` الدالة التي لها نفس
+واجهة وظائف البناء المذكورة أعلاه
+:func: `torch.sparse_csr_tensor` ، :func: `torch.sparse_csc_tensor` ،
+:func: `torch.sparse_bsr_tensor` ، و: func: `torch.sparse_bsc_tensor`،
+على التوالي، ولكن مع حجة تخطيط إضافية مطلوبة. توضح الأمثلة التالية طريقة لبناء تنسورات CSR و CSC
+باستخدام نفس بيانات الإدخال عن طريق تحديد معلمة تخطيط المقابلة إلى
+:func: `torch.sparse_compressed_tensor` الدالة:
 
-    >>> compressed_indices = torch.tensor([0, 2, 4])
-    >>> plain_indices = torch.tensor([0, 1, 0, 1])
-    >>> values = torch.tensor([1, 2, 3, 4])
-    >>> csr = torch.sparse_compressed_tensor(compressed_indices, plain_indices, values, layout=torch.sparse_csr)
+    >>> compressed_indices = torch.tensor([0، 2، 4])
+    >>> plain_indices = torch.tensor([0، 1، 0، 1])
+    >>> values = torch.tensor([1، 2، 3، 4])
+    >>> csr = torch.sparse_compressed_tensor (compressed_indices، plain_indices، values، layout=torch.sparse_csr)
     >>> csr
-    tensor(crow_indices=tensor([0, 2, 4]),
-           col_indices=tensor([0, 1, 0, 1]),
-           values=tensor([1, 2, 3, 4]), size=(2, 2), nnz=4,
+    tensor(crow_indices=tensor([0، 2، 4])،
+           col_indices=tensor([0، 1، 0، 1])،
+           values=tensor([1، 2، 3، 4])، size=(2، 2)، nnz=4،
            layout=torch.sparse_csr)
-    >>> csc = torch.sparse_compressed_tensor(compressed_indices, plain_indices, values, layout=torch.sparse_csc)
+    >>> csc = torch.sparse_compressed_tensor (compressed_indices، plain_indices، values، layout=torch.sparse_csc)
     >>> csc
-    tensor(ccol_indices=tensor([0, 2, 4]),
-           row_indices=tensor([0, 1, 0, 1]),
-           values=tensor([1, 2, 3, 4]), size=(2, 2), nnz=4,
+    tensor(ccol_indices=tensor([0، 2، 4])،
+           row_indices=tensor([0، 1، 0، 1])،
+           values=tensor([1، 2، 3، 4])، size=(2، 2)، nnz=4،
            layout=torch.sparse_csc)
-    >>> (csr.transpose(0, 1).to_dense() == csc.to_dense()).all()
+    >>> (csr.transpose(0، 1).to_dense() == csc.to_dense()).all()
     tensor(True)
 
 .. _sparse-ops-docs:
 
-Supported operations
-+++++++++++++++++++++++++++++++++++
+العمليات المدعومة
++++++++++++++++
 
-Linear Algebra operations
--------------------------
-
-The following table summarizes supported Linear Algebra operations on
-sparse matrices where the operands layouts may vary. Here
-``T[layout]`` denotes a tensor with a given layout. Similarly,
-``M[layout]`` denotes a matrix (2-D PyTorch tensor), and ``V[layout]``
-denotes a vector (1-D PyTorch tensor). In addition, ``f`` denotes a
-scalar (float or 0-D PyTorch tensor), ``*`` is element-wise
-multiplication, and ``@`` is matrix multiplication.
+الجبر الخطي العمليات
+فيما يلي جدول يلخص عمليات الجبر الخطي المدعومة على المصفوفات المتناثرة حيث قد تختلف تخطيطات المشغلين. هنا، "T[layout]" تشير إلى Tensor ذات تخطيط معين. وبالمثل، "M[layout]" تشير إلى مصفوفة (Tensor ذات بعدين في PyTorch)، و "V[layout]" تشير إلى متجه (Tensor أحادي البعد في PyTorch). بالإضافة إلى ذلك، تشير "f" إلى عدد صحيح (float أو Tensor أبعاده صفرية في PyTorch)، و "*" هي الضرب العنصري، و "@" هي ضرب المصفوفات.
 
 .. csv-table::
-   :header: "PyTorch operation", "Sparse grad?", "Layout signature"
+   :header: "عملية PyTorch", "Sparse grad؟", "توقيع التخطيط"
    :widths: 20, 5, 60
    :delim: ;
 
@@ -1153,22 +970,16 @@ multiplication, and ``@`` is matrix multiplication.
    :func:`torch.pca_lowrank`; yes; ``PCA(M[sparse_coo]) -> M[strided], M[strided], M[strided]``
    :func:`torch.svd_lowrank`; yes; ``SVD(M[sparse_coo]) -> M[strided], M[strided], M[strided]``
 
-where "Sparse grad?" column indicates if the PyTorch operation supports
-backward with respect to sparse matrix argument. All PyTorch operations,
-except :func:`torch.smm`, support backward with respect to strided
-matrix arguments.
+يشير عمود "Sparse grad؟" إلى ما إذا كانت عملية PyTorch تدعم التشتت فيما يتعلق بحجة المصفوفة المتناثرة. تدعم جميع عمليات PyTorch، باستثناء :func:`torch.smm`، التشتت فيما يتعلق بحجج المصفوفة ذات الخطوة.
 
 .. note::
 
-   Currently, PyTorch does not support matrix multiplication with the
-   layout signature ``M[strided] @ M[sparse_coo]``. However,
-   applications can still compute this using the matrix relation ``D @
-   S == (S.t() @ D.t()).t()``.
+   حاليًا، لا يدعم PyTorch ضرب المصفوفات مع توقيع التخطيط "M[strided] @ M[sparse_coo]". ومع ذلك، لا تزال التطبيقات قادرة على حساب هذا باستخدام علاقة المصفوفة "D @ S == (S.t() @ D.t()).t()".
 
-Tensor methods and sparse
+أساليب Tensor والمصفوفات المتناثرة
 -------------------------
 
-The following Tensor methods are related to sparse tensors:
+طرق Tensor التالية تتعلق بالمصفوفات المتناثرة:
 
 .. autosummary::
     :toctree: generated
@@ -1188,7 +999,7 @@ The following Tensor methods are related to sparse tensors:
     Tensor.to_dense
     Tensor.values
 
-The following Tensor methods are specific to sparse COO tensors:
+طرق Tensor التالية خاصة بمصفوفات COO المتناثرة:
 
 .. autosummary::
     :toctree: generated
@@ -1200,7 +1011,7 @@ The following Tensor methods are specific to sparse COO tensors:
     Tensor.is_coalesced
     Tensor.indices
 
-The following methods are specific to :ref:`sparse CSR tensors <sparse-csr-docs>` and :ref:`sparse BSR tensors <sparse-bsr-docs>`:
+الطرق التالية خاصة بـ :ref:`مصفوفات CSR المتناثرة <sparse-csr-docs>` و :ref:`مصفوفات BSR المتناثرة <sparse-bsr-docs>`:
 
 .. autosummary::
     :toctree: generated
@@ -1209,7 +1020,7 @@ The following methods are specific to :ref:`sparse CSR tensors <sparse-csr-docs>
     Tensor.crow_indices
     Tensor.col_indices
 
-The following methods are specific to :ref:`sparse CSC tensors <sparse-csc-docs>` and :ref:`sparse BSC tensors <sparse-bsc-docs>`:
+الطرق التالية خاصة بـ :ref:`مصفوفات CSC المتناثرة <sparse-csc-docs>` و :ref:`مصفوفات BSC المتناثرة <sparse-bsc-docs>`:
 
 .. autosummary::
     :toctree: generated
@@ -1218,7 +1029,7 @@ The following methods are specific to :ref:`sparse CSC tensors <sparse-csc-docs>
     Tensor.row_indices
     Tensor.ccol_indices
 
-The following Tensor methods support sparse COO tensors:
+طرق Tensor التالية تدعم مصفوفات COO المتناثرة:
 
 :meth:`~torch.Tensor.add`
 :meth:`~torch.Tensor.add_`
@@ -1272,7 +1083,7 @@ The following Tensor methods support sparse COO tensors:
 :meth:`~torch.Tensor.transpose_`
 :meth:`~torch.Tensor.zero_`
 
-Torch functions specific to sparse Tensors
+وظائف الشعلة المحددة للمصفوفات المتناثرة
 ------------------------------------------
 
 .. autosummary::
@@ -1297,10 +1108,10 @@ Torch functions specific to sparse Tensors
     sparse.log_softmax
     sparse.spdiags
 
-Other functions
+وظائف أخرى
 ---------------
 
-The following :mod:`torch` functions support sparse tensors:
+تدعم وظائف الشعلة التالية المصفوفات المتناثرة:
 
 :func:`~torch.cat`
 :func:`~torch.dstack`
@@ -1326,7 +1137,7 @@ The following :mod:`torch` functions support sparse tensors:
 :func:`~torch.zeros`
 :func:`~torch.zeros_like`
 
-To manage checking sparse tensor invariants, see:
+لإدارة التحقق من دقائق المصفوفات المتناثرة، راجع:
 
 .. autosummary::
     :toctree: generated
@@ -1334,8 +1145,7 @@ To manage checking sparse tensor invariants, see:
 
     sparse.check_sparse_tensor_invariants
 
-To use sparse tensors with :func:`~torch.autograd.gradcheck` function,
-see:
+لاستخدام المصفوفات المتناثرة مع دالة :func:`~torch.autograd.gradcheck`، راجع:
 
 .. autosummary::
     :toctree: generated
@@ -1343,16 +1153,14 @@ see:
 
     sparse.as_sparse_gradcheck
 
-Zero-preserving unary functions
+الوظائف أحادية الصفرية
 -------------------------------
 
-We aim to support all 'zero-preserving unary functions': functions of one argument that map zero to zero.
+نحن نهدف إلى دعم جميع "الوظائف الأحادية الصفرية": الوظائف ذات الحجة التي ترسم الصفر إلى الصفر.
 
-If you find that we are missing a zero-preserving unary function
-that you need, please feel encouraged to open an issue for a feature request.
-As always please kindly try the search function first before opening an issue.
+إذا وجدت أننا نفتقد إلى وظيفة أحادية الصفرية تحتاجها، فيرجى تشجيعك على فتح قضية لطلب ميزة. كما هو الحال دائمًا، يرجى محاولة البحث أولاً قبل فتح قضية.
 
-The following operators currently support sparse COO/CSR/CSC/BSR/CSR tensor inputs.
+تدعم المشغلين التاليين حاليًا إدخالات Tensor المتناثرة COO/CSR/CSC/BSR/CSR.
 
 :func:`~torch.abs`
 :func:`~torch.asin`
