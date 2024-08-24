@@ -1,174 +1,177 @@
-Fake tensor
-===========
+.. Fake tensor
+   عربي: تنسور مزيف
+=================
 
-Code: `fake_tensor.py <https://github.com/pytorch/pytorch/blob/db4572dbf18f1cf50cf662547e272d3117063747/torch/_subclasses/fake_tensor.py>`_
+كود: `fake_tensor.py <https://github.com/pytorch/pytorch/blob/db4572dbf18f1cf50cf662547e272d3117063747/torch/_subclasses/fake_tensor.py>`_
 
-Motivation
-----------
+الدافع
+------
 
-When doing Dynamo symbolic evaluation and compiler passes, we often want to be able to run tensor operations to understand what output sizes/dtypes/devices are, without actually running those operations (or trashing preexisting tensors), which would be slower (if you're doing a lot of compute) and take a lot of memory (it's bad if your compiler needs to use GPU memory while you are compiling the program). A fake tensor is like a real tensor in all respects, except that it doesn't actually have any data. For example, when we do Dynamo tracing, we need to trace through user Tensor code and answer questions about intermediates (e.g., if a user does a conditional on an intermediate tensor). Without fake tensor, we would not have accurate information for these queries.
+عند إجراء التقييم الرمزي لـ Dynamo وتمريرات المترجم، نريد غالبًا أن نتمكن من تشغيل عمليات tensor لفهم أحجام الإخراج/الأنواع/الأجهزة، دون تشغيل هذه العمليات بالفعل (أو حذف بيانات tensor الموجودة مسبقًا)، والتي ستكون أبطأ (إذا كنت تقوم بالكثير من الحسابات) وتستهلك الكثير من الذاكرة (من السيئ أن يحتاج مترجمك إلى استخدام ذاكرة GPU أثناء تجميع البرنامج). Tensor المزيف يشبه tensor الحقيقي من جميع النواحي، باستثناء أنه لا يحتوي فعليًا على أي بيانات. على سبيل المثال، عندما نقوم بالتتبع في Dynamo، يلزم تتبع التعليمات البرمجية لـ Tensor الخاصة بالمستخدم والإجابة عن الأسئلة المتعلقة بالوسيطات (على سبيل المثال، إذا قام المستخدم بتنفيذ عملية شرطية على tensor وسيطة). بدون tensor مزيفة، لن تكون لدينا معلومات دقيقة لهذه الاستعلامات.
 
-Similarly, suppose you want to store metadata for a tensor, e.g., on an FX IR node (meta['val']). You can instead store a fake tensor directly on the node, which will give you all the metadata you need for the tensor, including subtle stuff that you probably wouldn't have handled (e.g., aliasing relationships).
+وبالمثل، افترض أنك تريد تخزين البيانات الوصفية لـ tensor، على سبيل المثال، على عقدة IR FX (meta ['val']). بدلاً من ذلك، يمكنك تخزين tensor مزيف مباشرة على العقدة، والذي سيوفر لك جميع البيانات الوصفية التي تحتاجها لـ tensor، بما في ذلك الأشياء الدقيقة التي ربما لم تكن قد تعاملت معها (على سبيل المثال، علاقات التكرار).
 
-Related work
+العمل ذو الصلة
 ------------
 
-- A meta tensor is a tensor with device='meta'. This is actually a lot of what you want for fake tensor, but meta tensors don't model devices, and sometimes stride behavior varies depending on your device, so fake tensors really can get a lot more accurate info this way. Also, meta tensors are "global" (they exist on their own, similar to how a CPU/CUDA tensor exist on their own), whereas fake tensors are scoped to a FakeTensorMode.
+- tensor ميتا هي tensor مع device='meta'. هذا هو في الواقع الكثير مما تريده لـ tensor المزيفة، ولكن لا تقوم tensors الميتا بوضع نماذج للأجهزة، وأحيانًا يختلف سلوك الخطوة باختلاف الجهاز، لذا يمكن أن تحصل tensors المزيفة حقًا على معلومات أكثر دقة بهذه الطريقة. أيضًا، تكون tensors الميتا "عالمية" (فهي موجودة بمفردها، تمامًا مثل وجود tensor CPU/CUDA بمفردها)، في حين أن tensors المزيفة محدودة النطاق إلى FakeTensorMode.
 
-- A tensor subclass lets you subclass torch.Tensor and customize their behavior. Fake tensors are implemented as a tensor subclass; that means almost all of its implementation lives in Python! For more simple examples of tensor subclasses check out `subclass_zoo <https://github.com/albanD/subclass_zoo/>`_.
+- تسمح لك فئة فرعية tensor بتصنيف فرعي لـ torch.Tensor وتخصيص سلوكها. يتم تنفيذ tensors المزيفة كفئة فرعية tensor؛ وهذا يعني أن معظم تنفيذها يعيش في Python! للحصول على أمثلة أبسط لفئات فرعية tensor، تحقق من `subclass_zoo <https://github.com/albanD/subclass_zoo/>`_.
 
-- Dynamic shapes allow you to create tensors with symbolic sizes rather than only concrete sizes, and propagate these sizes symbolically through operations. Dynamic shapes maintain state in a ShapeEnv, which is always associated with a FakeTensorMode (so fake tensors also are responsible for managing symbolic sizes.) In general, whenever we compile a subgraph with PT2, there is a tracing context associated with this compilation, which contains, among other things, a FakeTensorMode and (possibly) a ShapeEnv.
+- تسمح الأشكال الديناميكية بإنشاء tensors بأحجام رمزية بدلاً من الأحجام الملموسة فقط، ونشر هذه الأحجام بشكل رمزي عبر العمليات. تحتفظ الأشكال الديناميكية بالحالة في ShapeEnv، والتي ترتبط دائمًا بـ FakeTensorMode (لذا فإن tensors المزيفة مسؤولة أيضًا عن إدارة الأحجام الرمزية.) بشكل عام، عندما نقوم بتجميع subgraph مع PT2، يكون هناك سياق تتبع مرتبط بهذا التجميع، والذي يحتوي، من بين أشياء أخرى، على FakeTensorMode و (ربما) ShapeEnv.
 
-Overall architecture
+البنية المعمارية العامة
 --------------------
 
-All fake tensors are associated with a FakeTensorMode. Because fake tensor's primary use case is to do analysis on real tensors, the general workflow is you have a bunch of real tensors, you allocate a FakeTensorMode, and then you use from_real_tensor to convert all those real tensors into fake tensors, and then you do things to the fake tensors. In particular, the FakeTensorMode maintains a memo table persistently mapping tensors (and storages) to the same storages. If you fakeify the same tensor multiple times, you will get the same fake tensor; if you fakeify two tensors which alias each other, you will get two fake tensors which alias the same fake storage. FakeTensors are tensor subclasses, so if you do operations on them, you'll automatically get a fake tensor, but in general you will want to do operations on fake tensors (e.g., if you're running an FX pass) with the FakeTensorMode active; what a tensor operation will do is automatically turn on the fake tensor mode and try again.
+جميع tensors المزيفة مرتبطة بـ FakeTensorMode. لأن الاستخدام الأساسي لـ tensor المزيف هو إجراء تحليل على tensors الحقيقية، فإن سير العمل العام هو أن يكون لديك مجموعة من tensors الحقيقية، وتقوم بتخصيص FakeTensorMode، ثم تستخدم from_real_tensor لتحويل جميع تلك tensors الحقيقية إلى tensors مزيفة، ثم تقوم بأشياء على tensors المزيفة. على وجه الخصوص، يحتفظ FakeTensorMode بجدول تلميحات يقوم بشكل ثابت بتعيين tensors (والتخزين) إلى نفس التخزين. إذا قمت بإنشاء نسخة مزيفة من نفس tensor عدة مرات، فستحصل على نفس tensor المزيفة؛ إذا قمت بإنشاء نسخة مزيفة من tensor التي تتشابه مع tensor أخرى، فستحصل على tensor مزيفة تتشابه مع نفس التخزين المزيف. نظرًا لأن FakeTensors عبارة عن فئات فرعية tensor، إذا قمت بعمليات عليها، فستحصل تلقائيًا على tensor مزيف، ولكن بشكل عام، ستريد إجراء عمليات على tensors المزيفة (على سبيل المثال، إذا كنت تقوم بتشغيل تمريرة FX) مع FakeTensorMode النشطة؛ ما ستفعله عملية tensor هو تشغيل FakeTensorMode تلقائيًا ومحاولة مرة أخرى.
 
-A fake tensor is represented as a __torch_dispatch__ tensor subclass of a meta tensor. This means under the hood, fake tensors are meta device tensors; they then use extra extensibility hooks, specifically dispatch_device, to lie about what the actual device of the tensor is. This was one of the more error-prone parts of fake tensors in the early days: sometimes, fake tensors were too good at lying about being CPU/CUDA whatever, and you'd end up with a CPU kernel getting called with a fake tensor trying to dereference the data pointer, which obviously won't work. If you are segfaulting in fake tensor code, this is the first thing you should check: is the C++ backtrace in a CPU kernel (unexpected!) or a meta kernel (expected!) A meta kernel is like a real kernel, but all it does is allocate the outputs, it doesn't do any data compute.
+يتم تمثيل tensor المزيف كـ __torch_dispatch__ فئة فرعية tensor من tensor ميتا. وهذا يعني أن tensors المزيفة هي في الواقع tensors جهاز ميتا؛ ثم تستخدم هوكات القابلية للتوسعة، وتحديداً dispatch_device، للكذب بشأن الجهاز الفعلي لـ tensor. كان هذا أحد أكثر الأجزاء المعرضة للأخطاء في tensors المزيفة في الأيام الأولى: في بعض الأحيان، كانت tensors المزيفة جيدة جدًا في الكذب بشأن كونها CPU/CUDA، وما إلى ذلك، وكنت ستنتهي بـ kernel CPU يتم استدعاؤه مع tensor مزيف يحاول إلغاء الإشارة إلى مؤشر البيانات، والذي من الواضح أنه لن ينجح. إذا كنت تقوم بإنهاء عملك بشكل غير متوقع في كود tensor المزيف، فإن هذا هو أول شيء يجب عليك التحقق منه: هل تتبع المكدس C++ في kernel CPU (غير متوقع!) أو kernel ميتا (متوقع!) kernel ميتا يشبه kernel حقيقي، ولكنه يقوم فقط بتخصيص الإخراج، ولا يقوم بأي حسابات بيانات.
 
-A tensor subclass has to define how to implement various operations. Here is the general fake tensor recipe:
+يجب أن تحدد فئة فرعية tensor كيفية تنفيذ عمليات مختلفة. فيما يلي الوصفة العامة لـ tensor المزيفة:
 
-- Run the meta kernel on the input fake tensors, reinterpreting them as meta tensors. This is done via a magic context manager in_kernel_invocation_manager which instructs all of PyTorch to view fake tensors as their underlying meta tensors, rather than "unwrapping" fake tensors into meta tensors (a fake tensor is a meta tensor). Fake tensors are represented this way to avoid having to keep two sets of metadata in sync (the meta tensor's metadata, and the fake tensor's metadata); the "is a" relationship ensures there is only one canonical copy of metadata.
+- قم بتشغيل kernel ميتا على tensors المزيفة المدخلة، مع إعادة تفسيرها على أنها tensors ميتا. يتم ذلك عبر مدير سياق سحري in_kernel_invocation_manager والذي يوجه PyTorch بالكامل لعرض tensors المزيفة على أنها tensors ميتا الأساسية، بدلاً من "فك" tensors المزيفة إلى tensors ميتا (tensor مزيف هو tensor ميتا). يتم تمثيل tensors المزيفة بهذه الطريقة لتجنب الحاجة إلى الاحتفاظ بمجموعتين من البيانات الوصفية (بيانات tensor الميتا الوصفية، وبيانات tensor المزيفة الوصفية)؛ تضمن علاقة "is a" وجود نسخة واحدة فقط من البيانات الوصفية.
 
-- If you're a factory function, you'll instead call the underlying factory function with device='meta'.
+- إذا كنت دالة مصنع، فستقوم بدلاً من ذلك باستدعاء دالة المصنع الأساسية مع device='meta'.
 
-- Convert the resulting meta tensor into a fake tensor, computing what the output device of the tensor should be (this is usually trivial, but sometimes it is not, e.g., cpu scalar promotion, or device-converting operations.)
+- قم بتحويل tensor الميتا الناتج إلى tensor مزيف، مع حساب الجهاز الذي يجب أن يكون عليه الإخراج (هذا عادة ما يكون بسيطًا، ولكنه ليس كذلك في بعض الأحيان، على سبيل المثال، الترقية المتصاعدة لـ CPU، أو عمليات تحويل الجهاز.)
 
-API: the important bits
+واجهة برمجة التطبيقات: القطع المهمة
 -----------------------
 
-Non-PT2 usage (check out test/test_fake_tensor.py for more examples):
+الاستخدام غير PT2 (تحقق من test/test_fake_tensor.py للحصول على مزيد من الأمثلة):
 
 .. code:: python
 
-    # Create a fake mode
-    from torch._subclasses.fake_tensor import FakeTensorMode
+    # إنشاء وضع مزيف
+    من torch._subclasses.fake_tensor import FakeTensorMode
     fake_mode = FakeTensorMode()
-    converter = fake_mode.fake_tensor_converter
-    # Fakeify some real tensors
+    المحول = fake_mode.fake_tensor_converter
+    # إنشاء نسخة مزيفة من بعض tensors الحقيقية
     fake_x = converter.from_real_tensor(fake_mode, x)
-    with fake_mode:
-        # Do some operations on the fake tensors
+    مع fake_mode:
+        # قم ببعض العمليات على tensors المزيفة
         fake_y = fake_x * 2
-        # Factory operations automatically get fakeified in the context manager
+        # يتم تحويل عمليات المصنع تلقائيًا إلى نسخ مزيفة في مدير السياق
         fake_z = torch.empty(20)
 
-Q: Why do you have real tensors as inputs?
+س: لماذا لديك tensors حقيقية كمدخلات؟
 
-A: In a PT2 context, this is because you typically are compiling just-in-time, so for all the inputs to a graph you're compiling, you already have the "real" inputs, because you're compiling while you're executing the program.
+ج: في سياق PT2، يرجع ذلك إلى أنك تقوم عادةً بالتجميع في الوقت المناسب، لذا بالنسبة لجميع المدخلات إلى graph الذي تقوم بتجميعه، لديك بالفعل "المدخلات الحقيقية"، لأنك تقوم بالتجميع أثناء تنفيذ البرنامج.
 
-PT2 pre-AOTAutograd usage (this is unusual, you probably don't want to do this):
+استخدام PT2 pre-AOTAutograd (هذا غير معتاد، وربما لا تريد القيام بذلك):
 
 .. code:: python
 
 
-    # Fake mode is not enabled!
-    from torch._guards import detect_fake_mode
+    # وضع مزيف غير ممكن!
+    من torch._guards استيراد detect_fake_mode
     fake_mode = detect_fake_mode(args)
-    # if fake_mode isn't None
-    converter = fake_mode.fake_tensor_converter
-    fake_args = [converter.from_real_tensor(fake_mode, arg) for arg in args]
-    with fake_mode:
-    ... do stuff with the fake args, if needed ...
+    # إذا لم يكن fake_mode None
+    المحول = fake_mode.fake_tensor_converter
+    fake_args = [converter.from_real_tensor(fake_mode، arg) لـ arg في args]
+    مع fake_mode:
+    ... قم بأشياء مع args المزيفة، إذا لزم الأمر ...
 
-detect_fake_mode will search a number of locations to try to find "the" fake tensor mode associated with the lifecycle. Typically it will be pulled off of the tracing context.
+سيقوم detect_fake_mode بالبحث في عدد من المواقع لمحاولة العثور على "وضع tensor المزيف" المرتبط بدورة الحياة. عادةً ما يتم سحبه من سياق التتبع.
 
-PT2 post-AOTAutograd usage:
+استخدام PT2 post-AOTAutograd:
 
-# Fake mode is enabled! example_inputs is typically fake already
-# TODO: we probably want to change this
-# Still do this to access fake mode
+# تم تمكين الوضع المزيف! عادةً ما تكون example_inputs مزيفة بالفعل
+# TODO: ربما نريد تغيير هذا
+# لا يزال قم بذلك للوصول إلى الوضع المزيف
 fake_mode = detect_fake_mode(example_inputs)
-# But in general you don't have to turn it on
+# ولكن بشكل عام، لا يلزم تشغيله
 
-Other useful stuff:
+أشياء أخرى مفيدة:
 
 .. code:: python
 
-    from torch._subclasses.fake_tensor import unset_fake_temporarily
-    with unset_fake_temporarily():
-        # fake mode is disabled here, you can do real tensor compute
+    من torch._subclasses.fake_tensor استيراد unset_fake_temporarily
+    مع unset_fake_temporarily():
+        # تم تعطيل الوضع المزيف هنا، يمكنك إجراء حسابات tensor الحقيقية
 
-When might you want to disable fake tensor mode? Usually you don't want to do this. One niche case where we've found it useful is to implement constant propagation on fake tensors: in this case, we need to do some actual tensor computation even though we're in a fake tensor mode.
+متى قد تريد تعطيل وضع tensor المزيف؟ عادةً لا تريد القيام بذلك. إحدى الحالات المتخصصة التي وجدنا أنها مفيدة هي تنفيذ انتشار الثوابت على tensors المزيفة: في هذه الحالة، يلزم إجراء بعض حسابات tensor الفعلية على الرغم من أننا في وضع tensor مزيف.
 
 .. code:: python
 
     FakeTensorProp
-    from torch.fx.passes.fake_tensor_prop
+    من torch.fx.passes.fake_tensor_prop
     gm: GraphModule
-    real_inputs: List[Tensor]
-    FakeTensorProp(gm).propagate(*real_inputs)
-    # This will populate meta['val'] on all the FX nodes with a fake tensor
-    # or if you have a preexisting fake mode, you should use it
-    FakeTensorProp(gm, mode=fake_mode).propagate(*real_inputs)
-    # There is also propagate_dont_convert_inputs if your inputs are already fake
-    fake_inputs: List[FakeTensor]
-    FakeTensorProp(gm, mode=fake_mode).propagate_dont_convert_inputs(*fake_inputs)
+    real_inputs: List [Tensor]
+    FakeTensorProp (gm).propagate (* real_inputs)
+    # سيؤدي هذا إلى ملء البيانات الوصفية ['val'] على جميع عقد FX باستخدام tensor مزيف
+    # أو إذا كان لديك وضع مزيف مسبقًا، فيجب عليك استخدامه
+    FakeTensorProp (gm، mode=fake_mode).propagate (* real_inputs)
+    # هناك أيضًا propagate_dont_convert_inputs إذا كانت مدخلاتك مزيفة بالفعل
+    fake_inputs: List [FakeTensor]
+    FakeTensorProp (gm، mode=fake_mode).propagate_dont_convert_inputs (* fake_inputs)
 
-Details
+التفاصيل
 -------
 
-Auto-convert or not?
-Originally, FakeTensorMode would not automatically fakeify real tensors if you tried to do compute on them inside a FakeTensorMode region. The motivation behind this was to prevent the following footgun:
+التحويل التلقائي أم لا؟
+في الأصل، لن يقوم FakeTensorMode بتحويل tensors الحقيقية تلقائيًا إذا حاولت إجراء حسابات عليها داخل منطقة FakeTensorMode. كان الدافع وراء ذلك هو منع ما يلي:
 
 .. code:: python
 
-    with FakeTensorMode():
+    مع FakeTensorMode():
     real_tensor.t_()
 
-What should this code do? It would be surprising if we actually modified the metadata on the real tensor. But at the same time, there isn't any obvious opportunity to create a FakeTensor. So we conservatively decided to make this raise an error: "Invoking operators with non-Fake Tensor inputs in FakeTensorMode is not yet supported. Please convert all Tensors to FakeTensors first."
+ماذا يجب أن يفعل هذا الكود؟ سيكون من المفاجئ إذا قمنا بالفعل بتعديل البيانات الوصفية على tensor الحقيقي. ولكن في الوقت نفسه، لا توجد فرصة واضحة لإنشاء FakeTensor. لذلك قررنا بحذر جعل هذا يرفع خطأ: "استدعاء المشغلين باستخدام مدخلات tensor غير مزيفة في FakeTensorMode غير مدعوم بعد. يرجى تحويل جميع tensors إلى FakeTensors أولاً."
 
-This error is pretty annoying in practice. For example, suppose you have a real nn.Module and you want to feed fake tensors through it. You need to somehow fakeify the nn.Module. This motivated FakeCopyMode.
+هذا الخطأ مزعج للغاية في الممارسة العملية. على سبيل المثال، افترض أن لديك وحدة نمطية nn حقيقية وتريد إطعامها بـ tensors مزيفة. يلزمك بطريقة ما إنشاء نسخة مزيفة من الوحدة النمطية nn. وقد أدى هذا إلى FakeCopyMode.
 
-Eventually, we gave up and added automatic fakeification. However, this is still not yet enabled by default in many uses of FakeTensorMode.
+في النهاية، استسلمنا وأضفنا التحويل التلقائي. ومع ذلك، لا يزال هذا غير ممكن بشكل افتراضي في العديد من استخدامات FakeTensorMode.
 
-Metadata mutation on fake tensor
-If you have a fake tensor, and you t_() it, the metadata on the fake tensor changes. This is reasonable on its face, but sometimes you want to also store fake tensors as metadata on FX nodes; mutating a fake tensor is bad because this will invalidate old metadata!
+تحور البيانات الوصفية على tensor المزيف
+إذا كان لديك tensor مزيف، وقمت بتعديله، فإن البيانات الوصفية على tensor المزيف تتغير. هذا معقول في حد ذاته، ولكن في بعض الأحيان تريد أيضًا تخزين tensors المزيفة كبيانات وصفية على عقد FX؛ تعديل tensor مزيف أمر سيء لأنه سيؤدي إلى إبطال البيانات الوصفية القديمة!
 
-In fact, there is a fundamental tension here, which is that fake tensors maintain extremely accurate metadata about tensors, up to and including object identity. If object metadata changes over time in an FX graph, there is not actually any way to represent this change over time. Most of the time, our serious FX analyses are done on functionalized graphs, which don't have this, but occasionally you need to do an analysis on a non-functionalized graph. Maybe it was a mistake to put fake tensor in meta['val']
+في الواقع، هناك توتر أساسي هنا، وهو أن tensors المزيفة تحتفظ ببيانات وصفية دقيقة للغاية حول tensors، بما في ذلك هوية الكائن. إذا تغيرت البيانات الوصفية للكائن بمرور الوقت في graph FX، فلا توجد في الواقع أي طريقة لتمثيل هذا التغيير بمرور الوقت. معظم الوقت، نقوم بتحليلات FX الخطيرة على الرسوم البيانية الوظيفية، والتي لا تحتوي على ذلك، ولكن في بعض الأحيان يلزم إجراء تحليل على graph غير وظيفي. ربما كان من الخطأ وضع tensor مزيف في meta ['val']
 
-About the tensor subclass
+حول فئة فرعية tensor
 -------------------------
 
-Fake tensor uses both a subclass and a mode tensor subclass pattern, where FakeTensor.__torch_dispatch__ enables the FakeTensorMode associated with the fake tensor, and then redispatches (relying on FakeTensorMode to do the heavy lifting). If fake tensor operations get a subclass argument it doesn't recognize, it will return NotImplemented, giving the other subclass a chance to run first (hopefully desugaring into plain tensor operations), before it tries again. This can cause infinite loops.
+يستخدم tensor المزيف كل من نمط الفئة الفرعية ونمط فئة فرعية وضع tensor، حيث يقوم FakeTensor.__torch_dispatch__ بتمكين FakeTensorMode المرتبط بـ tensor المزيف، ثم يعيد التوزيع (يعتمد على FakeTensorMode للقيام بالرفع الثقيل). إذا تلقت عمليات tensor المزيف حجة فئة فرعية لا تعترف بها، فستعيد NotImplemented، مما يمنح الفئة الفرعية الأخرى فرصة للتشغيل أولاً (من المأمول أن يتم تحويلها إلى عمليات tensor عادية)، قبل أن تحاول مرة أخرى. يمكن أن يسبب هذا حلقات لا نهائية.
 
-How is each individual operator implemented?
+كيف يتم تنفيذ كل مشغل فردي؟
 --------------------------------------------
 
-Unfortunately, there is a pretty complicated set of places where any given operator may be implemented. Some important cases to know about:
+لسوء الحظ، هناك مجموعة معقدة إلى حد ما من الأماكن التي قد يتم فيها تنفيذ أي مشغل معين. فيما يلي بعض الحالات المهمة التي يجب معرفتها:
 
-- Tensor subclasses support limited constant propagation if the number of elements is very small (this helps deal with some cases where we immediately call item() on such tensors.)
-- We have some fastpath implementations for certain operators, which are done entirely in fake tensor, for performance reasons.
-- If you use @custom_op to generate a custom tensor, these will register impl_abstract directly to fake tensor.
-- Fake tensor itself has some hardcoded special cases for device-converting operations.
-- If there is no meta implementation nor any decomposition, we will generate real zero-filled tensors and attempt to run the operator directly to find out what the results will be. This can cause segfaults if the operator attempts to do indexing with data, so we don't turn this on by default for custom ops.
+- تدعم فئات فرعية tensor انتشار ثابت محدود إذا كان عدد العناصر صغيرًا جدًا (يساعد هذا في التعامل مع بعض الحالات التي نقوم فيها على الفور باستدعاء item() على مثل هذه tensors.)
+- لدينا بعض التطبيقات السريعة لبعض المشغلين، والتي يتم تنفيذها بالكامل في tensor المزيف، لأسباب تتعلق بالأداء.
+- إذا كنت تستخدم @custom_op لإنشاء tensor مخصص، فسيتم تسجيل هذه المشغلات مباشرةً في tensor المزيف.
+- يحتوي tensor المزيف نفسه على بعض الحالات الخاصة الثابتة لعمليات تحويل الجهاز.
+- إذا لم يكن هناك تنفيذ ميتا ولا أي تحلل، فسنقوم بإنشاء tensors صفرية مملوءة ومحاولة تشغيل المشغل مباشرة لمعرفة ما ستكون عليه النتائج. يمكن أن يتسبب هذا في حدوث أخطاء segmentation إذا حاول المشغل إجراء الفهرسة باستخدام البيانات، لذا لا نقوم بتشغيله بشكل افتراضي للمشغلات المخصصة.
 
-How does the converter work?
+كيف يعمل المحول؟
 ----------------------------
 
-Because fake tensors are used in situations that are very sensitive to the exact properties of a tensor, fake tensors do conversion very carefully, preserving leaf-ness, requires_grad'ness, aliasing, and a whole host of other properties. The bulk of the heavy lifting is in MetaConverter.
+نظرًا لأن tensors المزيفة تستخدم في المواقف التي تكون حساسة جدًا للخصائص الدقيقة لـ tensor، فإن tensors المزيفة تقوم بالتحويل بعناية، مع الحفاظ على leaf-ness، يتطلب_grad'ness، التكرار، ومجموعة كاملة من الخصائص الأخرى. يتم الجزء الأكبر من الرفع الثقيل في MetaConverter.
 
-Performance characteristics
+خصائص الأداء
+هذا هو النص المترجم إلى اللغة العربية بتنسيق ReStructuredText:
+
 ---------------------------
 
-You would think fake tensors are fast because they don't do any tensor compute. But at small tensor sizes we are actually entirely overhead bound, and, well, fake tensor is in Python, and we often do a LOT of work to do a single tensor operation (because they are implemented as decompositions). So fake tensors are actually pretty slow in practice, especially when symbolic shapes are involved. There are two important fastpaths we currently have in fake tensor that make a big difference in practice:
+قد تعتقد أن الأنسجة الزائفة سريعة لأنها لا تقوم بأي حسابات للأنسجة. ولكن في الواقع، نحن مقيدون تمامًا بالأعباء الزائدة عند التعامل مع أحجام صغيرة من الأنسجة، بالإضافة إلى أن الأنسجة الزائفة مكتوبة بلغة بايثون، وغالبًا ما نقوم بالكثير من العمل لإجراء عملية حسابية واحدة للأنسجة (لأنها مُنفذة على شكل تحليل). وبالتالي، فإن الأنسجة الزائفة بطيئة جدًا في الممارسة العملية، خاصة عند التعامل مع الأشكال الرمزية. هناك مساران سريعان مهمان نستخدمهما حاليًا في الأنسجة الزائفة ويحدثان فرقًا كبيرًا في الأداء:
 
-- Pointwise ops don't go through PrimTorch decomps, instead we've hand-coded their propagation rule.
-- If possible, we should.
+- العمليات النقطية لا تمر عبر تفكيكات PrimTorch، بدلاً من ذلك، قمنا بترميز يدوي لقاعدة انتشارها.
+- إذا أمكن، يجب علينا ذلك.
 
-Fake tensor of fake tensor?
+أنسجة زائفة للأنسجة الزائفة؟
 ----------------------------
 
-There is interest in sending fake tensors as user inputs into the PT2 stack, which would imply we would need to be able to create a fake tensor of a fake tensor. This isn't really supported right now, but maybe it would not be too difficult to do.
+هناك اهتمام بإرسال الأنسجة الزائفة كمدخلات من المستخدم إلى مكدس PT2، مما يعني أننا سنحتاج إلى القدرة على إنشاء أنسجة زائفة للأنسجة الزائفة. هذا غير مدعوم حاليًا، ولكن قد لا يكون من الصعب تنفيذه.
 
-Interaction with dynamic shapes
+التفاعل مع الأشكال الديناميكية
 -------------------------------
 
-Every FakeTensorMode contains a ShapeEnv, which tracks all symbolic shapes information. Their lifetimes are typically tied: they live and die together.
+يحتوي كل وضع FakeTensorMode على ShapeEnv، والذي يتتبع جميع المعلومات المتعلقة بالأشكال الرمزية. عادة ما تكون دورات حياتها مرتبطة: فهي تعيش وتموت معًا.
 
-Because FakeTensorMode has a ShapeEnv (but meta implementations do not), meta functions that are data-dependent and require allocating an unbacked SymInt live in fake tensor. Fake tensor also takes care of memoizing unbacked SymInts, so that, e.g., if you call nonzero() on the same fake tensor twice, you get the same symbolic size.
+نظرًا لأن FakeTensorMode يحتوي على ShapeEnv (على عكس التطبيقات الميتا)، فإن وظائف الميتا التي تعتمد على البيانات وتتطلب تخصيص SymInt غير مدعوم موجودة في الأنسجة الزائفة. كما تتولى الأنسجة الزائفة مسؤولية الاحتفاظ المؤقت لـ SymInts غير المدعومة، بحيث إذا قمت، على سبيل المثال، بالاستدعاء مرتين على نفس النسيج الزائف، فستحصل على نفس الحجم الرمزي.
 
-Other resources
+موارد أخرى
 ---------------
 
-`Colab Tutorial On Using FakeTensor To Determine Max Batch Size <https://colab.research.google.com/drive/1zjAisRrc8R6uixKsrs1DRm3lwz5MWN68>`_
+`برنامج تعليمي على Colab حول استخدام FakeTensor لتحديد حجم الدفعة القصوى <https://colab.research.google.com/drive/1zjAisRrc8R6uixKsrs1DRm3lwz5MWN68>`_
