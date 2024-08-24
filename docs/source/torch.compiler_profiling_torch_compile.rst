@@ -1,23 +1,23 @@
-Profiling to understand torch.compile performance
-=================================================
+تحديد ملف التعريف لفهم أداء torch.compile
+===================================
 
-What to use torch.profiler for:
+ما الذي يستخدم torch.profiler من أجله:
 -------------------------------
 
-torch.profiler is helpful for understanding the performance of your program at a kernel-level granularity - for example, it can show graph breaks and GPU utilization at the level of the program. The data provided by the profiler can often help users understand where to investigate further to understand model performance.
+يساعد torch.profiler على فهم أداء برنامجك على مستوى دقة النواة - على سبيل المثال، يمكنه عرض انقطاع الرسوم البيانية واستخدام GPU على مستوى البرنامج. غالبًا ما تساعد البيانات التي يوفرها المعالج الملف الشخصي المستخدمين على فهم المكان الذي يجب التحقيق فيه بشكل أكبر لفهم أداء النموذج.
 
-To understand kernel-level performance, other toosl exist. NVIDIA's ncu tool can be used, or :ref:`inductor's profiling tools <torchinductor-gpu-profiling>`.
+لفهم الأداء على مستوى النواة، هناك أدوات أخرى. يمكن استخدام أداة NVIDIA ncu، أو أدوات إنشاء ملفات التعريف في :ref: `inductor <torchinductor-gpu-profiling>`.
 
-See also the `general pytorch profiler guide <https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html>`_.
+راجع أيضًا الدليل العام لمعالج Python profiler <https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html>`_.
 
-Basics of using torch.profiler and viewing traces
--------------------------------------------------
+أساسيات استخدام torch.profiler وعرض التتبعات
+--------------------------------------
 
-**Example program**: We'll use this example of profiling resnet18. Notice the following parts of this example program:
+**برنامج مثال**: سنستخدم هذا المثال لتحديد ملف تعريف resnet18. لاحظ الأجزاء التالية من برنامج المثال هذا:
 
-* Include a warm-up run to wait for compilation to complete (this will warm up systems like the CUDA caching allocator)
-* Use :code:`torch.profiler.profile()` context for profiling the section we are interested in
-* Use :code:`prof.export_chrome_trace("trace.json")` to export the profiling artifact.
+* تضمين تشغيل تسخين للانتظار حتى اكتمال التجميع (سيقوم هذا بتسخين الأنظمة مثل مخصص ذاكرة التخزين المؤقت CUDA)
+* استخدم سياق :code: `torch.profiler.profile ()` لتحديد ملف تعريف القسم الذي نحن مهتمون به
+* استخدم :code: `prof.export_chrome_trace ("trace.json")` لتصدير قطعة التعريف.
 
 .. code-block:: python
 
@@ -29,44 +29,44 @@ Basics of using torch.profiler and viewing traces
 
     model_c = torch.compile(model)
 
-    def fwd_bwd(inp):
-        out = model_c(inp)
-        out.sum().backward()
+    def fwd_bwd (inp):
+        out = model_c (inp)
+        out.sum (). backward ()
 
-    # warm up
-    fwd_bwd(inputs[0])
+    # تسخين
+    fwd_bwd (مدخلات [0])
 
-    with torch.profiler.profile() as prof:
-        for i in range(1, 4):
-            fwd_bwd(inputs[i])
-            prof.step()
+    مع torch.profiler.profile () كما بروف:
+        للعيون في النطاق (1،4):
+            fwd_bwd (مدخلات [i])
+            prof.step ()
 
-    prof.export_chrome_trace("trace.json")
+    prof.export_chrome_trace ("trace.json")
 
-**Viewing chrome traces**: In the Chrome browser, open chrome://tracing and load the json file. Use the “w” and “s” keys to zoom in and out, and use “a” and “d” to scroll left and right. “?” will show a “help” screen with a list of shortcuts.
+**عرض التتبعات في Chrome**: في متصفح Chrome، افتح chrome://tracing وقم بتحميل ملف json. استخدم المفاتيح "w" و"s" للتكبير والتصغير، واستخدم "a" و"d" للتمرير يمينا ويسارا. سيظهر الضغط على "؟" شاشة "مساعدة" بقائمة من الاختصارات.
 
 .. figure:: _static/img/profiling_torch_compile/basic_chrome_trace.png
-    :alt: Example of a basic chrome trace, visualized in the chrome://tracing viewer
+    : بديل: مثال على تتبع أساسي، مرئي في عارض chrome://tracing.
 
-Here, we observe:
-* CompiledFunction and CompiledFunctionBackward events, which correspond to the dynamo-compiled regions.
-* CPU events at the top, and GPU events at the bottom.
+هنا، نلاحظ:
+* أحداث CompiledFunction و CompiledFunctionBackward، والتي تتوافق مع المناطق المجمعة بالدينامو.
+* أحداث وحدة المعالجة المركزية في الأعلى، وأحداث GPU في الأسفل.
 
-**Flows between CPU and GPU events**
+**التدفقات بين أحداث وحدة المعالجة المركزية و GPU**
 
-Every kernel on the GPU occurs after being launched by code running on the CPU. The profiler can draw connections (i.e. “flows”) between the GPU and CPU events to show which CPU event launched a GPU kernel. This is particularly helpful because, with a few exceptions, GPU kernels are launched asynchronously.
+يحدث كل نواة على GPU بعد إطلاقها من قبل التعليمات البرمجية التي تعمل على وحدة المعالجة المركزية. يمكن للمعالج الملف الشخصي رسم اتصالات (أي "التدفقات") بين أحداث وحدة المعالجة المركزية و GPU لإظهار حدث وحدة المعالجة المركزية الذي أطلق نواة GPU. هذا مفيد بشكل خاص لأن نوى GPU يتم إطلاقها بشكل غير متزامن، مع بعض الاستثناءات.
 
-To view a flow connection, click on a GPU kernel and click “ac2g”:
+لعرض اتصال التدفق، انقر فوق نواة GPU وانقر فوق "ac2g":
 
 .. figure:: _static/img/profiling_torch_compile/ac2g.png
-    :alt: Visualization in the chrome://trace viewer, showing an async flow between a kernel and its launching location.
+    : بديل: العرض في عارض chrome://trace، والذي يظهر تدفقًا غير متزامن بين النواة وموقع الإطلاق.
 
-Alternatively, turn on *all* flows with the “Flow events” dropdown at the top.
+أو، قم بتشغيل جميع التدفقات باستخدام القائمة المنسدلة "أحداث التدفق" في الأعلى.
 
-Working around CUDA Graph profiling issues
+التغلب على مشكلات ملفات تعريف رسومات CUDA
 ------------------------------------------
 
-When CUDA graphs are enabled, some cuda configurations (driver version under 525.85.12 or CUDA < 12)  can encounter issues between the profiling tools and CUDA graphs. To fix these issues, add an empty profiling context at the top of your program:
+عندما يتم تمكين رسومات CUDA، يمكن لبعض تكوينات CUDA (إصدار برنامج التشغيل أقل من 525.85.12 أو CUDA <12) مواجهة مشكلات بين أدوات التعريف ورسومات CUDA. لإصلاح هذه المشكلات، أضف سياق تعريف فارغ في الجزء العلوي من برنامجك:
 
 .. code-block:: python
 
@@ -74,16 +74,16 @@ When CUDA graphs are enabled, some cuda configurations (driver version under 525
 
     torch.profiler._utils._init_for_cuda_graphs()
 
-    # ... rest of program
+    # ... بقية البرنامج
 
-Understanding compilation time
-------------------------------
+فهم وقت التجميع
+------------
 
-To understand why compilation is taking a long time, you can profile the first invocation of a torch.compile-ed program. Keep in mind that profile traces of compilations can be distorted more than typical profiling, because compilation workloads can be quite different from typical PyTorch workloads. In some cases, trace files may also be quite large. Traces > 1GB can be difficult to open with the chrome tracing tool.
+لفهم سبب استغراق التجميع وقتًا طويلاً، يمكنك تحديد ملف تعريف الاستدعاء الأول لبرنامج torch.compile-ed. ضع في اعتبارك أن آثار تعريف التتبع للتجميعات يمكن أن تكون مشوهة أكثر من التعريف النموذجي، لأن أحمال عمل التجميع يمكن أن تكون مختلفة جدًا عن أحمال عمل PyTorch النموذجية. في بعض الحالات، قد تكون ملفات التتبع كبيرة جدًا أيضًا. يمكن أن يكون من الصعب فتح آثار > 1 غيغابايت باستخدام أداة التتبع Chrome.
 
-Note: roughly the same information can also be obtained in non-graphical format with :code:`torch._dynamo.utils.compile_times()`. This utility won’t show when the compilation steps occur, but it will show the amount of time spent on each step - and times will not be affected by any profiling overhead.
+ملاحظة: يمكن أيضًا الحصول على نفس المعلومات تقريبًا بتنسيق غير رسومي باستخدام :code: `torch._dynamo.utils.compile_times ()`. لن تعرض هذه الأداة المساعدة وقت حدوث خطوات التجميع، ولكنها ستظهر مقدار الوقت المستغرق في كل خطوة - ولن تتأثر الأوقات بأي تعقيد في التعريف.
 
-See an example below:
+انظر المثال أدناه:
 
 .. code-block:: python
 
@@ -103,141 +103,141 @@ See an example below:
         def fn(x):
             return x.sin().relu()
 
-        x = torch.rand((2, 2), device='cuda', requires_grad=True)
-        fn_c = torch.compile(fn)
-        out = fn_c(x)
-        out.sum().backward()
+        x = torch.rand((2, 2)، device='cuda'، requires_grad = True)
+        fn_c = torch.compile (fn)
+        الخروج = fn_c (x)
+        out.sum (). backward ()
 
-    with torch.profiler.profile() as prof:
-        with torch.profiler.record_function("warmup compile"):
-            warmup_compile()
+    مع torch.profiler.profile () كما بروف:
+        مع torch.profiler.record_function ("warmup compile"):
+            warmup_compile ()
 
-        with torch.profiler.record_function("resnet18 compile"):
-            fwd_bwd(inputs[0])
+        مع torch.profiler.record_function ("resnet18 compile"):
+            fwd_bwd (مدخلات [0])
 
-    prof.export_chrome_trace("trace_compile.json")
+    prof.export_chrome_trace ("trace_compile.json")
 
 .. figure:: _static/img/profiling_torch_compile/compilation_profiling.png
-    :alt: A visualization in the chrome://trace viewer, showing dynamo and inductor compilation steps
+    : بديل: عرض في عارض chrome://trace، والذي يظهر خطوات التجميع الدينامو والمحث.
 
-Note a few things:
+لاحظ بعض الأشياء:
 
-* The first invocation should occur *during* profiling in order to capture compilation
-* Add a warm-up compilation in order to initialize any systems that need to be lazily initialized.
+* يجب أن يحدث الاستدعاء الأول *أثناء* التعريف لالتقاط التجميع
+* أضف تجميعًا دافئًا لتهيئة أي أنظمة تحتاج إلى تهيئة كسولة.
 
-Finding graph breaks: "Torch-Compiled Region" and "CompiledFunction"
+البحث عن انقطاع الرسم البياني: "منطقة مجمعة بواسطة الشعلة" و "CompiledFunction"
 --------------------------------------------------------------------
 
-Although there are logging tools for identifying graph breaks, the profiler provides a quick visual method of identifying :ref:`graph breaks <torch.compiler_graph_breaks>`. There are two profiler events to look for: **Torch-Compiled Region** and **CompiledFunction**.
+على الرغم من وجود أدوات تسجيل لتحديد انقطاع الرسم البياني، يوفر المعالج طريقة مرئية سريعة لتحديد :ref: `انقطاع الرسم البياني <torch.compiler_graph_breaks>`. هناك حدثان للمعالج الملف الشخصي للبحث عنهما: **منطقة مجمعة بواسطة الشعلة** و **CompiledFunction**.
 
-**Torch-Compiled Region** - which was introduced in PyTorch 2.2 - is a profiler event that covers the entire compiled region. Graph breaks almost always look the same: nested “Torch-Compiled Region” events.
+**منطقة مجمعة بواسطة الشعلة** - التي تم تقديمها في PyTorch 2.2 - هي حدث المعالج الملف الشخصي الذي يغطي المنطقة المجمعة بأكملها. تبدو انقطاعات الرسم البياني دائمًا متشابهة: أحداث "منطقة مجمعة بواسطة الشعلة" متداخلة.
 
-If you run two separate functions with torch.compile() applied independently on each of them, you should generally expect to see two adjacent (i.e NOT stacked/nested) Torch-Compiled regions. Meanwhile, if you encounter graph breaks (or disable()'ed/skipped regions), expect nested “Torch-Compiled Region” events.
+إذا قمت بتشغيل دالتين منفصلتين مع تطبيق torch.compile () بشكل مستقل على كل منهما، فيجب أن تتوقع بشكل عام رؤية منطقتين مجمعتين بواسطة الشعلة متجاورتين (أي غير مكدستين / متداخلتين). في الوقت نفسه، إذا واجهت انقطاعات في الرسم البياني (أو مناطق معطلة () / تم تخطيها)، فمن المتوقع أن تشاهد أحداث "منطقة مجمعة بواسطة الشعلة" متداخلة.
 
-**CompiledFunction** - introduced in PyTorch 2.0 - is a profiler event that appears when gradients are required for any inputs.  Each graph break will interrupt a CompiledFunction block, splitting it in two. CompiledFunction events only appear when Autograd is involved, i.e. some of the input tensors to the graph have requires_grad=True.
+**CompiledFunction** - التي تم تقديمها في PyTorch 2.0 - هي حدث المعالج الملف الشخصي الذي يظهر عندما تكون الخلاصات مطلوبة لأي مدخلات. سوف يقاطع كل انقطاع في الرسم البياني كتلة CompiledFunction، مما يؤدي إلى انقسامها إلى قسمين. تظهر أحداث CompiledFunction فقط عندما تكون Autograd متضمنة، أي أن بعض تنسيقات الإدخال إلى الرسم البياني لها requires_grad=True.
 
-When a CompiledFunction appears in a trace, it is typically paired with a CompiledFunctionBackward event in the backward pass. A “fwd-bwd link” should appear in the trace connecting the two, if the backward function is called.
+عندما تظهر CompiledFunction في تتبع، عادة ما تكون مقترنة بـ CompiledFunctionBackward event في تمريرة الخلف. يجب أن يظهر "رابط fwd-bwd" في التتبع الذي يربط بين الاثنين، إذا تم استدعاء الدالة الخلفية.
 
-If your use case includes a graph that doesn't require grad and doesn't include "Torch-Compiled Region" events, it can be more difficult to identify whether torch.compile is being applied correctly. One clue can be the existence of Inductor-generated Triton kernels.
+إذا كانت حالتك الاستخدامية تتضمن رسمًا بيانيًا لا يتطلب grad ولا يتضمن أحداث "منطقة مجمعة بواسطة الشعلة"، فقد يكون من الصعب تحديد ما إذا كان يتم تطبيق torch.compile بشكل صحيح. قد تكون إحدى القرائن هي وجود نوى Triton التي تم إنشاؤها بواسطة المحث.
 
-See the synthetic example below for a demonstration:
+انظر المثال الاصطناعي أدناه للتوضيح:
 
 .. code-block:: python
 
     import torch
     import torch._dynamo
 
-    class ModelWithBreaks(torch.nn.Module):
-        def __init__(self):
-            super().__init__()
-            def create_sequential():
-                return torch.nn.Sequential(
-                    torch.nn.Linear(128, 128),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(128, 128),
-                    torch.nn.ReLU(),
+    class ModelWithBreaks (torch.nn.Module):
+        def __init__ (self):
+            super (). __ init __ ()
+            def create_sequential ():
+                return torch.nn.Sequential (
+                    torch.nn.Linear (128، 128)،
+                    torch.nn.ReLU ()،
+                    torch.nn.Linear (128، 128)،
+                    torch.nn.ReLU ()،
                 )
-            self.mod1 = create_sequential()
-            self.mod2 = create_sequential()
-            self.mod3 = create_sequential()
-            self.mod4 = create_sequential()
+            self.mod1 = create_sequential ()
+            self.mod2 = create_sequential ()
+            self.mod3 = create_sequential ()
+            self.mod4 = create_sequential ()
 
-        def forward(self, inp):
-            mod1 = self.mod1(inp)
-            torch._dynamo.graph_break()
-            mod2 = self.mod2(mod1)
-            torch._dynamo.graph_break()
-            mod3 = self.mod3(mod2)
-            torch._dynamo.graph_break()
-            mod4 = self.mod4(mod3)
+        def forward (self، inp):
+            mod1 = self.mod1 (inp)
+            torch._dynamo.graph_break ()
+            mod2 = self.mod2 (mod1)
+            torch._dynamo.graph_break ()
+            mod3 = self.mod3 (mod2)
+            torch._dynamo.graph_break ()
+            mod4 = self.mod4 (mod3)
             return mod4
 
 
-    model = ModelWithBreaks().cuda()
-    inputs = [torch.randn((128, 128), device='cuda') for _ in range(10)]
+    model = ModelWithBreaks (). cuda ()
+    المدخلات = [torch.randn ((128، 128)، device='cuda') للعيون في النطاق (10)]
 
-    model_c = torch.compile(model)
+    model_c = torch.compile (النموذج)
 
-    def fwd_bwd(inp):
-        out = model_c(inp)
-        out.sum().backward()
+    def fwd_bwd (inp):
+        out = model_c (inp)
+        out.sum (). backward ()
 
-    # warm up
-    fwd_bwd(inputs[0])
+    # تسخين
+    fwd_bwd (مدخلات [0])
 
-    with torch.profiler.profile() as prof:
-        for i in range(1, 4):
-            fwd_bwd(inputs[i])
-            prof.step()
+    مع torch.profiler.profile () كما بروف:
+        للعيون في النطاق (1،4):
+            fwd_bwd (مدخلات [i])
+            prof.step ()
 
-    prof.export_chrome_trace("trace_break.json")
+    prof.export_chrome_trace ("trace_break.json")
 
 .. figure:: _static/img/profiling_torch_compile/graph_breaks_with_torch_compiled_region.png
-    :alt: Visualization in the chrome://trace viewer, showing nested Torch-Compiled Region events and multiple CompiledFunction events - indicating graph breaks.
+    : بديل: عرض في عارض chrome://trace، والذي يظهر أحداث "منطقة مجمعة بواسطة الشعلة" متداخلة وأحداث CompiledFunction متعددة - مما يشير إلى انقطاعات الرسم البياني.
 
-Operator Kernels
-----------------
+نوى المشغل
+---------
 
-When an operator is launched, we expect to see a few events:
+عندما يتم إطلاق المشغل، نتوقع أن نرى بعض الأحداث:
 
-1. CPU-side event
-2. Kernel launch (if dealing with a GPU kernel)
-3. GPU-side event
+1. حدث جانب وحدة المعالجة المركزية
+2. إطلاق النواة (إذا كان الأمر يتعلق بنواة GPU)
+3. حدث جانب GPU
 
 .. figure:: _static/img/profiling_torch_compile/kernel_launch_labeled.png
-    :alt: Visualization in the chrome://trace viewer, showing the three types of events: CPU-side event, kernel launch, and GPU-side event
+    : بديل: عرض في عارض chrome://trace، والذي يظهر الأنواع الثلاثة من الأحداث: حدث جانب وحدة المعالجة المركزية، وإطلاق النواة، وحدث جانب GPU
 
-**Inductor-generated Triton kernels:**
-1. The **CPU-side event** should appear as an event prefixed with "triton\_". The events currently have minimal information - the kernel name and a launch, but less information than typical aten kernel launches (which contain input shapes, types, etc.).
-2. The **kernel launch** should appear as cuLaunchKernel instead of cudaLaunchKernel (cudaLaunchKernel is typical for aten ops)
-3. The **GPU-side event** should appear, and how descriptive the name will be depends on the inductor config for unique_kernel_names
+**نوى Triton التي تم إنشاؤها بواسطة المحث:**
+1. يجب أن يظهر **حدث جانب وحدة المعالجة المركزية** كحدث مسبوق بـ "triton_". تحتوي الأحداث حاليًا على معلومات قليلة - اسم النواة والإطلاق، ولكن أقل من معلومات عمليات إطلاق نواة aten النموذجية (التي تحتوي على أشكال الإدخال وأنواعه، وما إلى ذلك).
+2. يجب أن يظهر **إطلاق النواة** كـ cuLaunchKernel بدلاً من cudaLaunchKernel (cudaLaunchKernel هو المعتاد لعمليات aten)
+3. يجب أن يظهر **حدث جانب GPU**، ويعتمد مدى وصف الاسم على تكوين المحث لـ unique_kernel_names
 
 .. figure:: _static/img/profiling_torch_compile/triton_kernel_launch.png
 
-**Non-Inductor generated Triton kernels:**
+**نوى Triton غير المولدة بواسطة المحث:**
 
-1. The **CPU-side** event may not appear in traces; the machinery for automatically inserting a profiler event is currently implemented at the Inductor level, so Triton kernels that bypass Inductor may not appear in traces, unless users have annotated them manually
-2. The **kernel launch** should appear s cuLaunchKernel instead of cudaLaunchKernel (cudaLaunchKernel is typical for aten ops)
-3. The **GPU-side** event should appear, named similarly to the triton kernel that was authored.
+1. قد لا يظهر **جانب وحدة المعالجة المركزية** في التتبعات؛ حيث يتم حاليًا تنفيذ آلية إدراج حدث المعالج الملف الشخصي تلقائيًا على مستوى المحث، لذلك قد لا تظهر نوى Triton التي تتجاوز المحث في التتبعات، ما لم يقم المستخدمون بوضع علامات عليها يدويًا
+2. يجب أن يظهر **إطلاق النواة** كـ cuLaunchKernel بدلاً من cudaLaunchKernel (cudaLaunchKernel هو المعتاد لعمليات aten)
+3. يجب أن يظهر **جانب GPU**، ويتم تسمية الحدث بشكل مشابه لنواة triton التي تم تأليفها.
 
 .. figure:: _static/img/profiling_torch_compile/noninductor_triton_kernel.png
 
-**Inductor-generated CPU kernels:**
+**نوى وحدة المعالجة المركزية التي تم إنشاؤها بواسطة المحث:**
 
-1. The **CPU-side event** will not appear in traces; we haven't added profiling for this yet.
-2. The **kernel launch** and **GPU-side events** don't exist
+1. لن يظهر **حدث جانب وحدة المعالجة المركزية** في التتبعات؛ لم نقم بإضافة التعريف لهذا بعد.
+2. لا وجود لإطلاق **النواة** وأحداث **جانب GPU**
 
-**Non-Triton kernels** (i.e. aten kernels or custom ops) should also be expected to sometimes appear in traces. Sometimes, Inductor will fall back to the original op implementation, in which case you will see a call to the aten op.
+من المتوقع أيضًا أن تظهر **نوى غير نوى Triton** (أي نوى aten أو العمليات المخصصة) في بعض الأحيان في التتبعات. في بعض الأحيان، قد يعود المحث إلى تنفيذ العملية الأصلية، وفي هذه الحالة سترى مكالمة إلى عملية aten.
 
 
-Launch overhead
+الوقت المستغرق للإطلاق
 ---------------
 
-One common issue is bad GPU utilization. A quick way to identify this is if there are large gaps between kernels on the GPU:
+تتمثل إحدى المشكلات الشائعة في انخفاض استخدام GPU. تتمثل إحدى الطرق السريعة لتحديد ذلك في وجود فجوات كبيرة بين النوى على GPU:
 
 .. figure:: _static/img/profiling_torch_compile/cpu_bound.png
-    :alt: Visualization in the chrome://trace viewer, showing large gaps between GPU kernels. This indicates that the model is CPU bound, likely due to overhead during kernel launches.
+    : بديل: عرض في عارض chrome://trace، والذي يظهر فجوات كبيرة بين نوى GPU. يشير هذا إلى أن النموذج مقيد بوحدة المعالجة المركزية، على الأرجح بسبب التعقيد أثناء عمليات إطلاق النواة.
 
-This is often the result of CPU overhead, e.g. if the amount of time spent on the CPU between kernel launches is larger than the amount of time spent by the GPU to process the kernels. The issue is more common for small batch sizes.
+غالبًا ما يكون هذا نتيجة لتعقيد وحدة المعالجة المركزية، على سبيل المثال، إذا كان الوقت المستغرق على وحدة المعالجة المركزية بين عمليات إطلاق النواة أكبر من الوقت الذي تستغرقه GPU لمعالجة النوى. تعد هذه المشكلة أكثر شيوعًا لحجم الدفعات الصغيرة.
 
-When using inductor, enabling CUDA graphs can often help improve performance when launch overhead is a concern.
+عند استخدام المحث، يمكن أن يساعد تمكين رسومات CUDA غالبًا في تحسين الأداء عندما يكون الوقت المستغرق للإطلاق مصدر قلق.
