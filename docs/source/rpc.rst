@@ -1,82 +1,69 @@
 .. _distributed-rpc-framework:
 
-Distributed RPC Framework
-=========================
+إطار عمل RPC الموزع
+==================
 
-The distributed RPC framework provides mechanisms for multi-machine model
-training through a set of primitives to allow for remote communication, and a
-higher-level API to automatically differentiate models split across several
-machines.
+يوفر إطار عمل RPC الموزع آليات لتدريب النماذج متعددة الآلات من خلال مجموعة من التعليمات البرمجية الأساسية للسماح بالتواصل عن بُعد، وAPI عالية المستوى للتمييز التلقائي للنماذج المقسمة عبر عدة آلات.
 
-.. warning ::
-     APIs in the RPC package are stable. There are multiple ongoing work items
-     to improve performance and error handling, which will ship in future releases.
+.. warning::
+     تعتبر واجهات برمجة التطبيقات في حزمة RPC مستقرة. هناك العديد من بنود العمل الجارية لتحسين الأداء ومعالجة الأخطاء، والتي سيتم إصدارها في الإصدارات المستقبلية.
 
-.. warning ::
-    CUDA support was introduced in PyTorch 1.9 and is still a **beta** feature.
-    Not all features of the RPC package are yet compatible with CUDA support and
-    thus their use is discouraged. These unsupported features include: RRefs,
-    JIT compatibility, dist autograd and dist optimizer, and profiling. These
-    shortcomings will be addressed in future releases.
+.. warning::
+    تم تقديم دعم CUDA في PyTorch 1.9 ولا يزال ميزة **beta**.
+    ليست جميع ميزات حزمة RPC متوافقة بعد مع دعم CUDA
+    وبالتالي لا يُنصح باستخدامها. تتضمن هذه الميزات غير المدعومة: RRefs
+    التوافق مع JIT، dist autograd و dist optimizer، والتعريف. سيتم معالجة هذه
+    القيود في الإصدارات المستقبلية.
 
-.. note ::
-    Please refer to `PyTorch Distributed Overview <https://pytorch.org/tutorials/beginner/dist_overview.html>`__
-    for a brief introduction to all features related to distributed training.
+.. note::
+    يرجى الرجوع إلى `نظرة عامة على PyTorch الموزع <https://pytorch.org/tutorials/beginner/dist_overview.html>`__
+    للتعرف على مقدمة موجزة لجميع الميزات المتعلقة بالتدريب الموزع.
 
-Basics
+أساسيات
 ------
 
-The distributed RPC framework makes it easy to run functions remotely, supports
-referencing remote objects without copying the real data around, and provides
-autograd and optimizer APIs to transparently run backward and update parameters
-across RPC boundaries. These features can be categorized into four sets of APIs.
+يجعل إطار العمل RPC الموزع من السهل تشغيل الوظائف عن بُعد، ويدعم
+الإشارة إلى الكائنات البعيدة دون نسخ البيانات الفعلية، ويوفر
+واجهات برمجة التطبيقات للتمييز التلقائي والمحسن للتشغيل الشفاف للخلف
+وتحديث المعلمات عبر حدود RPC. يمكن تصنيف هذه الميزات إلى أربع مجموعات من واجهات برمجة التطبيقات.
 
-1) **Remote Procedure Call (RPC)** supports running a function on the specified
-   destination worker with the given arguments and getting the return value back
-   or creating a reference to the return value. There are three main RPC APIs:
-   :meth:`~torch.distributed.rpc.rpc_sync` (synchronous),
-   :meth:`~torch.distributed.rpc.rpc_async` (asynchronous), and
-   :meth:`~torch.distributed.rpc.remote` (asynchronous and returns a reference
-   to the remote return value). Use the synchronous API if the user code cannot
-   proceed without the return value. Otherwise, use the asynchronous API to get
-   a future, and wait on the future when the return value is needed on the
-   caller. The :meth:`~torch.distributed.rpc.remote` API is useful when the
-   requirement is to create something remotely but never need to fetch it to
-   the caller. Imagine the case that a driver process is setting up a parameter
-   server and a trainer. The driver can create an embedding table on the
-   parameter server and then share the reference to the embedding table with the
-   trainer, but itself will never use the embedding table locally. In this case,
-   :meth:`~torch.distributed.rpc.rpc_sync` and
-   :meth:`~torch.distributed.rpc.rpc_async` are no longer appropriate, as they
-   always imply that the return value will be returned to the caller
-   immediately or in the future.
-2) **Remote Reference (RRef)** serves as a distributed shared pointer to a local
-   or remote object. It can be shared with other workers and reference counting
-   will be handled transparently. Each RRef only has one owner and the object
-   only lives on that owner. Non-owner workers holding RRefs can get copies of
-   the object from the owner by explicitly requesting it. This is useful when
-   a worker needs to access some data object, but itself is neither the creator
-   (the caller of :meth:`~torch.distributed.rpc.remote`) or the owner of the
-   object. The distributed optimizer, as we will discuss below, is one example
-   of such use cases.
-3) **Distributed Autograd** stitches together local autograd engines on all the
-   workers involved in the forward pass, and automatically reach out to them
-   during the backward pass to compute gradients. This is especially helpful if
-   the forward pass needs to span multiple machines when conducting, e.g.,
-   distributed model parallel training, parameter-server training, etc. With
-   this feature, user code no longer needs to worry about how to send gradients
-   across RPC boundaries and in which order should the local autograd engines
-   be launched, which can become quite complicated where there are nested and
-   inter-dependent RPC calls in the forward pass.
-4) **Distributed Optimizer**'s constructor takes a
-   :meth:`~torch.optim.Optimizer` (e.g., :meth:`~torch.optim.SGD`,
-   :meth:`~torch.optim.Adagrad`, etc.) and a list of parameter RRefs, creates an
-   :meth:`~torch.optim.Optimizer` instance on each distinct RRef owner, and
-   updates parameters accordingly when running ``step()``. When you have
-   distributed forward and backward passes, parameters and gradients will be
-   scattered across multiple workers, and hence it requires an optimizer on each
-   of the involved workers. Distributed Optimizer wraps all those local
-   optimizers into one, and provides a concise constructor and ``step()`` API.
+1) **نداء الإجراء البعيد (RPC)** يدعم تشغيل وظيفة على عامل الوجهة المحددة
+   باستخدام الحجج المعطاة والحصول على قيمة الإرجاع مرة أخرى
+   أو إنشاء مرجع لقيمة الإرجاع. هناك ثلاث واجهات برمجة تطبيقات RPC رئيسية:
+   :meth:`~torch.distributed.rpc.rpc_sync` (متزامن)،
+   :meth:`~torch.distributed.rpc.rpc_async` (غير متزامن)، و
+   :meth:`~torch.distributed.rpc.remote` (غير متزامن ويعيد مرجعًا
+   لقيمة الإرجاع البعيدة). استخدم واجهة برمجة التطبيقات المتزامنة إذا لم يكن بإمكان التعليمات البرمجية للمستخدم المتابعة بدون قيمة الإرجاع. وإلا، استخدم واجهة برمجة التطبيقات غير المتزامنة للحصول
+   على مستقبل، وانتظر المستقبل عندما تكون قيمة الإرجاع مطلوبة على
+   المتصل. تعد واجهة برمجة التطبيقات :meth:`~torch.distributed.rpc.remote` مفيدة عندما يكون
+   المطلوب هو إنشاء شيء عن بُعد ولكن لا يلزم مطلقًا استرجاعه إلى المتصل. تخيل الحالة التي تقوم فيها عملية تشغيل بإعداد خادم معلمات ومدرب. يمكن لعملية التشغيل إنشاء جدول تضمين على خادم المعلمات ثم مشاركة المرجع إلى جدول التضمين مع المدرب، ولكنها لن تستخدم أبدًا جدول التضمين محليًا. في هذه الحالة،
+   :meth:`~torch.distributed.rpc.rpc_sync` و
+   :meth:`~torch.distributed.rpc.rpc_async` لم يعدا مناسبين، لأنهما
+   يعني دائمًا أن قيمة الإرجاع ستتم إعادتها إلى المتصل
+   على الفور أو في المستقبل.
+2) **المرجع البعيد (RRef)** يعمل كإشارة موزعة إلى مؤشر محلي
+   أو كائن بعيد. يمكن مشاركتها مع العمال الآخرين وسيتم التعامل مع العد المرجعي
+   بشكل شفاف. لكل RRef مالك واحد فقط ويعيش الكائن فقط على هذا المالك. يمكن للعمال غير المالكين الذين يحملون RRefs الحصول على نسخ من
+   الكائن من المالك عن طريق طلب ذلك بشكل صريح. هذا مفيد عندما
+   يحتاج عامل إلى الوصول إلى كائن بيانات، ولكنه ليس هو نفسه
+   منشئ (المتصل لـ :meth:`~torch.distributed.rpc.remote`) أو مالك الكائن. يعد المحسن الموزع، كما سنناقش أدناه، أحد أمثلة
+   حالات الاستخدام هذه.
+3) **التدرج التلقائي الموزع** يخيط معًا محركات التدرج التلقائي المحلية على جميع
+   العمال المشاركين في تمرير الإرسال، والوصول إليها تلقائيًا أثناء
+   تمرير الإرجاع لحساب التدرجات. هذا مفيد إذا
+   كان تمرير الإرسال يحتاج إلى امتداد لعدة آلات عند إجراء
+   التدريب المتوازي للنماذج الموزعة، وتدريب خادم المعلمات، وما إلى ذلك. مع
+   هذه الميزة، لم يعد كود المستخدم بحاجة إلى القلق بشأن كيفية إرسال التدرجات
+   عبر حدود RPC والترتيب الذي يجب أن يتم به تشغيل محركات التدرج التلقائي المحلية، والتي يمكن أن تصبح معقدة جدًا حيث توجد مكالمات RPC متداخلة ومتداخلة في تمرير الإرسال.
+4) **المحسن الموزع** يأخذ الباني
+   :meth:`~torch.optim.Optimizer` (على سبيل المثال: :meth:`~torch.optim.SGD`،
+   :meth:`~torch.optim.Adagrad`، إلخ) وقائمة من مراجع المعلمات RRef، وينشئ مثيل
+   :meth:`~torch.optim.Optimizer` على كل مالك RRef مميز،
+   ويحدّث المعلمات وفقًا لذلك عند تشغيل ``step()``. عندما يكون لديك
+   تمريرات إرسال وإرجاع موزعة، ستكون المعلمات والتدرجات مشتتة عبر
+   عمال متعددين، وبالتالي فهو يتطلب محسنًا على كل
+   من العمال المعنيين. يقوم المحسن الموزع بتغليف جميع هؤلاء المحسنين المحليين
+   في واحد، ويوفر بناة واجهة برمجة تطبيقات واضحة و ``step()``.
 
 
 .. _rpc:
@@ -84,28 +71,26 @@ across RPC boundaries. These features can be categorized into four sets of APIs.
 RPC
 ---
 
-Before using RPC and distributed autograd primitives, initialization must take
-place. To initialize the RPC framework we need to use
-:meth:`~torch.distributed.rpc.init_rpc` which would initialize the RPC
-framework, RRef framework and distributed autograd.
+قبل استخدام RPC وبدائيات التدرج التلقائي الموزع، يجب أن يحدث التهيئة. لتهيئة إطار عمل RPC، نحتاج إلى استخدام
+:meth:`~torch.distributed.rpc.init_rpc` الذي يقوم بتهيئة إطار عمل RPC
+وإطار عمل RRef والتدرج التلقائي الموزع.
 
 .. automodule:: torch.distributed.rpc
 .. autofunction:: init_rpc
 
-The following APIs allow users to remotely execute functions as well as create
-references (RRefs) to remote data objects. In these APIs, when passing a
-``Tensor`` as an argument or a return value, the destination worker will try to
-create a ``Tensor`` with the same meta (i.e., shape, stride, etc.). We
-intentionally disallow transmitting CUDA tensors because it might crash if the
-device lists on source and destination workers do not match. In such cases,
-applications can always explicitly move the input tensors to CPU on the caller
-and move it to the desired devices on the callee if necessary.
+تسمح واجهات برمجة التطبيقات التالية للمستخدمين بتنفيذ الوظائف عن بُعد بالإضافة إلى إنشاء
+مراجع (RRefs) إلى كائنات البيانات البعيدة. في هذه الواجهات، عند تمرير
+"Tensor" كحجة أو قيمة إرجاع، سيحاول عامل الوجهة إنشاء
+"Tensor" بنفس البيانات الوصفية (أي الشكل، الخطوة، إلخ). نقوم
+عن عمد بحظر نقل تنسيقات CUDA لأنه قد يتسبب في تعطل إذا لم تتطابق قوائم الأجهزة على المصدر
+وعمال الوجهة. في مثل هذه الحالات، يمكن للتطبيقات دائمًا نقل تنسيقات الإدخال بشكل صريح إلى CPU على المتصل
+ونقله إلى الأجهزة المرغوبة على المستدعي إذا لزم الأمر.
 
 .. warning::
-  TorchScript support in RPC is a prototype feature and subject to change. Since
-  v1.5.0, ``torch.distributed.rpc`` supports calling TorchScript functions as
-  RPC target functions, and this will help improve parallelism on the callee
-  side as executing TorchScript functions does not require GIL.
+  يعد دعم TorchScript في RPC ميزة تجريبية وقد تتغير. منذ
+  v1.5.0، ``torch.distributed.rpc`` يدعم استدعاء وظائف TorchScript
+  كوظائف RPC مستهدفة، وهذا سيساعد في تحسين التوازي على جانب المستدعي
+  نظرًا لأن تنفيذ وظائف TorchScript لا يتطلب GIL.
 
 
 .. autofunction:: rpc_sync
@@ -117,8 +102,8 @@ and move it to the desired devices on the callee if necessary.
     :members:
 
 
-The RPC package also provides decorators which allow applications to specify
-how a given function should be treated on the callee side.
+توفر حزمة RPC أيضًا زخارف تسمح للتطبيقات بتحديد
+كيفية معاملة وظيفة معينة على جانب المستدعي.
 
 
 .. autofunction:: torch.distributed.rpc.functions.async_execution
@@ -126,17 +111,15 @@ how a given function should be treated on the callee side.
 
 .. _rpc-backends:
 
-Backends
+الخلفيات
 ^^^^^^^^
 
-The RPC module can leverage different backends to perform the communication
-between the nodes. The backend to be used can be specified in the
-:func:`~torch.distributed.rpc.init_rpc` function, by passing a certain value of
-the :class:`~torch.distributed.rpc.BackendType` enum. Regardless of what backend
-is used, the rest of the RPC API won't change. Each backend also defines its own
-subclass of the :class:`~torch.distributed.rpc.RpcBackendOptions` class, an
-instance of which can also be passed to :func:`~torch.distributed.rpc.init_rpc`
-to configure the backend's behavior.
+يمكن لوحدة RPC الاستفادة من الخلفيات المختلفة لأداء الاتصال
+بين العقد. يمكن تحديد الخلفية التي سيتم استخدامها في الدالة
+:func:`~torch.distributed.rpc.init_rpc`، عن طريق تمرير قيمة معينة من
+الفئة :class:`~torch.distributed.rpc.BackendType` enum. بغض النظر عن الخلفية المستخدمة، فإن بقية واجهة برمجة تطبيقات RPC لن تتغير. كما تحدد كل خلفية أيضًا فئتها الفرعية الخاصة بها من فئة
+:class:`~torch.distributed.rpc.RpcBackendOptions`، ويمكن أيضًا تمرير مثيل منها إلى :func:`~torch.distributed.rpc.init_rpc`
+لتكوين سلوك الخلفية.
 
 .. autoclass:: BackendType
 
@@ -144,30 +127,21 @@ to configure the backend's behavior.
     :members:
 
 
-TensorPipe Backend
+خلفية TensorPipe
 """"""""""""""""""
 
-The TensorPipe agent, which is the default, leverages `the TensorPipe library
-<https://github.com/pytorch/tensorpipe>`_, which provides a natively
-point-to-point communication primitive specifically suited for machine learning
-that fundamentally addresses some of the limitations of Gloo. Compared to Gloo,
-it has the advantage of being asynchronous, which allows a large number of
-transfers to occur simultaneously, each at their own speed, without blocking
-each other. It will only open pipes between pairs of nodes when needed, on
-demand, and when one node fails only its incident pipes will be closed, while
-all other ones will keep working as normal. In addition, it is able to support
-multiple different transports (TCP, of course, but also shared memory, NVLink,
-InfiniBand, ...) and can automatically detect their availability and negotiate
-the best transport to use for each pipe.
+يستفيد وكيل TensorPipe، وهو الخلفية الافتراضية، من `مكتبة TensorPipe
+<https://github.com/pytorch/tensorpipe>`_، والتي توفر بدائية اتصال من نقطة إلى نقطة
+مخصصة لتعلم الآلة والتي تتناول بشكل أساسي بعض قيود Gloo. مقارنة بـ Gloo،
+فهي تتمتع بميزة كونها غير متزامنة، مما يسمح بحدوث عدد كبير من
+عمليات النقل في نفس الوقت، كل منها بسرعته الخاصة، دون حظر بعضها البعض. سيفتح الأنابيب فقط بين أزواج العقد عند الحاجة، عند الطلب، وعندما يفشل أحد العقد، سيتم إغلاق الأنابيب الحادثة فقط، بينما ستستمر جميع الأنابيب الأخرى في العمل بشكل طبيعي. بالإضافة إلى ذلك، فهو قادر على دعم
+وسائط نقل متعددة (TCP، بالطبع، ولكن أيضًا الذاكرة المشتركة، NVLink،
+InfiniBand، ...) ويمكنه اكتشاف توفرها تلقائيًا والتفاوض بشأن أفضل وسيط نقل يجب استخدامه لكل أنبوب.
 
-The TensorPipe backend has been introduced in PyTorch v1.6 and is being actively
-developed. At the moment, it only supports CPU tensors, with GPU support coming
-soon. It comes with a TCP-based transport, just like Gloo. It is also able to
-automatically chunk and multiplex large tensors over multiple sockets and
-threads in order to achieve very high bandwidths. The agent will be able to pick
-the best transport on its own, with no intervention required.
+تم تقديم خلفية TensorPipe في PyTorch v1.6 وهي قيد التطوير النشط. في الوقت الحالي، فإنه يدعم فقط تنسيقات CPU، مع دعم GPU قادم قريبًا. يأتي مع وسيط نقل قائم على TCP، مثل Gloo. كما أنه قادر على
+تجزئة وتعدد تنسيقات كبيرة عبر مقابس وخيوط متعددة من أجل تحقيق عرض نطاق ترددي عالي جدًا. سيكون الوكيل قادرًا على اختيار أفضل وسيط نقل بمفرده، دون أي تدخل مطلوب.
 
-Example::
+مثال::
 
     >>> import os
     >>> from torch.distributed import rpc
@@ -175,33 +149,28 @@ Example::
     >>> os.environ['MASTER_PORT'] = '29500'
     >>>
     >>> rpc.init_rpc(
-    >>>     "worker1",
-    >>>     rank=0,
-    >>>     world_size=2,
+    >>>     "worker1"،
+    >>>     rank=0،
+    >>>     world_size=2،
     >>>     rpc_backend_options=rpc.TensorPipeRpcBackendOptions(
-    >>>         num_worker_threads=8,
-    >>>         rpc_timeout=20 # 20 second timeout
+    >>>         num_worker_threads=8،
+    >>>         rpc_timeout=20 # مهلة 20 ثانية
     >>>     )
     >>> )
     >>>
-    >>> # omitting init_rpc invocation on worker2
+    >>> # تخطي استدعاء init_rpc على worker2
 
 .. autoclass:: TensorPipeRpcBackendOptions
     :members:
     :inherited-members:
 
 .. note ::
-  The RPC framework does not automatically retry any
-  :meth:`~torch.distributed.rpc.rpc_sync`,
-  :meth:`~torch.distributed.rpc.rpc_async` and
-  :meth:`~torch.distributed.rpc.remote` calls. The reason being that there is
-  no way the RPC framework can determine whether an operation is idempotent or
-  not and whether it is safe to retry. As a result, it is the application's
-  responsibility to deal with failures and retry if necessary. RPC communication
-  is based on TCP and as a result failures could happen due to network failures
-  or intermittent network connectivity issues. In such scenarios, the application
-  needs to retry appropriately with reasonable backoffs to ensure the network
-  isn't overwhelmed by aggressive retries.
+  لا يقوم إطار عمل RPC بإعادة المحاولة تلقائيًا لأي
+  :meth:`~torch.distributed.rpc.rpc_sync`،
+  :meth:`~torch.distributed.rpc.rpc_async` و
+  :meth:`~torch.distributed.rpc.remote` المكالمات. والسبب هو أنه لا توجد طريقة يمكن أن يحدد بها إطار عمل RPC ما إذا كان الإجراء معيدًا أم لا
+  وما إذا كان من الآمن إعادة المحاولة. نتيجة لذلك، تقع على عاتق التطبيق مسؤولية التعامل مع الأخطاء وإعادة المحاولة إذا لزم الأمر. يعتمد الاتصال RPC على TCP ونتيجة لذلك، قد تحدث الأخطاء بسبب فشل الشبكة
+  أو مشكلات اتصال الشبكة المتقطعة. في مثل هذه السيناريوهات، يحتاج التطبيق إلى إعادة المحاولة بشكل مناسب مع فترات توقف معقولة لضمان عدم إغراق الشبكة بسبب عمليات إعادة المحاولة العدوانية.
 
 .. _rref:
 
@@ -209,17 +178,14 @@ RRef
 ----
 
 .. warning ::
-    RRefs are not currently supported when using CUDA tensors
+    لا يتم حاليًا دعم RRefs عند استخدام تنسيقات CUDA
 
-An ``RRef`` (Remote REFerence) is a reference to a value of some type ``T``
-(e.g. ``Tensor``) on a remote worker. This handle keeps the referenced remote
-value alive on the owner, but there is no implication that the value will be
-transferred to the local worker in the future. RRefs can be used in
-multi-machine training by holding references to `nn.Modules
-<https://pytorch.org/docs/stable/nn.html#torch.nn.Module>`_ that exist on
-other workers, and calling the appropriate functions to retrieve or modify their
-parameters during training. See :ref:`remote-reference-protocol` for more
-details.
+RRef (Remote REFerence) هو مرجع لقيمة من نوع ما ``T``
+(على سبيل المثال ``Tensor``) على عامل بعيد. يحتفظ هذا المقبض بالقيمة البعيدة المشار إليها على المالك، ولكن لا يوجد ما يشير إلى أن القيمة سيتم
+نقلها إلى العامل المحلي في المستقبل. يمكن استخدام RRefs في
+التدريب متعدد الآلات عن طريق الاحتفاظ بالإشارات إلى `nn.Modules
+<https://pytorch.org/docs/stable/nn.html#torch.nn.Module>`_ التي توجد على
+عمال آخرين، واستدعاء الوظائف المناسبة لاسترداد أو تعديل معلماتها أثناء التدريب. راجع :ref:`remote-reference-protocol` لمزيد من التفاصيل.
 
 .. autoclass:: PyRRef(RRef)
     :members:
@@ -227,7 +193,7 @@ details.
 
 
 .. toctree::
-    :caption: More Information about RRef
+    :caption: مزيد من المعلومات حول RRef
 
     rpc/rref
 
@@ -237,64 +203,55 @@ RemoteModule
 ------------
 
 .. warning ::
-    RemoteModule is not currently supported when using CUDA tensors
+    لا يتم حاليًا دعم RemoteModule عند استخدام تنسيقات CUDA
 
-``RemoteModule`` is an easy way to create an nn.Module remotely on a different
-process. The actual module resides on a remote host, but the local host has a
-handle to this module and invoke this module similar to a regular nn.Module.
-The invocation however incurs RPC calls to the remote end and can be performed
-asynchronously if needed via additional APIs supported by RemoteModule.
+"RemoteModule" هي طريقة سهلة لإنشاء "nn.Module" عن بُعد على عملية مختلفة. يقع الوحدة النمطية الفعلية على مضيف بعيد، ولكن لدى المضيف المحلي مقبض لهذه الوحدة النمطية ويستدعي هذه الوحدة النمطية بطريقة مماثلة لـ "nn.Module" العادية.
+ومع ذلك، فإن الاستدعاء يتضمن مكالمات RPC إلى الطرف البعيد ويمكن إجراؤه بشكل غير متزامن إذا لزم الأمر عبر واجهات برمجة التطبيقات الإضافية التي تدعمها RemoteModule.
 
 .. autoclass:: torch.distributed.nn.api.remote_module.RemoteModule
     :members: remote_parameters, get_module_rref
 
 
-Distributed Autograd Framework
-------------------------------
+إطار عمل التدرج التلقائي الموزع
+-----------------------
 
 .. warning ::
-    Distributed autograd is not currently supported when using CUDA tensors
+    لا يتم حاليًا دعم التدرج التلقائي الموزع عند استخدام تنسيقات CUDA
 
-This module provides an RPC-based distributed autograd framework that can be
-used for applications such as model parallel training. In short, applications
-may send and receive gradient recording tensors over RPC. In the forward pass,
-we record when gradient recording tensors are sent over RPC and during the
-backward pass we use this information to perform a distributed backward pass
-using RPC. For more details see :ref:`distributed-autograd-design`.
+توفر هذه الوحدة النمطية إطار عمل تدرج تلقائي موزع يعتمد على RPC يمكن استخدامه لتطبيقات مثل التدريب المتوازي للنماذج. باختصار، قد ترسل التطبيقات وتتلقى تنسيقات تسجيل التدرج عبر RPC. في تمرير الإرسال،
+نقوم بتسجيل عندما يتم إرسال تنسيقات تسجيل التدرج عبر RPC وخلال تمرير الإرجاع نستخدم هذه المعلومات لأداء تمرير إرجاع موزع باستخدام RPC. لمزيد من التفاصيل، راجع :ref:`distributed-autograd-design`.
 
 .. automodule:: torch.distributed.autograd
     :members: context, backward, get_gradients
 
 .. toctree::
-    :caption: More Information about RPC Autograd
+    :caption: مزيد من المعلومات حول التدرج التلقائي RPC
 
     rpc/distributed_autograd
 
 
-Distributed Optimizer
----------------------
+المحسن الموزع
+----------
 
-See the `torch.distributed.optim <https://pytorch.org/docs/main/distributed.optim.html>`__ page for documentation on distributed optimizers.
+راجع صفحة `torch.distributed.optim <https://pytorch.org/docs/main/distributed.optim.html>`__ للاطلاع على الوثائق حول المحسنات الموزعة.
 
-Design Notes
+ملاحظات التصميم
 ------------
-The distributed autograd design note covers the design of the RPC-based distributed autograd framework that is useful for applications such as model parallel training.
+تغطي مذكرة تصميم "أوتوغراد" الموزع تصميم إطار "أوتوغراد" الموزع القائم على RPC والذي يفيد في تطبيقات مثل التدريب المتوازي للنماذج.
 
 -  :ref:`distributed-autograd-design`
 
-The RRef design note covers the design of the :ref:`rref` (Remote REFerence) protocol used to refer to values on remote workers by the framework.
+تغطي مذكرة تصميم RRef تصميم بروتوكول :ref:`rref` (Remote REFerence) المستخدم للإشارة إلى القيم على العمال البعيدين بواسطة الإطار.
 
 -  :ref:`remote-reference-protocol`
 
-Tutorials
+الدروس التعليمية
 ---------
-The RPC tutorials introduce users to the RPC framework, provide several example applications
-using :ref:`torch.distributed.rpc<distributed-rpc-framework>` APIs, and demonstrate how
-to use `the profiler <https://pytorch.org/docs/stable/autograd.html#profiler>`__ to profile RPC-based workloads.
+تقدم دروس RPC للمستخدمين إطار عمل RPC، وتقدم العديد من تطبيقات المثال باستخدام واجهات برمجة التطبيقات :ref:`torch.distributed.rpc<distributed-rpc-framework>`، وتوضح كيفية استخدام `البروفايلر <https://pytorch.org/docs/stable/autograd.html#profiler>`__ لمراقبة أداء المهام المعتمدة على RPC.
 
--  `Getting started with Distributed RPC Framework <https://pytorch.org/tutorials/intermediate/rpc_tutorial.html>`__
--  `Implementing a Parameter Server using Distributed RPC Framework <https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html>`__
--  `Combining Distributed DataParallel with Distributed RPC Framework <https://pytorch.org/tutorials/advanced/rpc_ddp_tutorial.html>`__ (covers **RemoteModule** as well)
--  `Profiling RPC-based Workloads <https://pytorch.org/tutorials/recipes/distributed_rpc_profiling.html>`__
--  `Implementing batch RPC processing <https://pytorch.org/tutorials/intermediate/rpc_async_execution.html>`__
--  `Distributed Pipeline Parallel <https://pytorch.org/tutorials/intermediate/dist_pipeline_parallel_tutorial.html>`__
+-  `البدء مع إطار RPC الموزع <https://pytorch.org/tutorials/intermediate/rpc_tutorial.html>`__
+-  `تنفيذ خادم المعلمات باستخدام إطار RPC الموزع <https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html>`__
+-  `الجمع بين Distributed DataParallel مع Distributed RPC Framework <https://pytorch.org/tutorials/advanced/rpc_ddp_tutorial.html>`__ (يغطي **RemoteModule** أيضًا)
+-  `مراقبة أداء المهام المعتمدة على RPC <https://pytorch.org/tutorials/recipes/distributed_rpc_profiling.html>`__
+-  `تنفيذ معالجة الدفعات باستخدام RPC <https://pytorch.org/tutorials/intermediate/rpc_async_execution.html>`__
+-  `توزيع Pipeline Parallel <https://pytorch.org/tutorials/intermediate/dist_pipeline_parallel_tutorial.html>`__
