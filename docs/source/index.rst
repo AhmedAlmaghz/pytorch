@@ -1,50 +1,40 @@
-.. PyTorch documentation master file, created by
-   sphinx-quickstart on Fri Dec 23 13:31:47 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+هذا هو ملف التوثيق الرئيسي لـ PyTorch، تم إنشاؤه بواسطة sphinx-quickstart on Fri Dec 23 13:31:47 2016.
+يمكنك تكييف هذا الملف تمامًا حسب رغبتك، ولكن يجب أن يحتوي على الأقل على توجيه الجذر `toctree`.
 
 :github_url: https://github.com/pytorch/pytorch
 
-PyTorch documentation
-===================================
+توثيق PyTorch
+=============
 
-PyTorch is an optimized tensor library for deep learning using GPUs and CPUs.
+PyTorch هو مكتبة تنسور محسنة للتعلم العميق باستخدام وحدات معالجة الرسوميات (GPU) ووحدات المعالجة المركزية (CPU).
 
-Features described in this documentation are classified by release status:
+تم تصنيف الميزات الموضحة في هذه الوثيقة حسب حالة الإصدار:
 
-  *Stable:*  These features will be maintained long-term and there should generally
-  be no major performance limitations or gaps in documentation.
-  We also expect to maintain backwards compatibility (although
-  breaking changes can happen and notice will be given one release ahead
-  of time).
+  *مستقر:*  سيتم الحفاظ على هذه الميزات على المدى الطويل، ولا ينبغي أن تكون هناك قيود أداء كبيرة أو فجوات في التوثيق.
+  نتوقع أيضًا الحفاظ على التوافق مع الإصدارات السابقة (على الرغم من أنه يمكن إجراء تغييرات مهمة وسيتم إعطاء إشعار قبل إصدار واحد).
 
-  *Beta:*  These features are tagged as Beta because the API may change based on
-  user feedback, because the performance needs to improve, or because
-  coverage across operators is not yet complete. For Beta features, we are
-  committing to seeing the feature through to the Stable classification.
-  We are not, however, committing to backwards compatibility.
+  *بيتا:*  تم وضع علامة على هذه الميزات على أنها Beta لأن واجهة برمجة التطبيقات (API) قد تتغير بناءً على تعليقات المستخدمين، أو لأن الأداء يحتاج إلى تحسين، أو لأن التغطية عبر المشغلين غير مكتملة بعد. بالنسبة للميزات التجريبية، نلتزم بجعل الميزة تصل إلى التصنيف المستقر.
+  ومع ذلك، فإننا لا نلتزم بالتوافق مع الإصدارات السابقة.
 
-  *Prototype:*  These features are typically not available as part of
-  binary distributions like PyPI or Conda, except sometimes behind run-time
-  flags, and are at an early stage for feedback and testing.
+  *نموذج أولي:*  عادةً ما تكون هذه الميزات غير متوفرة كجزء من التوزيعات الثنائية مثل PyPI أو Conda، باستثناء وجودها أحيانًا خلف أعلام وقت التشغيل، وهي في مرحلة مبكرة لتلقي التعليقات والاختبارات.
 
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Community
+   :caption: مجتمع
 
    community/*
 
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Developer Notes
+   :caption: ملاحظات المطور
 
    notes/*
 
 .. toctree::
    :maxdepth: 1
-   :caption: Language Bindings
+   :caption: روابط اللغة
 
    cpp_index
    Javadoc <https://pytorch.org/javadoc/>
@@ -53,7 +43,7 @@ Features described in this documentation are classified by release status:
 .. toctree::
    :glob:
    :maxdepth: 2
-   :caption: Python API
+   :caption: واجهة برمجة التطبيقات (API) بلغة بايثون
 
    torch
    nn
@@ -135,7 +125,7 @@ Features described in this documentation are classified by release status:
 
 .. toctree::
    :maxdepth: 1
-   :caption: Libraries
+   :caption: المكتبات
 
    torchaudio <https://pytorch.org/audio/stable>
    TorchData <https://pytorch.org/data>
@@ -145,8 +135,8 @@ Features described in this documentation are classified by release status:
    torchvision <https://pytorch.org/vision/stable>
    PyTorch on XLA Devices <https://pytorch.org/xla/>
 
-Indices and tables
-==================
+الفهرس والجداول
+=============
 
 * :ref:`genindex`
 * :ref:`modindex`
