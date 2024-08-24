@@ -1,24 +1,24 @@
-Frequently Asked Questions
+أسئلة شائعة
 ==========================
 
-My model reports "cuda runtime error(2): out of memory"
+يقوم النموذج الخاص بي بالإبلاغ عن "خطأ وقت التشغيل CUDA (2): نفاد الذاكرة"
 -------------------------------------------------------
 
-As the error message suggests, you have run out of memory on your
-GPU.  Since we often deal with large amounts of data in PyTorch,
-small mistakes can rapidly cause your program to use up all of your
-GPU; fortunately, the fixes in these cases are often simple.
-Here are a few common things to check:
+كما يوحي رسالة الخطأ، لقد نفدت الذاكرة على
+وحدة معالجة الرسوميات (GPU). نظرًا لأننا غالبًا ما نتعامل مع كميات كبيرة من البيانات في PyTorch،
+يمكن للأخطاء الصغيرة أن تتسبب بسرعة في استخدام برنامجك لجميع
+وحدة معالجة الرسوميات (GPU)؛ لحسن الحظ، فإن الإصلاحات في هذه الحالات تكون غالبًا بسيطة.
+فيما يلي بعض الأشياء الشائعة التي يجب التحقق منها:
 
-**Don't accumulate history across your training loop.**
-By default, computations involving variables that require gradients
-will keep history.  This means that you should avoid using such
-variables in computations which will live beyond your training loops,
-e.g., when tracking statistics. Instead, you should detach the variable
-or access its underlying data.
+**لا تتراكم التاريخ عبر حلقة التدريب الخاصة بك.**
+بافتراضي، ستستمر الحسابات التي تتضمن متغيرات تتطلب تدرجات
+في الاحتفاظ بالتاريخ. وهذا يعني أنه يجب عليك تجنب استخدام هذه
+المتغيرات في الحسابات التي ستستمر بعد حلقات التدريب الخاصة بك،
+على سبيل المثال، عند تتبع الإحصائيات. بدلاً من ذلك، يجب عليك فصل المتغير
+أو الوصول إلى بياناته الأساسية.
 
-Sometimes, it can be non-obvious when differentiable variables can
-occur.  Consider the following training loop (abridged from `source
+في بعض الأحيان، قد لا يكون من الواضح عندما يمكن أن تحدث المتغيرات القابلة للاشتقاق.
+خذ في الاعتبار حلقة التدريب التالية (مختصرة من `المصدر
 <https://discuss.pytorch.org/t/high-memory-usage-while-training/162>`_):
 
 .. code-block:: python
@@ -32,23 +32,23 @@ occur.  Consider the following training loop (abridged from `source
         optimizer.step()
         total_loss += loss
 
-Here, ``total_loss`` is accumulating history across your training loop, since
-``loss`` is a differentiable variable with autograd history. You can fix this by
-writing `total_loss += float(loss)` instead.
+هنا، ``total_loss`` تتراكم التاريخ عبر حلقة التدريب الخاصة بك، منذ
+``loss`` هو متغير قابل للاشتقاق مع تاريخ autograd. يمكنك إصلاح هذا عن طريق
+كتابة `total_loss += float(loss)` بدلاً من ذلك.
 
-Other instances of this problem:
+أمثلة أخرى على هذه المشكلة:
 `1 <https://discuss.pytorch.org/t/resolved-gpu-out-of-memory-error-with-batch-size-1/3719>`_.
 
-**Don't hold onto tensors and variables you don't need.**
-If you assign a Tensor or Variable to a local, Python will not
-deallocate until the local goes out of scope.  You can free
-this reference by using ``del x``.  Similarly, if you assign
-a Tensor or Variable to a member variable of an object, it will
-not deallocate until the object goes out of scope.  You will
-get the best memory usage if you don't hold onto temporaries
-you don't need.
+**لا تحتفظ بالموترات والمتغيرات التي لا تحتاجها.**
+إذا قمت بتعيين موتر أو متغير إلى محلي، فلن يقوم Python
+إلغاء تخصيص حتى يخرج المحلي عن النطاق. يمكنك تحرير
+هذه الإشارة باستخدام ``del x``. وبالمثل، إذا قمت بتعيين
+موتر أو متغير إلى متغير عضو كائن، فلن يتم إلغاء تخصيصه حتى
+يخرج الكائن عن النطاق. ستحصل على
+أفضل استخدام للذاكرة إذا لم تحتفظ بالمتغيرات المؤقتة
+أنت لا تحتاج.
 
-The scopes of locals can be larger than you expect.  For example:
+نطاقات المحليات يمكن أن تكون أكبر مما تتوقع.  على سبيل المثال:
 
 .. code-block:: python
 
@@ -58,47 +58,44 @@ The scopes of locals can be larger than you expect.  For example:
     output = h(result)
     return output
 
-Here, ``intermediate`` remains live even while ``h`` is executing,
-because its scope extrudes past the end of the loop.  To free it
-earlier, you should ``del intermediate`` when you are done with it.
+هنا، ``intermediate`` لا يزال نشطًا حتى أثناء تنفيذ ``h`` ،
+لأن نطاقه يبرز بعد نهاية الحلقة. لإلغاء تخصيصه في وقت سابق، يجب عليك
+``del intermediate`` عند الانتهاء منه.
 
-**Avoid running RNNs on sequences that are too large.**
-The amount of memory required to backpropagate through an RNN scales
-linearly with the length of the RNN input; thus, you will run out of memory
-if you try to feed an RNN a sequence that is too long.
+**تجنب تشغيل RNNs على تسلسلات طويلة جدًا.**
+كمية الذاكرة المطلوبة للانتشار الخلفي من خلال RNN تتناسب طرديًا مع
+طول إدخال RNN؛ وبالتالي، ستنفد الذاكرة
+إذا حاولت إطعام RNN تسلسلًا طويلًا جدًا.
 
-The technical term for this phenomenon is `backpropagation through time
-<https://en.wikipedia.org/wiki/Backpropagation_through_time>`_,
-and there are plenty of references for how to implement truncated
-BPTT, including in the `word language model <https://github.com/pytorch/examples/tree/master/word_language_model>`_ example; truncation is handled by the
-``repackage`` function as described in
-`this forum post <https://discuss.pytorch.org/t/help-clarifying-repackage-hidden-in-word-language-model/226>`_.
+المصطلح الفني لهذه الظاهرة هو `الانتشار الخلفي عبر الوقت
+<https://en.wikipedia.org/wiki/Backpropagation_through_time>`_،
+وهناك الكثير من المراجع حول كيفية تنفيذ BPTT المقطوع، بما في ذلك في `نموذج اللغة الكلمة <https://github.com/pytorch/examples/tree/master/word_language_model>`_ مثال؛ يتم التعامل مع الاقتصاص بواسطة
+دالة ``repackage`` كما هو موصوف في
+`هذه المشاركة في المنتدى <https://discuss.pytorch.org/t/help-clarifying-repackage-hidden-in-word-language-model/226>`_.
 
-**Don't use linear layers that are too large.**
-A linear layer ``nn.Linear(m, n)`` uses :math:`O(nm)` memory: that is to say,
-the memory requirements of the weights
-scales quadratically with the number of features.  It is very easy
-to `blow through your memory <https://github.com/pytorch/pytorch/issues/958>`_
-this way (and remember that you will need at least twice the size of the
-weights, since you also need to store the gradients.)
+**لا تستخدم الطبقات الخطية الكبيرة جدًا.**
+تستخدم الطبقة الخطية ``nn.Linear(m، n)`` :math:`O(nm)` الذاكرة: أي أن
+متطلبات الذاكرة للأوزان
+تتناسب تربيعيًا مع عدد الميزات. من السهل جدًا
+`نفخ ذاكرتك <https://github.com/pytorch/pytorch/issues/958>`_
+بهذه الطريقة (وتذكر أنك ستحتاج إلى ضعف حجم
+الأوزان، لأنك تحتاج أيضًا إلى تخزين التدرجات.)
 
-**Consider checkpointing.**
-You can trade-off memory for compute by using `checkpoint <https://pytorch.org/docs/stable/checkpoint.html>`_.
+**ضع في اعتبارك نقاط التفتيش.**
+يمكنك المقايضة بين الذاكرة والحوسبة باستخدام `النقطة المرجعية <https://pytorch.org/docs/stable/checkpoint.html>`_.
 
-My GPU memory isn't freed properly
+لا يتم تحرير ذاكرة GPU الخاصة بي بشكل صحيح
 ----------------------------------
-PyTorch uses a caching memory allocator to speed up memory allocations. As a
-result, the values shown in ``nvidia-smi`` usually don't reflect the true
-memory usage. See :ref:`cuda-memory-management` for more details about GPU
-memory management.
+يستخدم PyTorch مخصص ذاكرة التخزين المؤقت لتسريع عمليات تخصيص الذاكرة. نتيجة لذلك،
+عادة ما لا تعكس القيم المعروضة في ``nvidia-smi`` استخدام الذاكرة الحقيقي. راجع :ref: `cuda-memory-management` لمزيد من التفاصيل حول إدارة ذاكرة GPU.
 
-If your GPU memory isn't freed even after Python quits, it is very likely that
-some Python subprocesses are still alive. You may find them via
-``ps -elf | grep python`` and manually kill them with ``kill -9 [pid]``.
+إذا لم يتم تحرير ذاكرة GPU الخاصة بك حتى بعد خروج Python، فمن المحتمل جدًا أن
+بعض عمليات Python الفرعية لا تزال نشطة. يمكنك العثور عليها عبر
+``ps -elf | grep python`` وقتلها يدويًا باستخدام ``kill -9 [pid]``.
 
-My out of memory exception handler can't allocate memory
---------------------------------------------------------
-You may have some code that tries to recover from out of memory errors.
+لا يمكن لمعالج استثناء نفاد الذاكرة الخاص بي تخصيص الذاكرة
+---------------------------------------------------
+قد يكون لديك بعض التعليمات البرمجية التي تحاول التعافي من أخطاء نفاد الذاكرة.
 
 .. code-block:: python
 
@@ -108,11 +105,10 @@ You may have some code that tries to recover from out of memory errors.
         for _ in range(batch_size):
             run_model(1)
 
-But find that when you do run out of memory, your recovery code can't allocate
-either. That's because the python exception object holds a reference to the
-stack frame where the error was raised. Which prevents the original tensor
-objects from being freed. The solution is to move you OOM recovery code outside
-of the ``except`` clause.
+ولكنك تجد أنه عندما تنفد الذاكرة، لا يمكن لرمز الاسترداد الخاص بك تخصيص
+أيضا. ويرجع ذلك إلى أن كائن الاستثناء Python يحتفظ بإشارة إلى
+إطار المكدس حيث تم رفع الخطأ. مما يمنع كائنات tensor الأصلية من أن يتم تحريرها. الحل هو نقل رمز OOM الخاص بك خارج
+عبارة ``except`` .
 
 .. code-block:: python
 
@@ -129,45 +125,44 @@ of the ``except`` clause.
 
 .. _dataloader-workers-random-seed:
 
-My data loader workers return identical random numbers
+تعيد عمال محمل البيانات الخاص بي أرقامًا عشوائية متطابقة
 -------------------------------------------------------
-You are likely using other libraries to generate random numbers in the dataset
-and worker subprocesses are started via ``fork``. See
-:class:`torch.utils.data.DataLoader`'s documentation for how to
-properly set up random seeds in workers with its :attr:`worker_init_fn` option.
+من المحتمل أنك تستخدم مكتبات أخرى لتوليد أرقام عشوائية في مجموعة البيانات
+يتم بدء عمليات العامل الفرعي عبر ``fork``. راجع
+توثيق :class: `torch.utils.data.DataLoader` لمعرفة كيفية
+إعداد بذور الأرقام العشوائية بشكل صحيح في العاملين باستخدام خيارها: `worker_init_fn` .
 
 .. _pack-rnn-unpack-with-data-parallelism:
 
-My recurrent network doesn't work with data parallelism
+لا تعمل شبكتي المتكررة مع الموازاة للبيانات
 -------------------------------------------------------
-There is a subtlety in using the
-``pack sequence -> recurrent network -> unpack sequence`` pattern in a
-:class:`~torch.nn.Module` with :class:`~torch.nn.DataParallel` or
-:func:`~torch.nn.parallel.data_parallel`. Input to each the :meth:`forward` on
-each device will only be part of the entire input. Because the unpack operation
-:func:`torch.nn.utils.rnn.pad_packed_sequence` by default only pads up to the
-longest input it sees, i.e., the longest on that particular device, size
-mismatches will happen when results are gathered together. Therefore, you can
-instead take advantage of the :attr:`total_length` argument of
-:func:`~torch.nn.utils.rnn.pad_packed_sequence` to make sure that the
-:meth:`forward` calls return sequences of same length. For example, you can
-write::
+هناك دقة في استخدام
+نمط "حزم التسلسل -> الشبكة المتكررة -> فك حزم التسلسل" في
+:class:`~torch.nn.Module` مع :class:`~torch.nn.DataParallel` أو
+:func:`~torch.nn.parallel.data_parallel`. سيكون الإدخال إلى كل :meth: `forward` على
+كل جهاز فقط جزءًا من الإدخال بالكامل. نظرًا لأن عملية فك الحزم :func: `torch.nn.utils.rnn.pad_packed_sequence` افتراضيًا لا تقوم بالوسادة إلا حتى
+أطول إدخال تراه، أي الأطول على هذا الجهاز المحدد، سيحدث عدم تطابق في الحجم
+عندما يتم تجميع النتائج معًا. لذلك، يمكنك
+بدلاً من ذلك، استفد من حجة :attr: `total_length` من
+:func:`~torch.nn.utils.rnn.pad_packed_sequence` للتأكد من أن
+تعود مكالمات :meth: `forward` تسلسلات بنفس الطول. على سبيل المثال، يمكنك
+اكتب::
 
-    from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+    from torch.nn.utils.rnn import pack_padded_sequence، pad_packed_sequence
 
     class MyModule(nn.Module):
-        # ... __init__, other methods, etc.
+        # ... __init__، طرق أخرى، إلخ.
 
-        # padded_input is of shape [B x T x *] (batch_first mode) and contains
-        # the sequences sorted by lengths
-        #   B is the batch size
-        #   T is max sequence length
-        def forward(self, padded_input, input_lengths):
-            total_length = padded_input.size(1)  # get the max sequence length
-            packed_input = pack_padded_sequence(padded_input, input_lengths,
+        # padded_input هو من الشكل [B x T x *] (وضع batch_first) ويحتوي على
+        # التسلسلات التي تم فرزها حسب الأطوال
+        # ب هو حجم الدفعة
+        # ت هو طول التسلسل الأقصى
+        def forward(self، padded_input، input_lengths):
+            total_length = padded_input.size(1) # احصل على طول التسلسل الأقصى
+            packed_input = pack_padded_sequence(padded_input، input_lengths،
                                                 batch_first=True)
-            packed_output, _ = self.my_lstm(packed_input)
-            output, _ = pad_packed_sequence(packed_output, batch_first=True,
+            packed_output، _ = self.my_lstm(packed_input)
+            output، _ = pad_packed_sequence(packed_output، batch_first=True،
                                             total_length=total_length)
             return output
 
@@ -176,9 +171,8 @@ write::
     dp_m = nn.DataParallel(m)
 
 
-Additionally, extra care needs to be taken when batch dimension is dim ``1``
-(i.e., ``batch_first=False``) with data parallelism. In this case, the first
-argument of pack_padded_sequence ``padding_input`` will be of shape
-``[T x B x *]`` and should be scattered along dim ``1``, but the second argument
-``input_lengths`` will be of shape ``[B]`` and should be scattered along dim
-``0``. Extra code to manipulate the tensor shapes will be needed.
+بالإضافة إلى ذلك، يجب توخي مزيد من الحذر عندما يكون البعد الدفعي dim ``1``
+(أي ``batch_first=False``) مع الموازاة للبيانات. في هذه الحالة، سيكون الحجة الأولى من ``padding_input``
+من الشكل ``[T x B x *]`` ويجب أن يتم تفرقتها على طول dim ``1``، ولكن الحجة الثانية
+``input_lengths`` سيكون من الشكل ``[B]`` ويجب أن يتم تفرقتها على طول dim
+``0``. ستكون هناك حاجة إلى تعليمات برمجية إضافية للتلاعب بأشكال tensor.
