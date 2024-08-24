@@ -1,23 +1,529 @@
+.. _torch.utils.data:
+
 torch.utils.data
-===================================
+=================
 
-.. automodule:: torch.utils.data
+يحتوي هذا على فئات مفيدة للعمل مع مجموعات البيانات.
 
-At the heart of PyTorch data loading utility is the :class:`torch.utils.data.DataLoader`
-class.  It represents a Python iterable over a dataset, with support for
+.. currentmodule:: torch.utils.data
 
-* `map-style and iterable-style datasets <Dataset Types_>`_,
+.. autosummary::
+   :toctree: generated/
+   :template: class.rst
 
-* `customizing data loading order <Data Loading Order and Sampler_>`_,
+   Dataset
+   IterableDataset
+   DataLoader
+   RandomSampler
+   SequentialSampler
+   BatchSampler
+   DistributedSampler
+   WeightedRandomSampler
 
-* `automatic batching <Loading Batched and Non-Batched Data_>`_,
+.. _torch.utils.data.dataloader:
 
-* `single- and multi-process data loading <Single- and Multi-process Data Loading_>`_,
+torch.utils.data.DataLoader
+--------------------------
 
-* `automatic memory pinning <Memory Pinning_>`_.
+.. autoclass:: DataLoader
+   :members:
+   :inherited-members:
 
-These options are configured by the constructor arguments of a
-:class:`~torch.utils.data.DataLoader`, which has signature::
+.. _torch.utils.data.dataset:
+
+torch.utils.data.Dataset
+------------------------
+
+.. autoclass:: Dataset
+   :members:
+
+.. _torch.utils.data.iterable:
+
+torch.utils.data.IterableDataset
+--------------------------------
+
+.. autoclass:: IterableDataset
+   :members:
+
+.. _torch.utils.data.sampler:
+
+torch.utils.data.Sampler
+------------------------
+
+.. autoclass:: Sampler
+   :members:
+
+.. _torch.utils.data.random_sampler:
+
+torch.utils.data.RandomSampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: RandomSampler
+   :members:
+
+.. _torch.utils.data.sequential_sampler:
+
+torch.utils.data.SequentialSampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: SequentialSampler
+   :members:
+
+.. _torch.utils.data.distributed.distributed_sampler:
+
+torch.utils.data.distributed.DistributedSampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: distributed.DistributedSampler
+   :members:
+
+.. _torch.utils.data.batch_sampler:
+
+torch.utils.data.BatchSampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: BatchSampler
+   :members:
+
+.. _torch.utils.data.weighted_random_sampler:
+
+torch.utils.data.WeightedRandomSampler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: WeightedRandomSampler
+   :members:
+
+.. _torch.utils.data.dataloader_worker_process:
+
+torch.utils.data.DataLoader Worker Process
+-----------------------------------------
+
+.. currentmodule:: torch.utils.data._utils.worker
+
+.. autoclass:: DataLoaderIter
+   :members:
+
+.. autofunction:: _worker_loop
+
+.. autofunction:: _mp_sample_worker
+
+.. autofunction:: _spawn_workers
+
+.. autofunction:: _init_process
+
+.. autofunction:: _worker_loop_wrapper
+
+.. autofunction:: _worker_loop_wrapper_tpu
+
+.. autofunction:: _worker_loop_tpu
+
+.. autofunction ._worker_loop_gpu
+
+.. autofunction:: _pin_memory_tpu
+
+.. autofunction:: _pin_memory_gpu
+
+.. _torch.utils.data.dataloader_options:
+
+torch.utils.data.DataLoader Options
+----------------------------------
+
+.. currentmodule:: torch.utils.data
+
+.. autoclass:: DataLoader
+   :members: num_workers, pin_memory, timeout, batch_size, collate_fn, worker_init_fn, multiprocessing_context, generator, persistent_workers
+
+.. _torch.utils.data.dataloader_notes:
+
+torch.utils.data.DataLoader ملاحظات
+---------------------------------
+
+.. currentmodule:: torch.utils.data
+
+.. _torch.utils.data.dataloader.pin_memory:
+
+pin_memory
+^^^^^^^^^
+
+عند تعيينها إلى ``True`` ، سيتم استخدام الذاكرة المثبتة في عملية العامل.
+يؤدي ذلك إلى نسخ أقل في بعض الحالات.
+
+.. note::
+
+   لا تتوفر الذاكرة المثبتة إلا في PyTorch الذي تم بناؤه مع CUDA.
+
+.. _torch.utils.data.dataloader.num_workers:
+
+num_workers
+^^^^^^^^^^
+
+عدد العمليات الفرعية المستخدمة للبيانات الموازية. لا يتم استخدام العمليات الفرعية في
+الوضع الافتراضي.
+
+.. warning::
+
+   قد لا تعمل العمليات الفرعية بشكل جيد مع TensorFlow. إذا واجهت مشكلات، يرجى
+   استخدام ``num_workers=0``.
+
+.. _torch.utils.data.dataloader.timeout:
+
+timeout
+^^^^^^^
+
+عدد الثواني التي ينتظرها DataLoader قبل إيقاف عملية العامل. القيمة الافتراضية هي 0،
+أي لا يوجد حد زمني.
+
+.. _torchMultiplier:
+
+.. _torch.utils.data.dataloader.persistent_workers:
+
+persistent_workers
+^^^^^^^^^^^^^^^^^^
+
+إذا كان ``True`` ، فإن العامل لن يتم إيقافه بعد دورة واحدة. هذا سيحافظ على
+الذاكرة المثبتة في العامل، مما قد يؤدي إلى تقليل النسخ. ومع ذلك، فإن العمال
+الذين يستمرون في العمل قد يستهلكون المزيد من الذاكرة. القيمة الافتراضية هي
+``False``.
+
+.. _torch.utils.data.dataloader.multiprocessing_context:
+
+multiprocessing_context
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+سياق المعالجة المتعددة الذي سيتم استخدامه لتشغيل العمال. القيمة الافتراضية هي
+``None`` ، والتي ستستخدم السياق الافتراضي (عادة ``fork`` في Unix و ``spawn`` في
+Windows). يمكنك أيضًا استخدام ``multiprocessing.get_context('spawn')`` أو
+``multiprocessing.get_context('fork')`` أو ``multiprocessing.get_context('forkserver')``.
+
+.. note::
+
+   لا يتم دعم ``forkserver`` في Windows.
+
+.. _torch.utils.data.dataloader.worker_init_fn:
+
+worker_init_fn
+^^^^^^^^^^^^^^
+
+إذا تم تعيينها، فسيتم استدعاء هذه الدالة في كل عامل قبل بدء دورة العمل.
+يمكن استخدامها لمكافحة بعض مشكلات التهيئة في DataLoader.
+
+.. _torch.utils.data.dataloader.generator:
+
+generator
+^^^^^^^^^
+
+عند تعيينها، سيتم استخدام هذا المولد لإنشاء الأرقام العشوائية في DataLoader.
+
+.. _torch.utils.data.dataloader.collate_fn:
+
+collate_fn
+^^^^^^^^^^
+
+عند تعيينها، سيتم استخدام هذه الدالة لتجميع عينات البيانات في الدُفعات.
+
+.. _torch.utils.data.dataloader.iter_per_load:
+
+iter_per_load
+^^^^^^^^^^^^^^
+
+عدد المرات التي يجب أن يمر بها كل عامل على مجموعة البيانات. القيمة الافتراضية هي 1.
+
+.. _torch.utils.data.dataloader.default_collate:
+
+torch.utils.data.dataloader.default_collate
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: default_collate
+
+.. _torch.utils.data.dataloader.exceptions:
+
+torch.utils.data.dataloader استثناءات
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: torch.utils.data
+
+.. autoclass:: DataLoaderWarning
+
+.. _torch.utils.data.dataloader.best_practices:
+
+أفضل الممارسات لـ DataLoader
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: torch.utils.data
+
+.. _torch.utils.data.dataloader.best_practices.pinned_memory_benchmark:
+
+اختبار الذاكرة المثبتة
+'''''''''''''''''''''''''
+
+إذا كنت تستخدم الذاكرة المثبتة، فيجب عليك التأكد من أنها توفر بالفعل زيادة في
+الأداء. يمكنك القيام بذلك عن طريق مقارنة سرعة DataLoader مع وبدون الذاكرة المثبتة.
+
+.. code:: python
+
+   # بدون ذاكرة مثبتة
+   dataloader = DataLoader(dataset, num_workers=4)
+
+   # مع ذاكرة مثبتة
+   dataloader = DataLoader(dataset, num_workers=4, pin_memory=True)
+
+.. _torch.utils.data.dataloader.best_practices.num_workers_benchmark:
+
+اختبار عدد العمليات الفرعية
+'''''''''''''''''''
+
+يمكن أن يكون لعدد العمليات الفرعية تأثير كبير على أداء DataLoader. يجب عليك
+اختبار عدد العمال لمعرفة العدد الأمثل.
+
+.. code:: python
+
+   # بدون عمال
+   dataloader = DataLoader(dataset)
+
+   # مع 4 عمال
+   dataloMultiplier = DataLoader(dataset, num_workers=4)
+
+.. _torch.utils.data.dataloader.best_practices.large_vs_small_batches:
+
+الدُفعات الكبيرة مقابل الدُفعات الصغيرة
+'''''''''''''''''''''''''
+
+قد يكون حجم الدُفعة مهمًا أيضًا. إذا كان حجم الدُفعة كبيرًا، فقد لا يكون لديك
+ذاكرة كافية. إذا كان حجم الدُفعة صغيرًا، فقد لا تستفيد بشكل كافٍ من وحدة معالجة
+الرسوميات.
+
+.. _torch.utils.data.dataloader.best_practices.single_vs_multi_process:
+
+عملية واحدة مقابل عمليات متعددة
+''''''''''''''''''''
+
+إذا كنت تستخدم عملية واحدة، فيمكنك استخدام ``torch.no_grad()`` لتجنب
+تسجيل العمليات الحسابية.
+
+.. code:: python
+
+   for data in dataloader:
+       with torch.no_grad():
+           # قم بعملك
+
+إذا كنت تستخدم عمليات متعددة، فيجب عليك استخدام ``torch.enable_grad()`` و
+``torch.disable_grad()`` لتجنب تسجيل العمليات الحسابية.
+
+.. code:: python
+
+   for data in dataloader:
+       torch.set_grad_enabled(True)
+       # قم بعملك
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_in_jupyter:
+
+المعالجة المتعددة في Jupyter
+'''''''''''''''''''''
+
+إذا كنت تستخدم Jupyter، فيجب عليك استخدام ``start_method='spawn'`` في
+``torch.utils.data.DataLoader`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_queue:
+
+المعالجة المتعددة مع Queue
+'''''''''''''''''''
+
+إذا كنت تستخدم Queue في عملية رئيسية، فيجب عليك استخدام ``start_method='spawn'``
+في ``torch.utils.data.DataLoader`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_tpu:
+
+المعالجة المتعددة مع TPU
+'''''''''''''''''
+
+إذا كنت تستخدم TPU، فيجب عليك استخدام ``start_method='fork'`` في
+``torch.utils.data.DataLoader`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=8, multiprocessing_context=get_context('fork'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_forkserver:
+
+المعالجة المتعددة مع ForkServer
+''''''''''''''''''''''''
+
+إذا كنت تستخدم ``forkserver`` ، فيجب عليك استخدام ``forkserver_preload`` لتجنب
+الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('forkserver'), forkserver_preload=True)
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_fork:
+
+المعالجة المتعددة مع Fork
+''''''''''''''''''
+
+إذا كنت تستخدم ``fork`` ، فيجب عليك استخدام ``fork_args`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('fork'), fork_args=(('RLIMIT_NOFILE', 1024), ))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_spawn:
+
+المعالجة المتعددة مع Spawn
+''''''''''''''''''''
+
+إذا كنت تستخدم ``spawn`` ، فيجب عليك استخدام ``spawn_args`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'), spawn_args=(('RLIMIT_NOFILE', 1024), ))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_gloo:
+
+المعالجة المتعددة مع Gloo
+''''''''''''''''''
+
+إذا كنت تستخدم Gloo، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_mpi:
+
+المعالجة المتعددة مع MPI
+'''''''''''''''''
+
+إذا كنت تستخدم MPI، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   datalo
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_distributed:
+
+المعالجة المتعددة مع torch.distributed
+''''''''''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.distributed`` ، فيجب عليك استخدام ``spawn`` لتجنب
+الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_horovod:
+
+المعالجة المتعددة مع Horovod
+'''''''''''''''''''''
+
+إذا كنت تستخدم Horovod، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_xla:
+
+المعالجة المتعددة مع XLA
+'''''''''''''''''
+
+إذا كنت تستخدم XLA، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_cuda:
+
+المعالجة المتعددة مع torch.cuda
+''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.cuda`` ، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_cuda_async:
+
+المعالجة المتعددة مع torch.cuda.async
+''''''''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.cuda.async`` ، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_cuda_comm:
+
+المعالجة المتعددة مع torch.cuda.comm
+'''''''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.cuda.comm`` ، فيجب عليك استخدام ``spawn`` لتجنب الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_distributed_launch:
+
+المعالجة المتعددة مع torch.distributed.launch
+''''''''''''''''''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.distributed.launch`` ، فيجب عليك استخدام ``spawn`` لتجنب
+الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_distributed_run:
+
+المعالجة المتعددة مع torch.distributed.run
+''''''''''''''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.distributed.run`` ، فيجب عليك استخدام ``spawn`` لتجنب
+الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_distributed_rpc:
+
+المعالجة المتعددة مع torch.distributed.rpc
+'''''''''''''''''''''''''''''''''''
+
+إذا كنت تستخدم ``torch.distributed.rpc`` ، فيجب عليك استخدام ``spawn`` لتجنب
+الأخطاء.
+
+.. code:: python
+
+   dataloader = DataLoader(dataset, num_workers=4, multiprocessing_context=get_context('spawn'))
+
+.. _torch.utils.data.dataloader.best_practices.multiprocessing_with_torch_distributed_elastic:
+
+المعالجة المتعددة مع torch.distributed
+================================
+
+في قلب أداة تحميل البيانات PyTorch يوجد فئة :class:`torch.utils.data.DataLoader`. تمثل هذه الفئة كائنًا قابلًا للتنفيذ في Python عبر مجموعة بيانات، مع دعم لما يلي:
+
+* أنواع مجموعات البيانات على طراز الخرائط والطراز القابل للتنفيذ.
+* تخصيص ترتيب تحميل البيانات.
+* التجميع التلقائي.
+* تحميل البيانات أحادية ومتعددة العمليات.
+* تثبيت الذاكرة التلقائي.
+
+تتم تهيئة هذه الخيارات بواسطة وسائط البناء لـ :class:`~torch.utils.data.DataLoader`، والتي لها التوقيع التالي::
 
     DataLoader(dataset, batch_size=1, shuffle=False, sampler=None,
                batch_sampler=None, num_workers=0, collate_fn=None,
@@ -25,381 +531,275 @@ These options are configured by the constructor arguments of a
                worker_init_fn=None, *, prefetch_factor=2,
                persistent_workers=False)
 
-The sections below describe in details the effects and usages of these options.
+تصف الأقسام أدناه بالتفصيل تأثيرات هذه الخيارات واستخداماتها.
 
-Dataset Types
--------------
+أنواع مجموعات البيانات
+-----------------
 
-The most important argument of :class:`~torch.utils.data.DataLoader`
-constructor is :attr:`dataset`, which indicates a dataset object to load data
-from. PyTorch supports two different types of datasets:
+وسيط البناء الأكثر أهمية لـ :class:`~torch.utils.data.DataLoader` هو وسيط :attr:`dataset`، والذي يشير إلى كائن مجموعة بيانات لتحميل البيانات منه. يدعم PyTorch نوعين مختلفين من مجموعات البيانات:
 
-* `map-style datasets <Map-style datasets_>`_,
+* مجموعات البيانات على طراز الخرائط.
+* مجموعات البيانات على الطراز القابل للتنفيذ.
 
-* `iterable-style datasets <Iterable-style datasets_>`_.
+مجموعات البيانات على طراز الخرائط
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Map-style datasets
-^^^^^^^^^^^^^^^^^^
+مجموعة البيانات على طراز الخرائط هي مجموعة بيانات تقوم بتنفيذ بروتوكولات :meth:`__getitem__` و :meth:`__len__`، وتمثل خريطة من المؤشرات/المفاتيح (غير الصحيحة) إلى عينات البيانات.
 
-A map-style dataset is one that implements the :meth:`__getitem__` and
-:meth:`__len__` protocols, and represents a map from (possibly non-integral)
-indices/keys to data samples.
+على سبيل المثال، يمكن لمجموعة بيانات مثل هذه، عند الوصول إليها باستخدام ``dataset[idx]``، قراءة الصورة التي تحمل المؤشر ``idx`` وتصنيفها المقابل من مجلد على القرص.
 
-For example, such a dataset, when accessed with ``dataset[idx]``, could read
-the ``idx``-th image and its corresponding label from a folder on the disk.
+راجع :class:`~torch.utils.data.Dataset` لمزيد من التفاصيل.
 
-See :class:`~torch.utils.data.Dataset` for more details.
+مجموعات البيانات على الطراز القابل للتنفيذ
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Iterable-style datasets
-^^^^^^^^^^^^^^^^^^^^^^^
+مجموعة البيانات على الطراز القابل للتنفيذ هي مثيل لفئة فرعية من :class:`~torch.utils.data.IterableDataset` تقوم بتنفيذ بروتوكول :meth:`__iter__`، وتمثل كائنًا قابلًا للتنفيذ عبر عينات البيانات. وهذا النوع من مجموعات البيانات مناسب بشكل خاص للحالات التي تكون فيها القراءات العشوائية مكلفة أو حتى مستحيلة، وحيث يعتمد حجم الدفعة على البيانات المستردة.
 
-An iterable-style dataset is an instance of a subclass of :class:`~torch.utils.data.IterableDataset`
-that implements the :meth:`__iter__` protocol, and represents an iterable over
-data samples. This type of datasets is particularly suitable for cases where
-random reads are expensive or even improbable, and where the batch size depends
-on the fetched data.
+على سبيل المثال، يمكن لمجموعة بيانات مثل هذه، عند استدعائها ``iter(dataset)``، أن تعيد دفق بيانات القراءة من قاعدة بيانات أو خادم بعيد أو حتى سجلات يتم إنشاؤها في الوقت الفعلي.
 
-For example, such a dataset, when called ``iter(dataset)``, could return a
-stream of data reading from a database, a remote server, or even logs generated
-in real time.
+راجع :class:`~torch.utils.data.IterableDataset` لمزيد من التفاصيل.
 
-See :class:`~torch.utils.data.IterableDataset` for more details.
+.. note:: عند استخدام :class:`~torch.utils.data.IterableDataset` مع تحميل البيانات متعددة العمليات. يتم استنساخ نفس كائن مجموعة البيانات على كل عملية عامل، وبالتالي يجب تكوين النسخ المتماثلة بشكل مختلف لتجنب البيانات المكررة. راجع وثائق :class:`~torch.utils.data.IterableDataset` لمعرفة كيفية تحقيق ذلك.
 
-.. note:: When using a :class:`~torch.utils.data.IterableDataset` with
-          `multi-process data loading <Multi-process data loading_>`_. The same
-          dataset object is replicated on each worker process, and thus the
-          replicas must be configured differently to avoid duplicated data. See
-          :class:`~torch.utils.data.IterableDataset` documentations for how to
-          achieve this.
+ترتيب تحميل البيانات وفئة :class:`~torch.utils.data.Sampler`
+-----------------------------------------------------
 
-Data Loading Order and :class:`~torch.utils.data.Sampler`
----------------------------------------------------------
+بالنسبة لمجموعات البيانات على الطراز القابل للتنفيذ، يتحكم المستخدم في ترتيب تحميل البيانات بالكامل. يسمح هذا بتنفيذ أسهل لقراءة الجزء والدفعات الديناميكية (على سبيل المثال، عن طريق إنتاج عينة مجمعة في كل مرة).
 
-For `iterable-style datasets <Iterable-style datasets_>`_, data loading order
-is entirely controlled by the user-defined iterable. This allows easier
-implementations of chunk-reading and dynamic batch size (e.g., by yielding a
-batched sample at each time).
+يتعلق بقية هذا القسم بحالة مجموعات البيانات على طراز الخرائط. تستخدم فئات :class:`torch.utils.data.Sampler` لتحديد تسلسل المؤشرات/المفاتيح المستخدمة في تحميل البيانات. تمثل كائنات قابلة للتنفيذ عبر المؤشرات إلى مجموعات البيانات. على سبيل المثال، في الحالة الشائعة مع الانحدار التدريجي العشوائي (SGD)، يمكن لـ :class:`~torch.utils.data.Sampler` أن يقوم بترتيب عشوائي لقائمة من المؤشرات وإنتاج كل منها في وقت واحد، أو إنتاج عدد صغير منها لتنفيذ SGD على دفعات صغيرة.
 
-The rest of this section concerns the case with
-`map-style datasets <Map-style datasets_>`_. :class:`torch.utils.data.Sampler`
-classes are used to specify the sequence of indices/keys used in data loading.
-They represent iterable objects over the indices to datasets.  E.g., in the
-common case with stochastic gradient decent (SGD), a
-:class:`~torch.utils.data.Sampler` could randomly permute a list of indices
-and yield each one at a time, or yield a small number of them for mini-batch
-SGD.
+سيتم بناء عينة تسلسلية أو مختلطة تلقائيًا بناءً على وسيط :attr:`shuffle` إلى :class:`~torch.utils.data.DataLoader`. بدلاً من ذلك، يمكن للمستخدمين استخدام وسيط :attr:`sampler` لتحديد كائن :class:`~torch.utils.data.Sampler` مخصص يقوم في كل مرة بإنتاج مؤشر/مفتاح الاسترجاع التالي.
 
-A sequential or shuffled sampler will be automatically constructed based on the :attr:`shuffle` argument to a :class:`~torch.utils.data.DataLoader`.
-Alternatively, users may use the :attr:`sampler` argument to specify a
-custom :class:`~torch.utils.data.Sampler` object that at each time yields
-the next index/key to fetch.
-
-A custom :class:`~torch.utils.data.Sampler` that yields a list of batch
-indices at a time can be passed as the :attr:`batch_sampler` argument.
-Automatic batching can also be enabled via :attr:`batch_size` and
-:attr:`drop_last` arguments. See
-`the next section <Loading Batched and Non-Batched Data_>`_ for more details
-on this.
+يمكن تمرير :class:`~torch.utils.data.Sampler` مخصص ينتج قائمة بمؤشرات الدفعات كوسيط :attr:`batch_sampler`. يمكن أيضًا تمكين التجميع التلقائي عبر وسيطي :attr:`batch_size` و :attr:`drop_last`. راجع "القسم التالي" <تحميل البيانات المجمعة وغير المجمعة> لمزيد من التفاصيل حول هذا الموضوع.
 
 .. note::
-  Neither :attr:`sampler` nor :attr:`batch_sampler` is compatible with
-  iterable-style datasets, since such datasets have no notion of a key or an
-  index.
+  لا يتوافق أي من :attr:`sampler` أو :attr:`batch_sampler` مع مجموعات البيانات القابلة للتنفيذ، حيث لا يوجد لدى هذه المجموعات أي مفهوم للمفتاح أو المؤشر.
 
-Loading Batched and Non-Batched Data
-------------------------------------
+تحميل البيانات المجمعة وغير المجمعة
+-------------------------
 
-:class:`~torch.utils.data.DataLoader` supports automatically collating
-individual fetched data samples into batches via arguments
-:attr:`batch_size`, :attr:`drop_last`, :attr:`batch_sampler`, and
-:attr:`collate_fn` (which has a default function).
+يدعم :class:`~torch.utils.data.DataLoader` التجميع التلقائي لعينات البيانات الفردية المستردة إلى دفعات عبر وسائط :attr:`batch_size` و :attr:`drop_last` و :attr:`batch_sampler` و :attr:`collate_fn` (والذي له دالة افتراضية).
 
+التجميع التلقائي (افتراضي)
+^^^^^^^^^^^^^^^^^^^^^
 
-Automatic batching (default)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+هذه هي الحالة الأكثر شيوعًا، وتتوافق مع استرداد دفعة مصغرة من البيانات وتجميعها في عينات مجمعة، أي تحتوي على مصفوفات ذات بُعد واحد يكون البعد الدفعي (عادةً الأول).
 
-This is the most common case, and corresponds to fetching a minibatch of
-data and collating them into batched samples, i.e., containing Tensors with
-one dimension being the batch dimension (usually the first).
-
-When :attr:`batch_size` (default ``1``) is not ``None``, the data loader yields
-batched samples instead of individual samples. :attr:`batch_size` and
-:attr:`drop_last` arguments are used to specify how the data loader obtains
-batches of dataset keys. For map-style datasets, users can alternatively
-specify :attr:`batch_sampler`, which yields a list of keys at a time.
+عندما لا يكون :attr:`batch_size` (افتراضيًا ``1``) ``None``، فإن محمل البيانات ينتج عينات مجمعة بدلاً من العينات الفردية. تُستخدم وسائط :attr:`batch_size` و :attr:`drop_last` لتحديد كيفية حصول محمل البيانات على دفعات من مفاتيح مجموعة البيانات. بالنسبة لمجموعات البيانات على طراز الخرائط، يمكن للمستخدمين بدلاً من ذلك تحديد :attr:`batch_sampler`، والذي ينتج قائمة بالمفاتيح في كل مرة.
 
 .. note::
-  The :attr:`batch_size` and :attr:`drop_last` arguments essentially are used
-  to construct a :attr:`batch_sampler` from :attr:`sampler`. For map-style
-  datasets, the :attr:`sampler` is either provided by user or constructed
-  based on the :attr:`shuffle` argument. For iterable-style datasets, the
-  :attr:`sampler` is a dummy infinite one. See
-  `this section <Data Loading Order and Sampler_>`_ on more details on
-  samplers.
+  يتم استخدام وسيطي :attr:`batch_size` و :attr:`drop_last` بشكل أساسي لبناء :attr:`batch_sampler` من :attr:`sampler`. بالنسبة لمجموعات البيانات على طراز الخرائط، يتم توفير :attr:`sampler` إما من قبل المستخدم أو يتم بناؤه بناءً على وسيط :attr:`shuffle`. بالنسبة لمجموعات البيانات القابلة للتنفيذ، فإن :attr:`sampler` هو عينة وهمية لا نهائية. راجع "هذا القسم" <ترتيب تحميل البيانات والعينة> لمزيد من التفاصيل حول العينات.
 
 .. note::
-  When fetching from
-  `iterable-style datasets <Iterable-style datasets_>`_ with
-  `multi-processing <Multi-process data loading_>`_, the :attr:`drop_last`
-  argument drops the last non-full batch of each worker's dataset replica.
+  عند الاسترداد من مجموعات البيانات على الطراز القابل للتنفيذ باستخدام "تحميل البيانات متعددة العمليات" <تحميل البيانات متعددة العمليات>، فإن وسيط :attr:`drop_last` يسقط الدفعة الأخيرة غير الكاملة لكل نسخة من مجموعة بيانات العامل.
 
-After fetching a list of samples using the indices from sampler, the function
-passed as the :attr:`collate_fn` argument is used to collate lists of samples
-into batches.
+بعد استرداد قائمة العينات باستخدام المؤشرات من العينة، يتم استخدام الدالة التي تم تمريرها كوسيط :attr:`collate_fn` لتجميع قوائم العينات في دفعات.
 
-In this case, loading from a map-style dataset is roughly equivalent with::
+في هذه الحالة، يكون تحميل البيانات من مجموعة بيانات على طراز الخرائط مكافئًا تقريبًا لما يلي::
 
     for indices in batch_sampler:
         yield collate_fn([dataset[i] for i in indices])
 
-and loading from an iterable-style dataset is roughly equivalent with::
+وتحميل البيانات من مجموعة بيانات على الطراز القابل للتنفيذ مكافئ تقريبًا لما يلي::
 
     dataset_iter = iter(dataset)
     for indices in batch_sampler:
         yield collate_fn([next(dataset_iter) for _ in indices])
 
-A custom :attr:`collate_fn` can be used to customize collation, e.g., padding
-sequential data to max length of a batch. See
-`this section <dataloader-collate_fn_>`_ on more about :attr:`collate_fn`.
+يمكن استخدام :attr:`collate_fn` مخصص لتخصيص التجميع، على سبيل المثال، وسادة البيانات التسلسلية إلى طول الدفعة الأقصى. راجع "هذا القسم" <dataloader-collate_fn_> لمزيد من المعلومات حول :attr:`collate_fn`.
 
-Disable automatic batching
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+تعطيل التجميع التلقائي
+^^^^^^^^^^^^^^^
 
-In certain cases, users may want to handle batching manually in dataset code,
-or simply load individual samples. For example, it could be cheaper to directly
-load batched data (e.g., bulk reads from a database or reading continuous
-chunks of memory), or the batch size is data dependent, or the program is
-designed to work on individual samples.  Under these scenarios, it's likely
-better to not use automatic batching (where :attr:`collate_fn` is used to
-collate the samples), but let the data loader directly return each member of
-the :attr:`dataset` object.
+في حالات معينة، قد يرغب المستخدمون في التعامل مع التجميع يدويًا في كود مجموعة البيانات، أو ببساطة تحميل عينات فردية. على سبيل المثال، قد يكون من الأرخص تحميل بيانات مجمعة مباشرة (مثل القراءات المجمعة من قاعدة بيانات أو قراءة قطع متجاورة من الذاكرة)، أو يعتمد حجم الدفعة على البيانات، أو تم تصميم البرنامج للعمل على عينات فردية. في ظل هذه السيناريوهات، من الأفضل عدم استخدام التجميع التلقائي (حيث يتم استخدام :attr:`collate_fn` لتجميع العينات)، ولكن السماح لمحمل البيانات بإرجاع كل عضو في كائن :attr:`dataset` مباشرة.
 
-When both :attr:`batch_size` and :attr:`batch_sampler` are ``None`` (default
-value for :attr:`batch_sampler` is already ``None``), automatic batching is
-disabled. Each sample obtained from the :attr:`dataset` is processed with the
-function passed as the :attr:`collate_fn` argument.
+عندما يكون كل من :attr:`batch_size` و :attr:`batch_sampler` ``None`` (قيمة افتراضية لـ :attr:`batch_sampler` هي بالفعل ``None``)، يتم تعطيل التجميع التلقائي. تتم معالجة كل عينة يتم الحصول عليها من :attr:`dataset` باستخدام الدالة التي تم تمريرها كوسيط :attr:`collate_fn`.
 
-**When automatic batching is disabled**, the default :attr:`collate_fn` simply
-converts NumPy arrays into PyTorch Tensors, and keeps everything else untouched.
+**عندما يتم تعطيل التجميع التلقائي**، فإن :attr:`collate_fn` الافتراضي يحول ببساطة صفيفات NumPy إلى مصفوفات PyTorch، ويترك كل شيء آخر دون تغيير.
 
-In this case, loading from a map-style dataset is roughly equivalent with::
+في هذه الحالة، يكون تحميل البيانات من مجموعة بيانات على طراز الخرائط مكافئًا تقريبًا لما يلي::
 
     for index in sampler:
         yield collate_fn(dataset[index])
 
-and loading from an iterable-style dataset is roughly equivalent with::
+وتحميل البيانات من مجموعة بيانات على الطراز القابل للتنفيذ مكافئ تقريبًا لما يلي::
 
     for data in iter(dataset):
         yield collate_fn(data)
 
-See `this section <dataloader-collate_fn_>`_ on more about :attr:`collate_fn`.
+راجع "هذا القسم" <dataloader-collate_fn_> لمزيد من المعلومات حول :attr:`collate_fn`.
 
 .. _dataloader-collate_fn:
 
-Working with :attr:`collate_fn`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The use of :attr:`collate_fn` is slightly different when automatic batching is
-enabled or disabled.
-
-**When automatic batching is disabled**, :attr:`collate_fn` is called with
-each individual data sample, and the output is yielded from the data loader
-iterator. In this case, the default :attr:`collate_fn` simply converts NumPy
-arrays in PyTorch tensors.
-
-**When automatic batching is enabled**, :attr:`collate_fn` is called with a list
-of data samples at each time. It is expected to collate the input samples into
-a batch for yielding from the data loader iterator. The rest of this section
-describes the behavior of the default :attr:`collate_fn`
-(:func:`~torch.utils.data.default_collate`).
-
-For instance, if each data sample consists of a 3-channel image and an integral
-class label, i.e., each element of the dataset returns a tuple
-``(image, class_index)``, the default :attr:`collate_fn` collates a list of
-such tuples into a single tuple of a batched image tensor and a batched class
-label Tensor. In particular, the default :attr:`collate_fn` has the following
-properties:
-
-* It always prepends a new dimension as the batch dimension.
-
-* It automatically converts NumPy arrays and Python numerical values into
-  PyTorch Tensors.
-
-* It preserves the data structure, e.g., if each sample is a dictionary, it
-  outputs a dictionary with the same set of keys but batched Tensors as values
-  (or lists if the values can not be converted into Tensors). Same
-  for ``list`` s, ``tuple`` s, ``namedtuple`` s, etc.
-
-Users may use customized :attr:`collate_fn` to achieve custom batching, e.g.,
-collating along a dimension other than the first, padding sequences of
-various lengths, or adding support for custom data types.
-
-If you run into a situation where the outputs of :class:`~torch.utils.data.DataLoader`
-have dimensions or type that is different from your expectation, you may
-want to check your :attr:`collate_fn`.
-
-Single- and Multi-process Data Loading
---------------------------------------
-
-A :class:`~torch.utils.data.DataLoader` uses single-process data loading by
-default.
-
-Within a Python process, the
-`Global Interpreter Lock (GIL) <https://wiki.python.org/moin/GlobalInterpreterLock>`_
-prevents true fully parallelizing Python code across threads. To avoid blocking
-computation code with data loading, PyTorch provides an easy switch to perform
-multi-process data loading by simply setting the argument :attr:`num_workers`
-to a positive integer.
-
-Single-process data loading (default)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In this mode, data fetching is done in the same process a
-:class:`~torch.utils.data.DataLoader` is initialized.  Therefore, data loading
-may block computing.  However, this mode may be preferred when resource(s) used
-for sharing data among processes (e.g., shared memory, file descriptors) is
-limited, or when the entire dataset is small and can be loaded entirely in
-memory.  Additionally, single-process loading often shows more readable error
-traces and thus is useful for debugging.
-
-
-Multi-process data loading
+العمل مع :attr:`collate_fn`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Setting the argument :attr:`num_workers` as a positive integer will
-turn on multi-process data loading with the specified number of loader worker
-processes.
+يختلف استخدام :attr:`collate_fn` قليلاً عندما يكون التجميع التلقائي ممكّنًا أو معطلاً.
 
-.. warning::
-   After several iterations, the loader worker processes will consume
-   the same amount of CPU memory as the parent process for all Python
-   objects in the parent process which are accessed from the worker
-   processes.  This can be problematic if the Dataset contains a lot of
-   data (e.g., you are loading a very large list of filenames at Dataset
-   construction time) and/or you are using a lot of workers (overall
-   memory usage is ``number of workers * size of parent process``).  The
-   simplest workaround is to replace Python objects with non-refcounted
-   representations such as Pandas, Numpy or PyArrow objects.  Check out
-   `issue #13246
+**عندما يتم تعطيل التجميع التلقائي**، يتم استدعاء :attr:`collate_fn` مع كل عينة بيانات فردية، ويتم إنتاج الإخراج من مؤشر ترابط محمل البيانات. في هذه الحالة، يقوم :attr:`collate_fn` الافتراضي بتحويل صفيفات NumPy إلى مصفوفات PyTorch.
+
+**عندما يتم تمكين التجميع التلقائي**، يتم استدعاء :attr:`collate_fn` بقائمة من عينات البيانات في كل مرة. من المتوقع أن يقوم بتجميع عينات الإدخال في دفعة لإنتاجها من مؤشر ترابط محمل البيانات. يصف باقي هذا القسم سلوك :attr:`collate_fn` الافتراضي (:func:`~torch.utils.data.default_collate`).
+
+على سبيل المثال، إذا كانت كل عينة بيانات تتكون من صورة ثلاثية القنوات وتصنيف رقمي، أي أن كل عنصر في مجموعة البيانات يعيد زوجًا ``(image، class_index)``، فإن :attr:`collate_fn` الافتراضي يقوم بتجميع قائمة من هذه الأزواج في زوج واحد من صورة مجمعة ومصنف مجمع. على وجه الخصوص، فإن لـ :attr:`collate_fn` الافتراضي الخصائص التالية:
+
+* دائمًا ما يضيف بُعدًا جديدًا كبعد دفعي.
+
+* يقوم تلقائيًا بتحويل صفيفات NumPy والقيم الرقمية في Python إلى مصفوفات PyTorch.
+
+* يحافظ على بنية البيانات، على سبيل المثال، إذا كانت كل عينة عبارة عن قاموس، فإنه ينتج قاموسًا بنفس مجموعة المفاتيح ولكن مع مصفوفات مجمعة كقيم (أو قوائم إذا لم يكن من الممكن تحويل القيم إلى مصفوفات). نفس الشيء بالنسبة للقوائم، والمصفوفات، والأزواج المسماة، وما إلى ذلك.
+
+يمكن للمستخدمين استخدام :attr:`collate_fn` مخصص لتحقيق التجميع المخصص، على سبيل المثال، التجميع على طول بُعد آخر غير الأول، أو وسادة التسلسلات ذات الأطوال المختلفة، أو إضافة دعم لأنواع البيانات المخصصة.
+
+إذا صادفت حالة يكون فيها إخراج :class:`~torch.utils.data.DataLoader` بأبعاد أو نوع مختلف عما تتوقعه، فقد تحتاج إلى التحقق من :attr:`collate_fn`.
+
+تحميل البيانات أحادية ومتعددة العمليات
+-------------------------
+
+يستخدم :class:`~torch.utils.data.DataLoader` تحميل البيانات أحادية العملية بشكل افتراضي.
+
+داخل عملية Python، يمنع 'Global Interpreter Lock (GIL) <https://wiki.python.org/moin/GlobalInterpreterLock>`_
+من تحقيق الموازاة الكاملة الحقيقية لرمز Python عبر الخيوط. لتجنب حظر
+رمز الحساب مع تحميل البيانات، توفر PyTorch مفتاحًا سهلاً لأداء
+تحميل البيانات متعدد العمليات ببساطة عن طريق تعيين وسيط :attr:`num_workers`
+إلى عدد صحيح موجب.
+
+تحميل البيانات أحادية العملية (افتراضي)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+في هذا الوضع، يتم جلب البيانات في نفس العملية التي تم فيها تهيئة
+:class:`~torch.utils.data.DataLoader`. لذلك، قد يؤدي تحميل البيانات إلى حظر الحساب.
+ومع ذلك، قد يكون هذا الوضع مفضلًا عندما تكون الموارد المستخدمة
+لمشاركة البيانات بين العمليات (مثل الذاكرة المشتركة، أو مؤشرات الملفات) محدودة،
+أو عندما تكون مجموعة البيانات بأكملها صغيرة ويمكن تحميلها بالكامل في
+الذاكرة. بالإضافة إلى ذلك، غالبًا ما يُظهر تحميل البيانات أحادية العملية
+آثار الأخطاء الأكثر قابلية للقراءة، وبالتالي فهو مفيد للتصحيح.
+
+تحميل البيانات متعدد العمليات
+^^^^^^^^^^^^^^^^^^^
+
+يؤدي تعيين وسيط :attr:`num_workers` كعدد صحيح موجب إلى
+تشغيل تحميل البيانات متعدد العمليات مع العدد المحدد من عمليات عامل التحميل.
+
+.. تحذير ::
+   بعد عدة تكرارات، ستستهلك عمليات عامل التحميل نفس كمية ذاكرة وحدة المعالجة المركزية مثل العملية الأصلية
+   لجميع كائنات Python في العملية الأصلية التي يتم الوصول إليها من عمليات العامل.
+   يمكن أن يمثل ذلك مشكلة إذا كانت مجموعة البيانات تحتوي على الكثير من
+   البيانات (على سبيل المثال، تقوم بتحميل قائمة كبيرة جدًا من أسماء الملفات في وقت إنشاء مجموعة البيانات)
+   و/أو تستخدم الكثير من العمال (إجمالي
+   استخدام الذاكرة هو "عدد العمال * حجم العملية الأصلية"). أبسط
+   حل بديل هو استبدال كائنات Python بتمثيلات غير مرجعية مثل Pandas أو Numpy أو PyArrow
+   الكائنات. تحقق من
+   'issue #13246
    <https://github.com/pytorch/pytorch/issues/13246#issuecomment-905703662>`_
-   for more details on why this occurs and example code for how to
-   workaround these problems.
+   لمزيد من التفاصيل حول سبب حدوث ذلك ورموز المثال لكيفية
+   حل هذه المشكلات.
 
-In this mode, each time an iterator of a :class:`~torch.utils.data.DataLoader`
-is created (e.g., when you call ``enumerate(dataloader)``), :attr:`num_workers`
-worker processes are created. At this point, the :attr:`dataset`,
-:attr:`collate_fn`, and :attr:`worker_init_fn` are passed to each
-worker, where they are used to initialize, and fetch data. This means that
-dataset access together with its  internal IO, transforms
-(including :attr:`collate_fn`) runs in the worker process.
+في هذا الوضع، في كل مرة يتم فيها إنشاء مؤشر لـ :class:`~torch.utils.data.DataLoader`
+(على سبيل المثال، عند استدعاء ``enumerate(dataloader)``)، يتم إنشاء :attr:`num_workers`
+عمليات عامل. في هذه المرحلة، يتم تمرير :attr:`dataset`،
+:attr:`collate_fn`، و:attr:`worker_init_fn` إلى كل
+عامل، حيث يتم استخدامها لتهيئة وجلب البيانات. وهذا يعني أن الوصول إلى مجموعة البيانات مع
+إدخال/إخراج داخلي، والتحويلات
+(بما في ذلك :attr:`collate_fn`) يتم تشغيله في عملية العامل.
 
-:func:`torch.utils.data.get_worker_info()` returns various useful information
-in a worker process (including the worker id, dataset replica, initial seed,
-etc.), and returns ``None`` in main process. Users may use this function in
-dataset code and/or :attr:`worker_init_fn` to individually configure each
-dataset replica, and to determine whether the code is running in a worker
-process. For example, this can be particularly helpful in sharding the dataset.
+:func:`torch.utils.data.get_worker_info()` يعيد معلومات مفيدة مختلفة
+في عملية عامل (بما في ذلك معرف العامل، نسخة مجموعة البيانات، البذرة الأولية،
+إلخ.)، ويعيد ``None`` في العملية الرئيسية. قد يستخدم المستخدمون هذه الدالة في
+رمز مجموعة البيانات و/أو :attr:`worker_init_fn` لتكوين كل
+نسخة مجموعة بيانات بشكل فردي، ولتحديد ما إذا كان الرمز يعمل في عملية عامل. على سبيل المثال، قد يكون هذا
+مفيدًا بشكل خاص في تجزئة مجموعة البيانات.
 
-For map-style datasets, the main process generates the indices using
-:attr:`sampler` and sends them to the workers. So any shuffle randomization is
-done in the main process which guides loading by assigning indices to load.
+بالنسبة لمجموعات البيانات على الطراز الخرائطي، تقوم العملية الرئيسية بتوليد المؤشرات باستخدام
+:attr:`sampler` وإرسالها إلى العمال. لذا فإن أي تعشيق يتم في
+العملية الرئيسية التي توجه التحميل عن طريق تعيين المؤشرات لتحميلها.
 
-For iterable-style datasets, since each worker process gets a replica of the
-:attr:`dataset` object, naive multi-process loading will often result in
-duplicated data. Using :func:`torch.utils.data.get_worker_info()` and/or
-:attr:`worker_init_fn`, users may configure each replica independently. (See
-:class:`~torch.utils.data.IterableDataset` documentations for how to achieve
-this. ) For similar reasons, in multi-process loading, the :attr:`drop_last`
-argument drops the last non-full batch of each worker's iterable-style dataset
-replica.
+بالنسبة لمجموعات البيانات على الطراز القابل للتحديد، نظرًا لأن كل عملية عامل تحصل على نسخة من
+كائن :attr:`dataset`، فإن التحميل متعدد العمليات البسيط غالبًا ما يؤدي إلى
+بيانات مكررة. باستخدام :func:`torch.utils.data.get_worker_info()` و/أو
+:attr:`worker_init_fn`، يمكن للمستخدمين تكوين كل نسخة بشكل مستقل. (راجع
+وثائق :class:`~torch.utils.data.IterableDataset` لمعرفة كيفية تحقيق ذلك. ) لنفس الأسباب، في
+التحميل متعدد العمليات، يسقط وسيط :attr:`drop_last`
+الحجة آخر دفعة غير مكتملة من مجموعة البيانات القابلة للتحديد لكل عامل.
 
-Workers are shut down once the end of the iteration is reached, or when the
-iterator becomes garbage collected.
+يتم إيقاف تشغيل العمال بمجرد الوصول إلى نهاية التكرار، أو عندما
+يتم جمع القمامة في المؤشر.
 
-.. warning::
-  It is generally not recommended to return CUDA tensors in multi-process
-  loading because of many subtleties in using CUDA and sharing CUDA tensors in
-  multiprocessing (see :ref:`multiprocessing-cuda-note`). Instead, we recommend
-  using `automatic memory pinning <Memory Pinning_>`_ (i.e., setting
-  :attr:`pin_memory=True`), which enables fast data transfer to CUDA-enabled
-  GPUs.
+.. تحذير ::
+  بشكل عام، لا يوصى بإرجاع Tensor CUDA في التحميل متعدد العمليات
+  بسبب العديد من الدقائق في استخدام CUDA ومشاركة Tensor CUDA في
+  المعالجة المتعددة (راجع: ref: multiprocessing-cuda-note`). بدلاً من ذلك، نوصي
+  باستخدام "تثبيت الذاكرة التلقائي <Memory Pinning_>`_ (أي تعيين
+  :attr:`pin_memory=True`)، والذي يمكّن النقل السريع للبيانات إلى GPUs الممكّنة من CUDA.
 
-Platform-specific behaviors
-"""""""""""""""""""""""""""
+السلوكيات الخاصة بالمنصة
+"""""""""""""""""
 
-Since workers rely on Python :py:mod:`multiprocessing`, worker launch behavior is
-different on Windows compared to Unix.
+نظرًا لاعتماد العمال على Python :py:mod:`multiprocessing`، يختلف سلوك بدء العامل على Windows عن Unix.
 
-* On Unix, :func:`fork()` is the default :py:mod:`multiprocessing` start method.
-  Using :func:`fork`, child workers typically can access the :attr:`dataset` and
-  Python argument functions directly through the cloned address space.
+* على Unix، :func:`fork()` هي طريقة البدء الافتراضية لـ :py:mod:`multiprocessing`.
+  باستخدام :func:`fork`، يمكن لعمال الأطفال عادةً الوصول إلى :attr:`dataset` و
+  وظائف وسيط Python مباشرة من خلال مساحة العنوان المستنسخة.
 
-* On Windows or MacOS, :func:`spawn()` is the default :py:mod:`multiprocessing` start method.
-  Using :func:`spawn()`, another interpreter is launched which runs your main script,
-  followed by the internal worker function that receives the :attr:`dataset`,
-  :attr:`collate_fn` and other arguments through :py:mod:`pickle` serialization.
+* على Windows أو MacOS، :func:`spawn()` هي طريقة البدء الافتراضية لـ :py:mod:`multiprocessing`.
+  باستخدام :func:`spawn`، يتم إطلاق مفسر آخر والذي يقوم بتشغيل النص البرمجي الرئيسي،
+  تليها وظيفة العامل الداخلية التي تتلقى :attr:`dataset`،
+  :attr:`collate_fn` والحجج الأخرى من خلال :py:mod:`pickle` التسلسل.
 
-This separate serialization means that you should take two steps to ensure you
-are compatible with Windows while using multi-process data loading:
+يعني هذا التسلسل المنفصل أنه يجب عليك اتخاذ خطوتين لضمان التوافق مع Windows أثناء استخدام
+تحميل البيانات متعدد العمليات:
 
-- Wrap most of you main script's code within ``if __name__ == '__main__':`` block,
-  to make sure it doesn't run again (most likely generating error) when each worker
-  process is launched. You can place your dataset and :class:`~torch.utils.data.DataLoader`
-  instance creation logic here, as it doesn't need to be re-executed in workers.
+- قم بتغليف معظم كود النص البرمجي الرئيسي الخاص بك داخل كتلة "if __name__ == '__main__':"،
+  للتأكد من أنه لا يتم تشغيله مرة أخرى (الأكثر احتمالًا لإنشاء خطأ) عندما يتم إطلاق كل عملية عامل. يمكنك وضع منطق إنشاء مجموعة البيانات و
+  :class:`~torch.utils.data.DataLoader`
+  هنا، حيث لا تحتاج إلى إعادة التنفيذ في العمال.
 
-- Make sure that any custom :attr:`collate_fn`, :attr:`worker_init_fn`
-  or :attr:`dataset` code is declared as top level definitions, outside of the
-  ``__main__`` check. This ensures that they are available in worker processes.
-  (this is needed since functions are pickled as references only, not ``bytecode``.)
+- تأكد من إعلان أي مخصص :attr:`collate_fn`، :attr:`worker_init_fn`
+  أو رمز :attr:`dataset` كتعريفات على مستوى عالٍ، خارج
+  فحص "main". يضمن هذا توفرها في عمليات العامل.
+  (هذا مطلوب لأن الوظائف يتم تسلسلها كمراجع فقط، وليس "bytecode".)
 
 .. _data-loading-randomness:
 
-Randomness in multi-process data loading
-""""""""""""""""""""""""""""""""""""""""""
+العشوائية في تحميل البيانات متعدد العمليات
+""""""""""""""""""""""""""
 
-By default, each worker will have its PyTorch seed set to ``base_seed + worker_id``,
-where ``base_seed`` is a long generated by main process using its RNG (thereby,
-consuming a RNG state mandatorily) or a specified :attr:`generator`. However, seeds for other
-libraries may be duplicated upon initializing workers, causing each worker to return
-identical random numbers. (See :ref:`this section <dataloader-workers-random-seed>` in FAQ.).
+بشكل افتراضي، سيكون لكل عامل بذرة PyTorch الخاصة به والتي تم تعيينها إلى "base_seed + worker_id"،
+حيث "base_seed" هي عدد طويل تم إنشاؤه بواسطة العملية الرئيسية باستخدام RNG (وبالتالي،
+استهلاك حالة RNG بشكل إلزامي) أو :attr:`generator` محدد. ومع ذلك، قد يتم تكرار البذور للمكتبات الأخرى عند تهيئة العمال،
+مما يتسبب في إرجاع كل عامل لأرقام عشوائية متطابقة. (راجع: ref: هذا القسم <dataloader-workers-random-seed>` في الأسئلة الشائعة.).
 
-In :attr:`worker_init_fn`, you may access the PyTorch seed set for each worker
-with either :func:`torch.utils.data.get_worker_info().seed <torch.utils.data.get_worker_info>`
-or :func:`torch.initial_seed()`, and use it to seed other libraries before data
-loading.
+في :attr:`worker_init_fn`، يمكنك الوصول إلى بذرة PyTorch المحددة لكل عامل
+مع إما :func:`torch.utils.data.get_worker_info().seed <torch.utils.data.get_worker_info>`
+أو :func:`torch.initial_seed()`، واستخدامه لزرع مكتبات أخرى قبل تحميل البيانات.
 
-Memory Pinning
---------------
+تثبيت الذاكرة
+---------
 
-Host to GPU copies are much faster when they originate from pinned (page-locked)
-memory. See :ref:`cuda-memory-pinning` for more details on when and how to use
-pinned memory generally.
+تكون النسخ من المضيف إلى GPU أسرع بكثير عندما تنشأ من ذاكرة مثبتة (صفحة مؤمنة). راجع
+:ref:`cuda-memory-pinning` لمزيد من التفاصيل حول متى وكيفية استخدام
+الذاكرة المثبتة بشكل عام.
 
-For data loading, passing :attr:`pin_memory=True` to a
-:class:`~torch.utils.data.DataLoader` will automatically put the fetched data
-Tensors in pinned memory, and thus enables faster data transfer to CUDA-enabled
-GPUs.
+بالنسبة لتحميل البيانات، يؤدي تمرير :attr:`pin_memory=True` إلى
+:class:`~torch.utils.data.DataLoader` سيضع تلقائيًا بيانات Tensor المستردة في الذاكرة المثبتة،
+وبالتالي تمكين نقل البيانات بشكل أسرع إلى GPUs الممكّنة من CUDA.
 
-The default memory pinning logic only recognizes Tensors and maps and iterables
-containing Tensors.  By default, if the pinning logic sees a batch that is a
-custom type (which will occur if you have a :attr:`collate_fn` that returns a
-custom batch type), or if each element of your batch is a custom type, the
-pinning logic will not recognize them, and it will return that batch (or those
-elements) without pinning the memory.  To enable memory pinning for custom
-batch or data type(s), define a :meth:`pin_memory` method on your custom
-type(s).
+تعترف منطق تثبيت الذاكرة الافتراضي فقط بـ Tensors والخرائط والمحددات التي تحتوي على Tensors.  بشكل افتراضي، إذا رأت منطق التثبيت
+دفعة تكون نوعًا مخصصًا (والذي سيحدث إذا كان لديك :attr:`collate_fn` الذي يعيد نوع دفعة مخصص)، أو إذا كان كل
+عنصر في دفعتك هو نوع مخصص، فلن تعترف منطق التثبيت بها، وستعيد تلك الدفعة (أو تلك
+العناصر) دون تثبيت الذاكرة. لتمكين تثبيت الذاكرة لأنواع الدفعات أو البيانات المخصصة،
+قم بتعريف طريقة :meth:`pin_memory` على نوع (أنواع) المخصص (المخصصين).
 
-See the example below.
+انظر المثال أدناه.
 
-Example::
+مثال ::
 
     class SimpleCustomBatch:
-        def __init__(self, data):
+        def __init__(self، data):
             transposed_data = list(zip(*data))
-            self.inp = torch.stack(transposed_data[0], 0)
-            self.tgt = torch.stack(transposed_data[1], 0)
+            self.inp = torch.stack(transposed_data[0]، 0)
+            self.tgt = torch.stack(transposed_data[1]، 0)
 
-        # custom memory pinning method on custom type
+        # طريقة تثبيت الذاكرة المخصصة على النوع المخصص
         def pin_memory(self):
             self.inp = self.inp.pin_memory()
             self.tgt = self.tgt.pin_memory()
@@ -408,14 +808,14 @@ Example::
     def collate_wrapper(batch):
         return SimpleCustomBatch(batch)
 
-    inps = torch.arange(10 * 5, dtype=torch.float32).view(10, 5)
-    tgts = torch.arange(10 * 5, dtype=torch.float32).view(10, 5)
-    dataset = TensorDataset(inps, tgts)
+    inps = torch.arange(10 * 5، dtype=torch.float32).view(10، 5)
+    tgts = torch.arange(10 * 5، dtype=torch.float32).view(10، 5)
+    dataset = TensorDataset(inps، tgts)
 
-    loader = DataLoader(dataset, batch_size=2, collate_fn=collate_wrapper,
+    loader = DataLoader(dataset، batch_size=2، collate_fn=collate_wrapper،
                         pin_memory=True)
 
-    for batch_ndx, sample in enumerate(loader):
+    for batch_ndx، sample in enumerate(loader):
         print(sample.inp.is_pinned())
         print(sample.tgt.is_pinned())
 
@@ -442,8 +842,8 @@ Example::
 .. autoclass:: torch.utils.data.distributed.DistributedSampler
 
 
-.. These modules are documented as part of torch/data listing them here for
-.. now until we have a clearer fix
+.. يتم توثيق هذه الوحدات النمطية كجزء من قائمة بيانات torch / يتم إدراجها هنا الآن حتى
+.. لدينا إصلاح أوضح
 .. py:module:: torch.utils.data.datapipes
 .. py:module:: torch.utils.data.datapipes.dataframe
 .. py:module:: torch.utils.data.datapipes.iter
