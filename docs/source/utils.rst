@@ -1,5 +1,6 @@
 torch.utils
-===================================
+==============
+
 .. automodule:: torch.utils
 .. currentmodule:: torch.utils
 
@@ -13,8 +14,8 @@ torch.utils
     set_module
     swap_tensors
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. يجب توثيق هذه الوحدة. يتم إضافته هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.utils.backend_registration
 .. py:module:: torch.utils.benchmark.examples.blas_compare_setup
 .. py:module:: torch.utils.benchmark.examples.compare
@@ -50,7 +51,7 @@ torch.utils
 .. py:module:: torch.utils.data.datapipes.gen_pyi
 .. py:module:: torch.utils.data.datapipes.iter.callable
 .. py:module:: torch.utils.data.datapipes.iter.combinatorics
-.. py:module:: torch.utils.data.datapipes.iter.combining
+.. py:module:: torchMultiplier.data.datapipes.iter.combining
 .. py:module:: torch.utils.data.datapipes.iter.filelister
 .. py:module:: torch.utils.data.datapipes.iter.fileopener
 .. py:module:: torch.utils.data.datapipes.iter.grouping
@@ -88,3 +89,5 @@ torch.utils
 .. py:module:: torch.utils.tensorboard.writer
 .. py:module:: torch.utils.throughput_benchmark
 .. py:module:: torch.utils.weak
+
+هذه الوحدة تحتاج إلى توثيق. يتم إضافتها هنا مؤقتًا لأغراض المتابعة.
