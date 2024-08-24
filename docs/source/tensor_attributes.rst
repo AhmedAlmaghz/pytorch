@@ -1,11 +1,11 @@
-.. currentmodule:: torch
+.. currentmodule:: الشعلة
 
 .. _tensor-attributes-doc:
 
-Tensor Attributes
+خصائص Tensor
 =================
 
-Each ``torch.Tensor`` has a :class:`torch.dtype`, :class:`torch.device`, and :class:`torch.layout`.
+يمتلك كل ``torch.Tensor`` :class:`نوع بيانات <torch.dtype>`، و:class:`جهاز <torch.device>`، و:class:`تخطيط <torch.layout>`.
 
 .. _dtype-doc:
 
@@ -14,59 +14,44 @@ torch.dtype
 
 .. class:: dtype
 
-A :class:`torch.dtype` is an object that represents the data type of a
-:class:`torch.Tensor`. PyTorch has twelve different data types:
+:class:`torch.dtype` هو كائن يمثل نوع البيانات لـ :class:`torch.Tensor`. يوفر PyTorch اثني عشر نوعًا مختلفًا من البيانات:
 
 ========================== ===========================================   ===========================
-Data type                  dtype                                         Legacy Constructors
+نوع البيانات                  dtype                                         البناة التراثية
 ========================== ===========================================   ===========================
-32-bit floating point      ``torch.float32`` or ``torch.float``          ``torch.*.FloatTensor``
-64-bit floating point      ``torch.float64`` or ``torch.double``         ``torch.*.DoubleTensor``
-64-bit complex             ``torch.complex64`` or ``torch.cfloat``
-128-bit complex            ``torch.complex128`` or ``torch.cdouble``
-16-bit floating point [1]_ ``torch.float16`` or ``torch.half``           ``torch.*.HalfTensor``
-16-bit floating point [2]_ ``torch.bfloat16``                            ``torch.*.BFloat16Tensor``
-8-bit integer (unsigned)   ``torch.uint8``                               ``torch.*.ByteTensor``
-8-bit integer (signed)     ``torch.int8``                                ``torch.*.CharTensor``
-16-bit integer (signed)    ``torch.int16`` or ``torch.short``            ``torch.*.ShortTensor``
-32-bit integer (signed)    ``torch.int32`` or ``torch.int``              ``torch.*.IntTensor``
-64-bit integer (signed)    ``torch.int64`` or ``torch.long``             ``torch.*.LongTensor``
-Boolean                    ``torch.bool``                                ``torch.*.BoolTensor``
+نقطة عائمة 32-بت      ``torch.float32`` أو ``torch.float``          ``torch.*.FloatTensor``
+نقطة عائمة 64-بت      ``torch.float64`` أو ``torch.double``         ``torch.*.DoubleTensor``
+معقد 64-بت             ``torch.complex64`` أو ``torch.cfloat``
+معقد 128-بت            ``torch.complex128`` أو ``torch.cdouble``
+نقطة عائمة 16-بت [1]_ ``torch.float16`` أو ``torch.half``           ``torch.*.HalfTensor``
+نقطة عائمة 16-بت [2]_ ``torch.bfloat16``                            ``torch.*.BFloat16Tensor``
+عدد صحيح 8-بت (بدون إشارة)   ``torch.uint8``                               ``torch.*.ByteTensor``
+عدد صحيح 8-بت (موقّع)     ``torch.int8``                                ``torch.*.CharTensor``
+عدد صحيح 16-بت (موقّع)    ``torch.int16`` أو ``torch.short``            ``torch.*.ShortTensor``
+عدد صحيح 32-بت (موقّع)    ``torch.int32`` أو ``torch.int``              ``torch.*.IntTensor``
+عدد صحيح 64-بت (موقّع)    ``torch.int64`` أو ``torch.long``             ``torch.*.LongTensor``
+منطقي                    ``torch.bool``                                ``torch.*.BoolTensor``
 ========================== ===========================================   ===========================
 
-.. [1] Sometimes referred to as binary16: uses 1 sign, 5 exponent, and 10
-  significand bits. Useful when precision is important.
+.. [1] يشار إليه أحيانًا باسم binary16: يستخدم 1 بت للإشارة، و5 للأس، و10 للمقام. مفيد عندما تكون الدقة مهمة.
 
-.. [2] Sometimes referred to as Brain Floating Point: use 1 sign, 8 exponent and 7
-  significand bits. Useful when range is important, since it has the same
-  number of exponent bits as ``float32``
+.. [2] يشار إليه أحيانًا باسم Brain Floating Point: يستخدم 1 بت للإشارة، و8 للأس، و7 للمقام. مفيد عندما يكون النطاق مهمًا، حيث أن له نفس عدد بتات الأس مثل ``float32``
 
-To find out if a :class:`torch.dtype` is a floating point data type, the property :attr:`is_floating_point`
-can be used, which returns ``True`` if the data type is a floating point data type.
+للتحقق مما إذا كان :class:`torch.dtype` هو نوع بيانات النقطة العائمة، يمكن استخدام الخاصية :attr:`is_floating_point`، والتي تعيد ``True`` إذا كان نوع البيانات هو نوع بيانات النقطة العائمة.
 
-To find out if a :class:`torch.dtype` is a complex data type, the property :attr:`is_complex`
-can be used, which returns ``True`` if the data type is a complex data type.
+للتحقق مما إذا كان :class:`torch.dtype` هو نوع بيانات معقد، يمكن استخدام الخاصية :attr:`is_complex`، والتي تعيد ``True`` إذا كان نوع البيانات هو نوع بيانات معقد.
 
 .. _type-promotion-doc:
 
-When the dtypes of inputs to an arithmetic operation (`add`, `sub`, `div`, `mul`) differ, we promote
-by finding the minimum dtype that satisfies the following rules:
+عندما تختلف أنواع بيانات المدخلات لعملية حسابية (`add`، `sub`، `div`، `mul`)، نقوم بالترقية عن طريق إيجاد أصغر نوع بيانات يفي بالقواعد التالية:
 
-* If the type of a scalar operand is of a higher category than tensor operands
-  (where complex > floating > integral > boolean), we promote to a type with sufficient size to hold
-  all scalar operands of that category.
-* If a zero-dimension tensor operand has a higher category than dimensioned operands,
-  we promote to a type with sufficient size and category to hold all zero-dim tensor operands of
-  that category.
-* If there are no higher-category zero-dim operands, we promote to a type with sufficient size
-  and category to hold all dimensioned operands.
+* إذا كان نوع بيانات كمية سلمية أعلى من نوع بيانات الكميات المتناسقة (حيث أن المعقد > العائم > الصحيح > المنطقي)، فإننا نرقي إلى نوع له حجم كافٍ لاحتواء جميع الكميات السلمية من تلك الفئة.
+* إذا كان لكمية سلمية صفرية الأبعاد نوع بيانات أعلى من الكميات المتناسقة ذات الأبعاد، فإننا نرقي إلى نوع له حجم وفئة كافيين لاحتواء جميع الكميات السلمية الصفرية الأبعاد من تلك الفئة.
+* إذا لم تكن هناك كميات سلمية صفرية الأبعاد ذات أولوية أعلى، فإننا نرقي إلى نوع له حجم وفئة كافيين لاحتواء جميع الكميات المتناسقة ذات الأبعاد.
 
-A floating point scalar operand has dtype `torch.get_default_dtype()` and an integral
-non-boolean scalar operand has dtype `torch.int64`. Unlike numpy, we do not inspect
-values when determining the minimum `dtypes` of an operand.  Quantized and complex types
-are not yet supported.
+تكون القيمة الافتراضية لنوع بيانات الكمية السلمية العائمة ``torch.get_default_dtype()`` وللكمية السلمية الصحيحة غير المنطقية ``torch.int64``. على عكس NumPy، فإننا لا نتفقد القيم عند تحديد أصغر أنواع بيانات الكميات السلمية. لا يتم دعم الأنواع الكمية المعقدة بعد.
 
-Promotion Examples::
+أمثلة الترقية::
 
     >>> float_tensor = torch.ones(1, dtype=torch.float)
     >>> double_tensor = torch.ones(1, dtype=torch.double)
@@ -77,13 +62,13 @@ Promotion Examples::
     >>> uint_tensor = torch.ones(1, dtype=torch.uint8)
     >>> double_tensor = torch.ones(1, dtype=torch.double)
     >>> bool_tensor = torch.ones(1, dtype=torch.bool)
-    # zero-dim tensors
+    # الكميات السلمية الصفرية الأبعاد
     >>> long_zerodim = torch.tensor(1, dtype=torch.long)
     >>> int_zerodim = torch.tensor(1, dtype=torch.int)
 
     >>> torch.add(5, 5).dtype
     torch.int64
-    # 5 is an int64, but does not have higher category than int_tensor so is not considered.
+    # 5 هي كمية سلمية من النوع int64، ولكنها لا تمتلك فئة أعلى من int_tensor لذا لا يتم اعتبارها.
     >>> (int_tensor + 5).dtype
     torch.int32
     >>> (int_tensor + long_zerodim).dtype
@@ -100,19 +85,19 @@ Promotion Examples::
     torch.complex128
     >>> (bool_tensor + int_tensor).dtype
     torch.int32
-    # Since long is a different kind than float, result dtype only needs to be large enough
-    # to hold the float.
+    # نظرًا لأن long من نوع مختلف عن float، فإن نوع نتيجة العملية لا يحتاج إلا أن يكون كبيرًا بما يكفي
+    # لاحتواء float.
     >>> torch.add(long_tensor, float_tensor).dtype
     torch.float32
 
-When the output tensor of an arithmetic operation is specified, we allow casting to its `dtype` except that:
-  * An integral output tensor cannot accept a floating point tensor.
-  * A boolean output tensor cannot accept a non-boolean tensor.
-  * A non-complex output tensor cannot accept a complex tensor
+عندما يتم تحديد الكمية المتناسقة الناتجة عن عملية حسابية، فإننا نسمح بالتحويل إلى نوع بياناتها باستثناء ما يلي:
+  * لا يمكن للكمية المتناسقة الناتجة ذات النوع الصحيح أن تقبل كمية متناسقة ذات نوع بيانات عائم.
+  * لا يمكن للكمية المتناسقة الناتجة ذات النوع المنطقي أن تقبل كمية متناسقة ذات نوع بيانات غير منطقي.
+  * لا يمكن للكمية المتناسقة الناتجة ذات النوع غير المعقد أن تقبل كمية متناسقة ذات نوع بيانات معقد.
 
-Casting Examples::
+أمثلة التحويل::
 
-    # allowed:
+    # مسموح:
     >>> float_tensor *= float_tensor
     >>> float_tensor *= int_tensor
     >>> float_tensor *= uint_tensor
@@ -122,7 +107,7 @@ Casting Examples::
     >>> int_tensor *= uint_tensor
     >>> uint_tensor *= int_tensor
 
-    # disallowed (RuntimeError: result type can't be cast to the desired output type):
+    # غير مسموح (RuntimeError: لا يمكن تحويل نوع النتيجة إلى نوع الإخراج المطلوب):
     >>> int_tensor *= float_tensor
     >>> bool_tensor *= int_tensor
     >>> bool_tensor *= uint_tensor
@@ -136,22 +121,19 @@ torch.device
 
 .. class:: device
 
-A :class:`torch.device` is an object representing the device on which a :class:`torch.Tensor` is
-or will be allocated.
+:class:`torch.device` هو كائن يمثل الجهاز الذي تم أو سيتم تخصيص :class:`torch.Tensor` عليه.
 
-The :class:`torch.device` contains a device type (most commonly "cpu" or
-"cuda", but also potentially :doc:`"mps" <mps>`, :doc:`"xpu" <xpu>`,
-`"xla" <https://github.com/pytorch/xla/>`_ or :doc:`"meta" <meta>`) and optional
-device ordinal for the device type. If the device ordinal is not present, this object will always represent
-the current device for the device type, even after :func:`torch.cuda.set_device()` is called; e.g.,
-a :class:`torch.Tensor` constructed with device ``'cuda'`` is equivalent to ``'cuda:X'`` where X is
-the result of :func:`torch.cuda.current_device()`.
+يحتوي :class:`torch.device` على نوع جهاز (غالبًا ما يكون "cpu" أو
+"cuda"، ولكن أيضًا قد يكون :doc:`"mps" <mps>`، أو :doc:`"xpu" <xpu>`،
+أو `"xla" <https://github.com/pytorch/xla/>`_ أو :doc:`"meta" <meta>`) ورقم جهاز اختياري لنوع الجهاز. إذا لم يكن رقم الجهاز موجودًا، فسيُمثل هذا الكائن دائمًا الجهاز الحالي لنوع الجهاز، حتى بعد استدعاء :func:`torch.cuda.set_device()`؛ على سبيل المثال،
+تكون الكمية المتناسقة المُنشأة بجهاز ``'cuda'`` مكافئة لـ ``'cuda:X'`` حيث X هي
+نتيجة :func:`torch.cuda.current_device()`.
 
-A :class:`torch.Tensor`'s device can be accessed via the :attr:`Tensor.device` property.
+يمكن الوصول إلى جهاز الكمية المتناسقة عبر الخاصية :attr:`Tensor.device`.
 
-A :class:`torch.device` can be constructed via a string or via a string and device ordinal
+يمكن إنشاء :class:`torch.device` عبر سلسلة أو عبر سلسلة ورقم جهاز
 
-Via a string:
+عبر سلسلة:
 ::
 
     >>> torch.device('cuda:0')
@@ -163,24 +145,24 @@ Via a string:
     >>> torch.device('mps')
     device(type='mps')
 
-    >>> torch.device('cuda')  # current cuda device
+    >>> torch.device('cuda')  # جهاز cuda الحالي
     device(type='cuda')
 
-Via a string and device ordinal:
+عبر سلسلة ورقم جهاز:
 
 ::
 
     >>> torch.device('cuda', 0)
     device(type='cuda', index=0)
 
-    >>> torch.device('mps', 0)
+    >>> torchMultiplier.device('mps', 0)
     device(type='mps', index=0)
 
     >>> torch.device('cpu', 0)
     device(type='cpu', index=0)
 
-The device object can also be used as a context manager to change the default
-device tensors are allocated on:
+يمكن أيضًا استخدام كائن الجهاز كسياق للتحكم في تغيير الجهاز الافتراضي
+الذي يتم تخصيص الكميات المتناسقة عليه:
 
 ::
 
@@ -189,60 +171,58 @@ device tensors are allocated on:
     >>> r.device
     device(type='cuda', index=1)
 
-This context manager has no effect if a factory function is passed an explicit,
-non-None device argument.  To globally change the default device, see also
+ليس لهذا السياق أي تأثير إذا تم تمرير دالة مصنع وسيطة جهاز صريحة وغير فارغة.  لرؤية كيفية التغيير الشامل للجهاز الافتراضي، راجع أيضًا
 :func:`torch.set_default_device`.
 
 .. warning::
 
-    This function imposes a slight performance cost on every Python
-    call to the torch API (not just factory functions).  If this
-    is causing problems for you, please comment on
+    تفرض هذه الدالة تكلفة أداء طفيفة على كل استدعاء Python
+    لواجهة برمجة تطبيقات PyTorch (ليس فقط لوظائف المصنع).  إذا كان
+    هذا يسبب مشاكل لك، يرجى التعليق على
     https://github.com/pytorch/pytorch/issues/92701
 
 .. note::
-   The :class:`torch.device` argument in functions can generally be substituted with a string.
-   This allows for fast prototyping of code.
+   يمكن استبدال وسيطة :class:`torch.device` في الدوال بشكل عام بسلسلة.
+   يسمح ذلك بالتصميم السريع لبروتوكول التشفير.
 
-   >>> # Example of a function that takes in a torch.device
+   >>> # مثال لوظيفة تأخذ وسيطة torch.device
    >>> cuda1 = torch.device('cuda:1')
    >>> torch.randn((2,3), device=cuda1)
 
-   >>> # You can substitute the torch.device with a string
+   >>> # يمكنك استبدال وسيطة torch.device بسلسلة
    >>> torch.randn((2,3), device='cuda:1')
 
 .. note::
-   For legacy reasons, a device can be constructed via a single device ordinal, which is treated
-   as the current :ref:`accelerator<accelerators>` type.
-   This matches :meth:`Tensor.get_device`, which returns an ordinal for device
-   tensors and is not supported for cpu tensors.
+   لأسباب تتعلق بالتوافق مع الإصدارات الأقدم، يمكن إنشاء جهاز عبر رقم جهاز واحد، والذي يتم التعامل معه
+   كنوع :ref:`accelerator<accelerators>` الحالي.
+   وهذا يتوافق مع :meth:`Tensor.get_device`، والذي يعيد رقمًا لكميات tensor ذات الجهاز
+   ولا يتم دعمه لكميات tensor ذات الجهاز cpu.
 
    >>> torch.device(1)
    device(type='cuda', index=1)
 
 .. note::
-   Methods which take a device will generally accept a (properly formatted) string
-   or (legacy) integer device ordinal, i.e. the following are all equivalent:
+   تقبل الطرق التي تأخذ جهازًا بشكل عام (سلسلة مُنسقة بشكل صحيح) أو (رقم جهاز صحيح) كوسيطة للجهاز، أي أن ما يلي متكافئ:
 
    >>> torch.randn((2,3), device=torch.device('cuda:1'))
    >>> torch.randn((2,3), device='cuda:1')
-   >>> torch.randn((2,3), device=1)  # legacy
+   >>> torch.randn((2,3), device=1)  # الإصدار الأقدم
 
 .. note::
-   Tensors are never moved automatically between devices and require an explicit call from the user. Scalar Tensors (with tensor.dim()==0) are the only exception to this rule and they are automatically transferred from CPU to GPU when needed as this operation can be done "for free".
-   Example:
+   لا يتم نقل الكميات المتناسقة مطلقًا تلقائيًا بين الأجهزة ويتطلب الأمر استدعاءً صريحًا من المستخدم. الكميات المتناسقة القياسية (مع tensor.dim()==0) هي الاستثناء الوحيد لهذه القاعدة حيث يتم نقلها تلقائيًا من CPU إلى GPU عندما تكون هناك حاجة إلى ذلك لأن هذه العملية يمكن إجراؤها "مجانًا".
+   مثال:
 
-   >>> # two scalars
-   >>> torch.ones(()) + torch.ones(()).cuda()  # OK, scalar auto-transferred from CPU to GPU
-   >>> torch.ones(()).cuda() + torch.ones(())  # OK, scalar auto-transferred from CPU to GPU
+   >>> # كميتان قياسيتان
+   >>> torch.ones(()) + torch.ones(()).cuda()  # موافق، يتم نقل الكمية المتناسقة القياسية تلقائيًا من CPU إلى GPU
+   >>> torch.ones(()).cuda() + torch.ones(())  # موافق، يتم نقل الكمية المتناسقة القياسية تلقائيًا من CPU إلى GPU
 
-   >>> # one scalar (CPU), one vector (GPU)
-   >>> torch.ones(()) + torch.ones(1).cuda()  # OK, scalar auto-transferred from CPU to GPU
-   >>> torch.ones(1).cuda() + torch.ones(())  # OK, scalar auto-transferred from CPU to GPU
+   >>> # كمية متناسقة قياسية واحدة (CPU)، وكمية متناسقة ناقلة واحدة (GPU)
+   >>> torch.ones(()) + torch.ones(1).cuda()  # موافق، يتم نقل الكمية المتناسقة القياسية تلقائيًا من CPU إلى GPU
+   >>> torch.ones(1).cuda() + torch.ones(())  # موافق، يتم نقل الكمية المتناسقة القياسية تلقائيًا من CPU إلى GPU
 
-   >>> # one scalar (GPU), one vector (CPU)
-   >>> torch.ones(()).cuda() + torch.ones(1)  # Fail, scalar not auto-transferred from GPU to CPU and non-scalar not auto-transferred from CPU to GPU
-   >>> torch.ones(1) + torch.ones(()).cuda()  # Fail, scalar not auto-transferred from GPU to CPU and non-scalar not auto-transferred from CPU to GPU
+   >>> # كمية متناسقة قياسية واحدة (GPU)، وكمية متناسقة ناقلة واحدة (CPU)
+   >>> torch.ones(()).cuda() + torch.ones(1)  # فشل، لا يتم نقل الكمية المتناسقة القياسية تلقائيًا من GPU إلى CPU ولا يتم نقل الكمية المتناسقة غير القياسية تلقائيًا من CPU إلى GPU
+   >>> torch.ones(1) + torch.ones(()).cuda()  # فشل، لا يتم نقل الكمية المتناسقة القياسية تلقائيًا من GPU إلى CPU ولا يتم نقل الكمية المتناسقة غير القياسية تلقائيًا من CPU إلى GPU
 
 .. _layout-doc:
 
@@ -252,22 +232,19 @@ torch.layout
 .. class:: layout
 
 .. warning::
-  The ``torch.layout`` class is in beta and subject to change.
+  ``torch.layout`` هو في مرحلة البيتا وقد يخضع للتغيير.
 
-A :class:`torch.layout` is an object that represents the memory layout of a
-:class:`torch.Tensor`. Currently, we support ``torch.strided`` (dense Tensors)
-and have beta support for ``torch.sparse_coo`` (sparse COO Tensors).
+:class:`torch.layout` هو كائن يمثل التخطيط الذاكري لـ :class:`torch.Tensor`. حاليًا، ندعم ``torch.strided`` (كميات tensor الكثيفة)
+ولدينا دعم تجريبي لـ ``torch.sparse_coo`` (كميات tensor المتناثرة COO).
 
-``torch.strided`` represents dense Tensors and is the memory layout that
-is most commonly used. Each strided tensor has an associated
-:class:`torch.Storage`, which holds its data. These tensors provide
-multi-dimensional, `strided <https://en.wikipedia.org/wiki/Stride_of_an_array>`_
-view of a storage. Strides are a list of integers: the k-th stride
-represents the jump in the memory necessary to go from one element to the
-next one in the k-th dimension of the Tensor. This concept makes it possible
-to perform many tensor operations efficiently.
+يمثل ``torch.strided`` كميات tensor الكثيفة وهو تخطيط الذاكرة الذي
+يتم استخدامه بشكل أكثر شيوعًا. تمتلك كل كمية tensor كثيفة مرتبطة بها
+:class:`torch.Storage`، والذي يحتفظ ببياناتها. توفر هذه الكميات المتناسقة عرضًا متعدد الأبعاد، `متناسق <https://en.wikipedia.org/wiki/Stride_of_an_array>`_
+للتخزين. تكون الخطوات قائمة من الأعداد الصحيحة: تمثل الخطوة k-th
+القفزة الضرورية في الذاكرة للانتقال من عنصر إلى العنصر التالي في البعد k-th للكمية المتناسقة. يجعل هذا المفهوم من الممكن
+أداء العديد من عمليات الكمية المتناسقة بكفاءة.
 
-Example::
+مثال::
 
     >>> x = torch.tensor([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])
     >>> x.stride()
@@ -276,30 +253,27 @@ Example::
     >>> x.t().stride()
     (1, 5)
 
-For more information on ``torch.sparse_coo`` tensors, see :ref:`sparse-docs`.
+للحصول على مزيد من المعلومات حول ``torch.sparse_coo`` tensors، راجع :ref:`sparse-docs`.
 
 torch.memory_format
--------------------
-
 .. class:: memory_format
 
-A :class:`torch.memory_format` is an object representing the memory format on which a :class:`torch.Tensor` is
-or will be allocated.
+إن :class:`torch.memory_format` هو كائن يمثل تنسيق الذاكرة الذي تم أو سيتم تخصيص :class:`torch.Tensor` له.
 
-Possible values are:
+القيم الممكنة هي:
 
 - ``torch.contiguous_format``:
-  Tensor is or will be allocated in dense non-overlapping memory. Strides represented by values in decreasing order.
+  سيتم تخصيص نسيج أو تم تخصيصه في ذاكرة غير متداخلة كثيفة. الخطوات التي تمثلها القيم بترتيب تنازلي.
 
 - ``torch.channels_last``:
-  Tensor is or will be allocated in dense non-overlapping memory. Strides represented by values in
-  ``strides[0] > strides[2] > strides[3] > strides[1] == 1`` aka NHWC order.
+  سيتم تخصيص نسيج أو تم تخصيصه في ذاكرة غير متداخلة كثيفة. الخطوات التي تمثلها القيم في
+  ``strides[0] > strides[2] > strides[3] > strides[1] == 1`` المعروف باسم ترتيب NHWC.
 
 - ``torch.channels_last_3d``:
-  Tensor is or will be allocated in dense non-overlapping memory. Strides represented by values in
-  ``strides[0] > strides[2] > strides[3] > strides[4] > strides[1] == 1`` aka NDHWC order.
+  سيتم تخصيص نسيج أو تم تخصيصه في ذاكرة غير متداخلة كثيفة. الخطوات التي تمثلها القيم في
+  ``strides[0] > strides[2] > strides[3] > strides[4] > strides[1] == 1`` المعروف باسم ترتيب NDHWC.
 
 - ``torch.preserve_format``:
-  Used in functions like `clone` to preserve the memory format of the input tensor. If input tensor is
-  allocated in dense non-overlapping memory, the output tensor strides will be copied from the input.
-  Otherwise output strides will follow ``torch.contiguous_format``
+  يستخدم في وظائف مثل 'clone' للحفاظ على تنسيق الذاكرة للنسيج المدخلات. إذا تم تخصيص نسيج الإدخال
+  في ذاكرة غير متداخلة كثيفة، سيتم نسخ خطوات الإخراج من الإدخال.
+  وإلا فإن الخطوات الإخراجية ستتبع ``torch.contiguous_format``
