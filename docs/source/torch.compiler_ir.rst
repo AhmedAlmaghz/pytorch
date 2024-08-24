@@ -1,21 +1,21 @@
 .. _torch.compiler_ir:
 
-IRs
-===============
+لغات IR
+==========
 
-PyTorch 2.0 offers two set of IRs for backends to interface with: Core Aten IR and Prims IR.
+يوفر PyTorch 2.0 مجموعتين من لغات IR للواجهات الخلفية للتفاعل معها: Core Aten IR و Prims IR.
 
 Core Aten IR
---------------------
+----------------
 
-Core aten ops is the core subset of aten operators that can be used to compose other operators.
-Core aten IR is fully functional, and there is no `inplace` or `_out` variants in this opset.
-In contrast to Prims IR, core aten ops reuses the existing aten ops in "native_functions.yaml",
-and it doesn't further decompose ops into explicit type promotion and broadcasting ops.
-This opset is designed to serve as the functional IR to interface with backends.
+عمليات Core aten هي المجموعة الأساسية من عمليات aten التي يمكن استخدامها لتكوين عمليات أخرى.
+Core aten IR هو مجموعة كاملة المزايا من التعليمات، ولا توجد متغيرات 'inplace' أو '_out' في هذه المجموعة من التعليمات.
+على عكس Prims IR، يعيد Core aten ops استخدام عمليات aten الموجودة في "native_functions.yaml"،
+ولا يقوم بتفكيك العمليات بشكل أكبر إلى عمليات ترقية نوع صريح وعمليات بث.
+تم تصميم هذه المجموعة من التعليمات لتعمل كـ IR وظيفية للتفاعل مع الواجهات الخلفية.
 
 .. warning::
-  This opset is still under active development, more ops will be added in the future.
+  لا تزال هذه المجموعة من التعليمات قيد التطوير، وسيتم إضافة المزيد من العمليات في المستقبل.
 
 .. csv-table::
    :file: ../build/ir/aten_ops.csv
@@ -25,13 +25,12 @@ This opset is designed to serve as the functional IR to interface with backends.
 Prims IR
 -----------
 
-Prims IR is a set of primitive operators that can be used to compose other operators.
-Prims IR is a lower level opset than core aten IR, and it further decomposes ops into explicit
-type promotion and broadcasting ops: prims.convert_element_type and prims.broadcast_in_dim.
-This opset is designed to interface with compiler backends.
+Prims IR هي مجموعة من العمليات الأولية التي يمكن استخدامها لتكوين عمليات أخرى.
+Prims IR هي مجموعة تعليمات منخفضة المستوى أكثر من Core aten IR، وهي تفكك العمليات بشكل أكبر إلى عمليات ترقية نوع صريحة وعمليات بث: prims.convert_element_type و prims.broadcast_in_dim.
+تم تصميم هذه المجموعة من التعليمات للتفاعل مع الواجهات الخلفية للمترجم.
 
 .. warning::
-  This opset is still under active development, more ops will be added in the future.
+  لا تزال هذه المجموعة من التعليمات قيد التطوير، وسيتم إضافة المزيد من العمليات في المستقبل.
 
 .. csv-table::
    :file: ../build/ir/prims_ops.csv
