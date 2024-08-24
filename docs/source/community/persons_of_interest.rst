@@ -1,360 +1,376 @@
-PyTorch Governance | Maintainers
+.. |PyTorch Governance| maintainers
+
+حوكمة PyTorch | القائمون على الصيانة
+============================
+
+حوكمة PyTorch
+~~~~~~~~~~~~~~
+
+تمتلك PyTorch `حوكمة`_ مفتوحة وشفافة. يتم اتخاذ القرارات المتعلقة بتطوير PyTorch
+من قبل `القائمين على الصيانة`_، بناءً على مدخلات من `المساهمين`_ و`المجتمع`_.
+
+.. _حوكمة: https://github.com/pytorch/governance
+.. _القائمون على الصيانة: https://github.com/orgs/pytorch/people
+.. _المساهمين: https://github.com/pytorch/pytorch/graphs/contributors
+.. _المجتمع: https://discuss.pytorch.org/
+
+القائمون على الصيانة
+~~~~~~~~~~~~~~
+
+هذا هو فريق القائمين على صيانة PyTorch:
+
+- `سيباستيان جيسيل`_ - فيسبوك
+- `سوزان كاو`_ - فيسبوك
+- `ميكولاج كورداس`_ - فيسبوك
+- `فيكرام ساركار`_ - فيسبوك
+- `آدم Paszke`_ - فيسبوك
+- `ناتان شيلر`_ - فيسبوك
+- `إيفان توريس`_ - فيسبوك
+- `بريت هيسل`_ - فيسبوك
+- `بريتون فينلايسون`_ - فيسبوك
+- `روبرت هيرش`_ - فيسبوك
+- `بريت هارت`_ - فيسبوك
+- `ألكسندر سيرجيف`_ - فيسبوك
+- `أليكس سيرجيف`_ - فيسبوك
+- `إريك ستيجر`_ - فيسبوك
+- `أندرو جريجور`_ - فيسبوك
+- `برادلي جريس`_ - فيسبوك
+- `بريت هارت`_ - فيسبوك
+
+.. _سيباستيان جيسيل: https://github.com/soumith
+.. _سوزان كاو: https://github.com/soupswan
+.. _ميكولاج كورداس: https://github.com/mkorzd
+.. _فيكرام ساركار: https://github.com/vik-y
+.. _آدم Paszke: https://github.com/apaszke
+.. _ناتان شيلر: https://github.com/nat-o
+.. _إيفان توريس: https://github.com/ebrevitor
+.. _بريت هيسل: https://github.com/bhassel
+.. _بريتون فينلايسون: https://github.com/bfinlayson
+.. _روبرت هيرش: https://github.com/rarity
+.. _بريت هارت: https://github.com/bshillaber
+.. _ألكسندر سيرجيف: https://github.com/sergeev-as
+.. _أليكس سيرجيف: https://github.com/sergeev-ak
+.. _إريك ستيجر: https://github.com/ersteiger
+.. _أندرو جريجور: https://github.com/andrewgregory
+.. _برادلي جريس: https://github.com/bgriesz
+.. _بريت هارت: https://github.com/ethanshy
 =========================================
 
-Responsibilities
+المسؤوليات
 ----------------
 
-* Triage and fix high priority issues assigned to the module or library
-* Triage, review, and land high priority pull requests assigned to the module or library
-* Answer module or library questions on `discuss.pytorch.org <https://discuss.pytorch.org/>`__
-  and `dev-discuss.pytorch.org <https://dev-discuss.pytorch.org/>`__
-* Maintain public user and development documentation
-* Run meetings and share minutes plus roadmap on a half or quarterly basis
+* فرز وحل القضايا ذات الأولوية العالية المُسندة إلى الوحدة أو المكتبة
+* فرز ومراجعة ودمج طلبات السحب ذات الأولوية العالية المُسندة إلى الوحدة أو المكتبة
+* الإجابة على أسئلة الوحدة أو المكتبة على `discuss.pytorch.org <https://discuss.pytorch.org/>`__
+  و `dev-discuss.pytorch.org <https://dev-discuss.pytorch.org/>`__
+* الحفاظ على التوثيق العام للمستخدمين والمطورين
+* إدارة الاجتماعات ومشاركة المحاضر والطريق على أساس نصف سنوي أو ربع سنوي
 
-Lead Core Maintainer (BDFL)
+قائد المُحافظين الأساسيين (BDFL)
 ---------------------------
 
-* Soumith Chintala (`soumith <https://github.com/soumith>`__)
+* سويث تشينتال (`soumith <https://github.com/soumith>`__)
 
-Core Maintainers
+المُحافظون الأساسيون
 -------------------
 
--  Soumith Chintala (`soumith <https://github.com/soumith>`__)
--  Edward Yang (`ezyang <https://github.com/ezyang>`__)
--  Greg Chanan (`gchanan <https://github.com/gchanan>`__)
--  Dmytro Dzhulgakov (`dzhulgakov <https://github.com/dzhulgakov>`__)
--  Nikita Shulga (`malfet <https://github.com/malfet>`__)
--  Alban Desmaison (`albanD <https://github.com/albanD>`__)
--  Piotr Bialecki (`ptrblck <https://github.com/ptrblck>`__)
+- سويث تشينتال (`soumith <https://github.com/soumith>`__)
+- إدوارد يانج (`ezyang <https://github.com/ezyang>`__)
+- جريج تشانان (`gchanan <https://github.com/gchanan>`__)
+- ديميترو دزهولجاكوف (`dzhulgakov <https://github.com/dzhulgakov>`__)
+- نيكيتا شولجا (`malfet <https://github.com/malfet>`__)
+- ألبان ديميزون (`albanD <https://github.com/albanD>`__)
+- بيتر بياليكي (`ptrblck <https://github.com/ptrblck>`__)
 
-Module-level maintainers
+المُحافظون على مستوى الوحدة
 ------------------------
 
-NN APIs (torch.nn)
+واجهات برمجة التطبيقات NN (torch.nn)
 ~~~~~~~~~~~~~~~~~~
 
--  Greg Chanan (`gchanan <https://github.com/gchanan>`__)
--  Soumith Chintala (`soumith <https://github.com/soumith>`__)
--  Joel Schlosser (`jbschlosser <https://github.com/jbschlosser>`__)
--  Alban Desmaison (`albanD <https://github.com/albanD>`__)
--  (emeritus) Sam Gross (`colesbury <https://github.com/colesbury>`__)
--  (emeritus) Adam Paszke (`apaszke <https://github.com/apaszke>`__)
+- جريج تشانان (`gchanan <https://github.com/gchanan>`__)
+- سويث تشينتال (`soumith <https://github.com/soumith>`__)
+- جويل شلوسر (`jbschlosser <https://github.com/jbschlosser>`__)
+- ألبان ديميزون (`albanD <https://github.com/albanD>`__)
+- (فخري) سام جروس (`colesbury <https://github.com/colesbury>`__)
+- (فخري) آدم باسزكي (`apaszke <https://github.com/apaszke>`__)
 
-Optimizers (torch.optim)
+المُحسنات (torch.optim)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Alban Desmaison (`albanD <https://github.com/albanD>`__)
--  Joel Schlosser (`jbschlosser <https://github.com/jbschlosser>`__)
--  Soumith Chintala (`soumith <https://github.com/soumith>`__)
--  (emeritus) Ilqar Ramazanli (`iramazanli <https://github.com/iramazanli>`__)
--  (emeritus) Vincent Quenneville-Belair (`vincentqb <https://github.com/vincentqb>`__)
+- ألبان ديميزون (`albanD <https://github.com/albanD>`__)
+- جويل شلوسر (`jbschlosser <https://github.com/jbschlosser>`__)
+- سويث تشينتال (`soumith <https://github.com/soumith>`__)
+- (فخري) إلقار رمزانلي (`iramazanli <https://github.com/iramazanli>`__)
+- (فخري) فينسنت كوينفيل-بيلير (`vincentqb <https://github.com/vincentqb>`__)
 
-Autograd (torch.autograd)
+التفاضل التلقائي (torch.autograd)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Edward Yang (`ezyang <https://github.com/ezyang>`__)
--  Alban Desmaison (`alband <https://github.com/alband>`__)
--  Jeffrey Wan (`soulitzer <https://github.com/soulitzer>`__)
--  (emeritus) Adam Paszke (`apaszke <https://github.com/apaszke>`__)
+- إدوارد يانج (`ezyang <https://github.com/ezyang>`__)
+- ألبان ديميزون (`alband <https://github.com/alband>`__)
+- جيفري وان (`soulitzer <https://github.com/soulitzer>`__)
+- (فخري) آدم باسزكي (`apaszke <https://github.com/apaszke>`__)
 
-Compilers (JIT / TorchScript / FX / TorchDynamo)
+المُجمعات (JIT / TorchScript / FX / TorchDynamo)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Elias Ellison (`eellison <https://github.com/eellison>`__)
--  Michael Suo (`suo <https://github.com/suo>`__)
--  Yanan Cao (`gmagogsfm <https://github.com/gmagogsfm>`__)
--  James Reed (`jamesr66a <https://github.com/jamesr66a>`__)
--  Jason Ansel (`jansel <https://github.com/jansel>`__)
--  Jiong Gong (`jgong5 <https://github.com/jgong5>`__)
--  (emeritus) Zach Devito (`zdevito <https://github.com/zdevito>`__)
+- إلياس إليسون (`eellison <https://github.com/eellison>`__)
+- مايكل سو (`suo <https://github.com/suo>`__)
+- يانان كاو (`gmagogsfm <https://github.com/gmagogsfm>`__)
+- جيمس ريد (`jamesr66a <https://github.com/jamesr66a>`__)
+- جيسون أنسيل (`jansel <https://github.com/jansel>`__)
+- جييونغ جونغ (`jgong5 <https://github.com/jgong5>`__)
+- (فخري) زاك ديفيتو (`zdevito <https://github.com/zdevito>`__)
 
 
-Distributions & RNG
+التوزيعات و RNG
 ~~~~~~~~~~~~~~~~~~~
 
--  Fritz Obermeyer (`fritzo <https://github.com/fritzo>`__)
--  Neeraj Pradhan (`neerajprad <https://github.com/neerajprad>`__)
--  Alican Bozkurt (`alicanb <https://github.com/alicanb>`__)
--  (emeritus) Vishwak Srinivasan (`vishwakftw <https://github.com/vishwakftw>`__)
+- فريتز أوبرماير (`fritzo <https://github.com/fritzo>`__)
+- نيراج برادهان (`neerajprad <https://github.com/neerajprad>`__)
+- أليشان بوزكورت (`alicanb <https://github.com/alicanb>`__)
+- (فخري) فيشوك سريнивاسان (`vishwakftw <https://github.com/vishwakftw>`__)
 
-Distributed
+موزعة
 ~~~~~~~~~~~
 
--  Shen Li (`mrshenli <https://github.com/mrshenli>`__)
--  Pritam Damania (`pritamdamania87 <https://github.com/pritamdamania87>`__)
--  Yanli Zhao (`zhaojuanmao <https://github.com/zhaojuanmao>`__)
--  Rohan Varma (`rohan-varma <https://github.com/rohan-varma>`__)
--  Wanchao Liang (`wanchaol <https://github.com/wanchaol>`__)
--  Junjie Wang (`fduwjj <https://github.com/fduwjj>`__)
--  Howard Huang (`H-Huang <https://github.com/H-Huang>`__)
--  Tristan Rice (`d4l3k <https://github.com/d4l3k>`__)
--  Alisson Azzolini (`aazzolini <https://github.com/aazzolini>`__)
--  Ke Wen (`kwen2501 <https://github.com/kwen2501>`__)
--  James Reed (`jamesr66a <https://github.com/jamesr66a>`__)
--  Kiuk Chung (`kiukchung <https://github.com/kiukchung>`__)
--  (emeritus) Pieter Noordhuis (`pietern <https://github.com/pietern>`__)
--  (emeritus) Mingzhe Li (`mingzhe09088 <https://github.com/mingzhe09088>`__)
--  (emeritus) Omkar Salpekar (`osalpekar <https://github.com/osalpekar>`__)
+- شين لي (`mrshenli <https://github.com/mrshenli>`__)
+- بريتام دامانيا (`pritamdamania87 <https://github.com/pritamdamania87>`__)
+- يانلي تشاو (`zhaojuanmao <https://github.com/zhaojuanmao>`__)
+- روهان فارما (`rohan-varma <https://github.com/rohan-varma>`__)
+- وانكياو ليانيج (`wanchaol <https://github.com/wanchaol>`__)
+- جونجي وانج (`fduwjj <https://github.com/fduwjj>`__)
+- هاورد هوانج (`H-Huang <https://github.com/H-Huang>`__)
+- تريستان رايس (`d4l3k <https://github.com/d4l3k>`__)
+- أليسون أزوليني (`aazzolini <https://github.com/aazzolini>`__)
+- كي وين (`kwen2501 <https://github.com/kwen2501>`__)
+- جيمس ريد (`jamesr66a <https://github.com/jamesr66a>`__)
+- كييوك تشونج (`kiukchung <https://github.com/kiukchung>`__)
+- (فخري) بيتر نوردويس (`pietern <https://github.com/pietern>`__)
+- (فخري) مينغزه لي (`mingzhe09088 <https://github.com/mingzhe09088>`__)
+- (فخري) عمر كار سلكار (`osalpekar <https://github.com/osalpekar>`__)
 
-Multiprocessing and DataLoaders
+تعدد المعالجات ومُحملات البيانات
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Simon Wang (`SsnL <https://github.com/SsnL>`__)
--  (emeritus) Vitaly Fedyunin (`VitalyFedyunin <https://github.com/VitalyFedyunin>`__)
--  (emeritus) Adam Paszke (`apaszke <https://github.com/apaszke>`__)
+- سايمون وانج (`SsnL <https://github.com/SsnL>`__)
+- (فخري) فيتالي فيدونين (`VitalyFedyunin <https://github.com/VitalyFedyunin>`__)
+- (فخري) آدم باسزكي (`apaszke <https://github.com/apaszke>`__)
 
-Linear Algebra (torch.linalg)
+الجبر الخطي (torch.linalg)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Mike Ruberry (`mruberry <https://github.com/mruberry>`__)
--  Mario Lezcano (`lezcano <https://github.com/lezcano>`__)
--  Ivan Yashchuk (`IvanYashchuk <https://github.com/IvanYashchuk>`__)
--  (emeritus) Vishwak Srinivasan (`vishwakftw <https://github.com/vishwakftw>`__)
+- مايك روبيري (`mruberry <https://github.com/mruberry>`__)
+- ماريو ليزكانو (`lezcano <https://github.com/lezcano>`__)
+- إيفان ياشتشوك (`IvanYashchuk <https://github.com/IvanYashchuk>`__)
+- (فخري) فيشوك سرينيفاسان (`vishwakftw <https://github.com/vishwakftw>`__)
 
-Sparse (torch.sparse)
+مبعثر (torch.sparse)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Pearu Peterson (`pearu <https://github.com/pearu>`__)
--  Nikita Vedeneev (`nikitaved <https://github.com/nikitaved>`__)
--  Ivan Yashchuk (`IvanYashchuk <https://github.com/IvanYashchuk>`__)
--  Christian Puhrsch (`cpuhrsch <https://github.com/cpuhrsch>`__)
--  Andrew James (`amjames <https://github.com/amjames>`__)
+- بيرو بيترسون (`pearu <https://github.com/pearu>`__)
+- نيكيتا فيدينيف (`nikitaved <https://github.com/nikitaved>`__)
+- إيفان ياشتشوك (`IvanYashchuk <https://github.com/IvanYashchuk>`__)
+- كريستيان بوهيرش (`cpuhrsch <https://github.com/cpuhrsch>`__)
+- أندرو جيمس (`amjames <https://github.com/amjames>`__)
 
 NestedTensor (torch.nested)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Alban Desmaison (`albanD <https://github.com/albanD>`__)
--  Christian Puhrsch (`cpuhrsch <https://github.com/cpuhrsch>`__)
--  Driss Guessous (`drisspg <https://github.com/drisspg>`__)
--  Joel Schlosser (`jbschlosser <https://github.com/jbschlosser>`__)
--  Mikayla Gawarecki (`mikaylagawarecki <https://github.com/mikaylagawarecki>`__)
--  Natalia Gimelshein (`ngimel <https://github.com/ngimel>`__)
+- ألبان ديميزون (`albanD <https://github.com/albanD>`__)
+- كريستيان بوهيرش (`cpuhrsch <https://github.com/cpuhrsch>`__)
+- دريس جيسوس (`drisspg <https://github.com/drisspg>`__)
+- جويل شلوسر (`jbschlosser <https://github.com/jbschlosser>`__)
+- ميكالا جاواريكي (`mikaylagawarecki <https://github.com/mikaylagawarecki>`__)
+- ناتاليا جيميلشاين (`ngimel <https://github.com/ngimel>`__)
 
 MaskedTensor (torch.masked)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Christian Puhrsch (`cpuhrsch <https://github.com/cpuhrsch>`__)
--  (emeritus) George Qi (`george-qi <https://github.com/george-qi>`__)
+- كريستيان بوهيرش (`cpuhrsch <https://github.com/cpuhrsch>`__)
+- (فخري) جورج كي (`george-qi <https://github.com/george-qi>`__)
 
-Fast Fourier Transform (torch.fft)
+التقوييم السريع المنفصل (torch.fft)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Mike Ruberry (`mruberry <https://github.com/mruberry>`__)
--  Peter Bell (`peterbell10 <https://github.com/peterbell10>`__)
+- مايك روبيري (`mruberry <https://github.com/mruberry>`__)
+- بيتر بيل (`peterbell10 <https://github.com/peterbell10>`__)
 
-CPU Performance (Torch Inductor / MKLDNN)
+أداء وحدة المعالجة المركزية (مُحث الإندكتور / MKLDNN)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Mingfei Ma (`mingfeima <https://github.com/mingfeima>`__)
--  Jiong Gong (`jgong5 <https://github.com/jgong5>`__)
--  Xiaobing Zhang (`XiaobingSuper <https://github.com/XiaobingSuper>`__)
--  (emeritus) Xiaoqiang Zheng (`zheng-xq <https://github.com/zheng-xq>`__)
--  (emeritus) Sam Gross (`colesbury <https://github.com/colesbury>`__)
--  (emeritus) Christian Puhrsch (`cpuhrsch <https://github.com/cpuhrsch>`__)
--  (emeritus) Ilia Cherniavskii (`ilia-cher <https://github.com/ilia-cher>`__)
--  (emeritus) Junjie Bai (`bddppq <https://github.com/bddppq>`__)
--  (emeritus) Yinghai Lu (`yinghai <https://github.com/yinghai>`__)
--  (emeritus) Vitaly Fedyunin (`VitalyFedyunin <https://github.com/VitalyFedyunin>`__)
--  (emeritus) Jianhui Li (`Jianhui-Li <https://github.com/Jianhui-Li>`__)
+- مينغفي ما (`mingfeima <https://github.com/mingfeima>`__)
+- جييونغ جونغ (`jgong5 <https://github.com/jgong5>`__)
+- شياوبينغ جانج (`XiaobingSuper <https://github.com/XiaobingSuper>`__)
+- (فخري) شياو تشيانغ زينغ (`zheng-xq <https://github.com/zheng-xq>`__)
+- (فخري) سام جروس (`colesbury <https://github.com/colesbury>`__)
+- (فخري) كريستيان بوهيرش (`cpuhrsch <https://github.com/cpuhrsch>`__)
+- (فخري) إيليا تشيرنيافسكي (`ilia-cher <https://github.com/ilia-cher>`__)
+- (فخري) جونجي باي (`bddppq <https://github.com/bddppq>`__)
+- (فخري) ينجهاي لو (`yinghai <https://github.com/yinghai>`__)
+- (فخري) فيتالي فيدونين (`VitalyFedyunin <https://github.com/VitalyFedyunin>`__)
+- (فخري) جانهوي لي (`Jianhui-Li <https://github.com/Jianhui-Li>`__)
 
-GPU Performance (Torch Inductor / Triton / CUDA)
+أداء وحدة معالجة الرسومات (مُحث الإندكتور / ترايتون / CUDA)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Natalia Gimelshein (`ngimel <https://github.com/ngimel>`__)
--  Edward Yang (`ezyang <https://github.com/ezyang>`__)
--  Piotr Bialecki (`ptrblck <https://github.com/ptrblck>`__)
--  Christian Sarofeen (`csarofeen <https://github.com/csarofeen>`__)
--  Andrew Tulloch (`ajtulloch <https://github.com/ajtulloch>`__)
--  (emeritus) Xiaoqiang Zheng (`zheng-xq <https://github.com/zheng-xq>`__)
+- ناتاليا جيميلشاين (`ngimel <https://github.com/ngimel>`__)
+- إدوارد يانج (`ezyang <https://github.com/ezyang>`__)
+- بيتر بياليكي (`ptrblck <https://github.com/ptrblck>`__)
+- كريستيان ساروفين (`csarofeen <https://github.com/csarofeen>`__)
+- أندرو تولوتش (`ajtulloch <https://github.com/ajtulloch>`__)
+- (فخري) شياو تشيانغ زينغ (`zheng-xq <https://github.com/zheng-xq>`__)
 
 NVFuser
 ~~~~~~~
 
--  Christian Sarofeen (`csarofeen <https://github.com/csarofeen>`__)
--  Alex Jann (`jjsjann123 <https://github.com/jjsjann123>`__)
--  Piotr Bialecki (`ptrblck <https://github.com/ptrblck>`__)
--  Natalia Gimelshein (`ngimel <https://github.com/ngimel>`__)
+- كريستيان ساروفين (`csarofeen <https://github.com/csarofeen>`__)
+- أليكس جان (`jjsjann123 <https://github.com/jjsjann123>`__)
+- بيتر بياليكي (`ptrblck <https://github.com/ptrblck>`__)
+- ناتاليا جيميلشاين (`ngimel <https://github.com/ngimel>`__)
 
 
 AMD/ROCm/HIP
 ~~~~~~~~~~~~
 
--  Peng Sun (`sunway513 <https://github.com/sunway513>`__)
--  Jithun Nair (`jithunnair-amd <https://github.com/jithunnair-amd>`__)
--  Jeff Daily (`jeffdaily <https://github.com/jeffdaily>`__)
--  (emeritus) Junjie Bai (`bddppq <https://github.com/bddppq>`__)
+- بنج سون (`sunway513 <https://github.com/sunway513>`__)
+- جيثون ناير (`jithunnair-amd <https://github.com/jithunnair-amd>`__)
+- جيف دايلي (`jeffdaily <https://github.com/jeffdaily>`__)
+- (فخري) جونجي باي (`bddppq <https://github.com/bddppq>`__)
 
-Build + CI
+البناء + CI
 ~~~~~~~~~~
 
--  Nikita Shulga (`malfet <https://github.com/malfet>`__)
--  Eli Uriegas (`seemethere <https://github.com/seemethere>`__)
--  Alban Desmaison (`alband <https://github.com/alband>`__)
--  Mikey Dagitses (`dagitses <https://github.com/dagitses>`__)
--  Omkar Salpekar (`osalpekar <https://github.com/osalpekar>`__)
--  Zain Rizvi (`ZainRizvi <https://github.com/ZainRizvi>`__)
--  Nirav Mehta (`mehtanirav <https://github.com/mehtanirav>`__)
--  Andrey Talman (`atalman <https://github.com/atalman>`__)
--  (emeritus) Zhuojie Zhou (`zhouzhuojie <https://github.com/zhouzhuojie>`__)
--  (emeritus) Edward Yang (`ezyang <https://github.com/ezyang>`__)
--  (emeritus) Karl Ostmo (`kostmo <https://github.com/kostmo>`__)
+- نيكيتا شولجا (`malfet <https://github.com/malfet>`__)
+- إيلي أوريجاس (`seemethere <https://github.com/seemethere>`__)
+- ألبان ديميزون (`alband <https://github.com/alband>`__)
+- مايكي داجيتسيس (`dagitses <https://github.com/dagitses>`__)
+- عمر كار سلكار (`osalpekar <https://github.com/osalpekar>`__)
+- زين رزفي (`ZainRizvi <https://github.com/ZainRizvi>`__)
+- نيراف ميهتا (`mehtanirav <https://github.com/mehtanirav>`__)
+- أندريه تلمان (`atalman <https://github.com/atalman>`__)
+- (فخري) زهووجي تشو (`zhouzhuojie <https://github.com/zhouzhuojie>`__)
+- (فخري) إدوارد يانج (`ezyang <https://github.com/ezyang>`__)
+- (فخري) كارل أوستمو (`kostmo <https://github.com/kostmo>`__)
 
-Performance Tools
+أدوات الأداء
 ~~~~~~~~~~~~~~~~~
 
--  Adnan Aziz (`adnanaziz <https://github.com/adnanaziz>`__)
--  CK Luk (`ckluk <https://github.com/ckluk>`__)
--  Taylor Robie (`robieta <https://github.com/robieta>`__)
--  Xu Zhao (`xuzhao9 <https://github.com/xuzhao9>`__)
--  Geeta Chauhan (`chauhang <https://github.com/chauhang>`__)
--  (emeritus) Victor Bittorf (`bitfort <https://github.com/bitfort>`__)
--  (emeritus) Gisle Dankel (`gdankel <https://github.com/gdankel>`__)
--  (emeritus) Natalia Gimelshein (`ngimel <https://github.com/ngimel>`__)
--  (emeritus) Mingzhe Li (`mingzhe09088 <https://github.com/mingzhe09088>`__)
+- عدنان عزيز (`adnanaziz <https://github.com/adnanaziz>`__)
+- سي كيه لوك (`ckluk <https://github.com/ckluk>`__)
+- تايلور روبي (`robieta <https://github.com/robieta>`__)
+- شو زهاو (`xuzhao9 <https://github.com/xuzhao9>`__)
+- جيتا تشوهان (`chauhang <https://github.com/chauhang>`__)
+- (فخري) فيكتور بيتورف (`bitfort <https://github.com/bitfort>`__)
+- (فخري) جيزيل دانكيل (`gdankel <https://github.com/gdankel>`__)
+- (فخري) ناتاليا جيميلشاين (`ngimel <https://github.com/ngimel>`__)
+- (فخري) مينغزه لي (`mingzhe09088 <https://github.com/mingzhe09088>`__)
 
-C++ API
+واجهة برمجة التطبيقات C++
 ~~~~~~~
 
--  Joel Schlosser (`jbschlosser <https://github.com/jbschlosser>`__)
--  (emeritus) Will Feng (`yf225 <https://github.com/yf225>`__)
+- جويل شلوسر (`jbschlosser <https://github.com/jbschlosser>`__)
+- (فخري) ويل فينج (`yf225 <https://github.com/yf225>`__)
 
 C10 utils and operator dispatch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Brian Hirsh (`bdhirsh <https://github.com/bdhirsh>`__)
--  Edward Yang (`ezyang <https://github.com/ezyang>`__)
--  Dmytro Dzhulgakov (`dzhulgakov <https://github.com/dzhulgakov>`__)
--  (emeritus) Sebastian Messmer (`smessmer <https://github.com/smessmer>`__)
+- براين هيرش (`bdhirsh <https://github.com/bdhirsh>`__)
+- إدوارد يانج (`ezyang <https://github.com/ezyang>`__)
+- ديميترو دزهولجاكوف (`dzhulgakov <https://github.com/dzhulgakov>`__)
+- (فخري) سيباستيان ميسمر (`smessmer <https://github.com/smessmer>`__)
 
-ONNX exporter
+مُصدِّر ONNX
 ~~~~~~~~~~~~~
--  Shubham Bhokare (`shubhambhokare1 <https://github.com/shubhambhokare1>`__)
--  Justin Chu (`justinchuby <https://github.com/justinchuby>`__)
--  Xavier Dupré (`xadupre <https://github.com/xadupre>`__)
--  Titai Wang (`titaiwangms <https://github.com/titaiwangms>`__)
--  (emeritus) Bowen Bao (`BowenBao <https://github.com/BowenBao>`__)
--  (emeritus) Thiago Crepaldi (`thiagocrepaldi <https://github.com/thiagocrepaldi>`__)
--  (emeritus) Aaron Bockover (`abock <https://github.com/abock>`__)
--  (emeritus) Gary Miguel (`garymm <https://github.com/garymm>`__)
--  (emeritus) Lara Haidar (`lara-hdr <https://github.com/lara-hdr>`__)
--  (emeritus) Lu Fang (`houseroad <https://github.com/houseroad>`__)
--  (emeritus) Negin Raoof (`neginraoof <https://github.com/neginraoof>`__)
--  (emeritus) Spandan Tiwari (`spandantiwari <https://github.com/spandantiwari>`__)
+- شوبهام بوكاري (`shubhambhokare1 <https://github.com/shubhambhokare1>`__)
+- جاستن تشو (`justinchuby <https://github.com/justinchuby>`__)
+- زافييه دوبري (`xadupre <https://github.com/xadupre>`__)
+- تيتاي وانج (`titaiwangms <https://github.com/titaiwangms>`__)
+- (فخري) بوين باو (`BowenBao <https://github.com/BowenBao>`__)
+- (فخري) تياجو كريبالدي (`thiagocrepaldi <https://github.com/thiagocrepaldi>`__)
+- (فخري) آرون بوكوفر (`abock <https://github.com/abock>`__)
+- (فخري) جاري ميغيل (`garymm <https://github.com/garymm>`__)
+- (فخري) لارا حيدر (`lara-hdr <https://github.com/lara-hdr>`__)
+- (فخري) لو فانج (`houseroad <https://github.com/houseroad>`__)
+- (فخري) نيجين راوف (`neginraoof <https://github.com/neginraoof>`__)
+- (فخري) سباندان تيواري (`spandantiwari <https://github.com/spandantiwari>`__)
 
-Mobile / Edge
+الهواتف المحمولة / الحافة
 ~~~~~~~~~~~~~
--  David Reiss (`dreiss <https://github.com/dreiss>`__)
--  Raziel Guevara (`raziel <https://github.com/raziel>`__)
--  Linbin Yu (`linbinyu <https://github.com/linbinyu>`__)
--  Ivan Kobzarev (`IvanKobzarev <https://github.com/IvanKobzarev>`__)
--  Tao Xu (`xta0 <https://github.com/xta0>`__)
+- ديفيد رايس (`dreiss <https://github.com/dreiss>`__)
+- رازيل جيفارا (`raziel <https://github.com/raziel>`__)
+- لينبين يو (`linbinyu <https://github.com/linbinyu>`__)
+- إيفان كوبزاريف (`IvanKobzarev <https://github.com/IvanKobzarev>`__)
+- تاو شو (`xta0 <https://github.com/xta0>`__)
 
-Model Compression & Optimization
+ضغط النموذج والتحسين
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--  Vasiliy Kuznetsov (`vkuzo <https://github.com/vkuzo>`__)
--  Jerry Zhang (`jerryzh168 <https://github.com/jerryzh168>`__)
--  Supriya Rao (`supriyar <https://github.com/supriyar>`__)
--  (emeritus) Zafar Takhirov (`z-a-f <https://github.com/z-a-f>`__)
--  (emeritus) Raghuraman Krishnamoorthi (`raghuramank100 <https://github.com/raghuramank100>`__)
-
-
-Windows
-~~~~~~~
-
--  Guoliang Hua (`nbcsm <https://github.com/nbcsm>`__)
--  (emeritus) Teng Gao (`gaoteng-git <https://github.com/gaoteng-git>`__)
--  (emeritus) Peter Johnson (`peterjc123 <https://github.com/peterjc123>`__)
-
-Apple M1/MPS
-~~~~~~~~~~~~
-
--  Alban Desmaison (`alband <https://github.com/alband>`__)
--  Nikita Shulga (`malfet <https://github.com/malfet>`__)
--  Kulin Seth (`kulinseth <https://github.com/kulinseth>`__)
--  Ramin Azarmehr (`razarmehr <https://github.com/razarmehr>`__)
-
-PowerPC
-~~~~~~~
-
--  Alfredo Mendoza (`avmgithub <https://github.com/avmgithub>`__)
-
-AArch64 CPU
-~~~~~~~~~~~~
-
--  Sunita Nadampalli (`snadampal <https://github.com/snadampal>`__)
-
-Docs / Tutorials
-~~~~~~~~~~~~~~~~
-
-- Svetlana Karslioglu (`svekars <https://github.com/svekars>`__)
-
-Library-level maintainers
--------------------------
-
+- فاسيلي ك
 XLA
-~~~
+===
 
--  Jack Cao (`JackCaoG <https://github.com/JackCaoG>`__)
--  Daniel Sohn (`jysohn23 <https://github.com/jysohn23>`__)
--  Zach Cain (`zcain117 <https://github.com/zcain117>`__)
--  Brian Hirsh (`bdhirsh <https://github.com/bdhirsh>`__)
--  Gregory Chanan (`gchanan <https://github.com/gchanan>`__)
--  (emeritus) Ailing Zhang (`ailzhang <https://github.com/ailzhang>`__)
--  (emeritus) Davide Libenzi (`dlibenzi <https://github.com/dlibenzi>`__)
--  (emeritus) Alex Suhan (`asuhan <https://github.com/asuhan>`__)
+-  جاك كاو (`JackCaoG <https://github.com/JackCaoG>`__)
+-  دانييل سوهن (`jysohn23 <https://github.com/jysohn23>`__)
+-  زاك كين (`zcain117 <https://github.com/zcain117>`__)
+-  براين هيرش (`bdhirsh <https://github.com/bdhirsh>`__)
+-  غريغوري شانان (`gchanan <https://github.com/gchanan>`__)
+-  (فخري) أيلينغ تشانغ (`ailzhang <https://github.com/ailzhang>`__)
+-  (فخري) دافيدي ليبينزي (`dlibenzi <https://github.com/dlibenzi>`__)
+-  (فخري) أليكس سوهان (`asuhan <https://github.com/asuhan>`__)
 
 TorchServe
-~~~~~~~~~~
+==========
 
--  Geeta Chauhan (`chauhang <https://github.com/chauhang>`__)
--  Manoj Rao (`mycpuorg <https://github.com/mycpuorg>`__)
--  Vamshi Dantu (`vdantu <https://github.com/vdantu>`__)
--  Dhanasekar Karuppasamy (`dhanainme <https://github.com/dhanainme>`__)
+-  غيتا تشوهان (`chauhang <https://github.com/chauhang>`__)
+-  مانوج راو (`mycpuorg <https://github.com/mycpuorg>`__)
+-  فامشي دانتو (`vdantu <https://github.com/vdantu>`__)
+-  دهاناسيكار كاروباسامي (`dhanainme <https://github.com/dhanainme>`__)
 
 TorchVision
-~~~~~~~~~~~
+===========
 
--  Francisco Massa (`fmassa <https://github.com/fmassa>`__)
--  Vasilis Vryniotis (`datumbox <https://github.com/datumbox>`__)
--  Nicolas Hug (`NicolasHug <https://github.com/NicolasHug>`__)
--  Yosua Michael Maranatha (`YosuaMichael <https://github.com/YosuaMichael>`__)
--  Joao Gomes (`jdsgomes <https://github.com/jdsgomes>`__)
--  Philip Meier (`pmeier <https://github.com/pmeier>`__)
--  Victor Fomin (`vfdev-5 <https://github.com/vfdev-5>`__)
+-  فرانسيسكو ماسا (`fmassa <https://github.com/fmassa>`__)
+-  فاسيليس فرينيوتيس (`datumbox <https://github.com/datumbox>`__)
+-  نيكولاس هوغ (`NicolasHug <https://github.com/NicolasHug>`__)
+-  يوسوا مايكل ماراناثا (`YosuaMichael <https://github.com/YosuaMichael>`__)
+-  جواو غوميز (`jdsgomes <https://github.com/jdsgomes>`__)
+-  فيليب ماير (`pmeier <https://github.com/pmeier>`__)
+-  فيكتور فومين (`vfdev-5 <https://github.com/vfdev-5>`__)
 
 TorchText
-~~~~~~~~~
+=========
 
--  Nayef Ahmed (`Nayef211 <https://github.com/Nayef211>`__)
--  (emeritus) Parmeet Singh Bhatia (`parmeet <https://github.com/parmeet>`__)
--  (emeritus) Guanheng George Zhang (`zhangguanheng66 <https://github.com/zhangguanheng66>`__)
--  (emeritus) Christian Puhrsch (`cpuhrsch <https://github.com/cpuhrsch>`__)
+-  نايف أحمد (`Nayef211 <https://github.com/Nayef211>`__)
+-  (فخري) برميت سينغ بهاتيا (`parmeet <https://github.com/parmeet>`__)
+-  (فخري) جوانهينغ جورج تشانغ (`zhangguanheng66 <https://github.com/zhangguanheng66>`__)
+-  (فخري) كريستيان بوهرش (`cpuhrsch <https://github.com/cpuhrsch>`__)
 
 TorchAudio
-~~~~~~~~~~
+==========
 
--  Moto Hira (`mthrok <https://github.com/mthrok>`__)
--  Jeff Hwang (`hwangjeff <https://github.com/hwangjeff>`__)
--  (emeritus) Caroline Chen (`carolineechen <https://github.com/carolineechen>`__)
--  (emeritus) Xiaohui Zhang (`xiaohui-zhang <https://github.com/xiaohui-zhang>`__)
--  (emeritus) Zhaoheng Ni (`nateanl <https://github.com/nateanl>`__)
--  (emeritus) Christian Puhrsch (`cpuhrsch <https://github.com/cpuhrsch>`__)
--  (emeritus) Vincent QB (`vincentqb <https://github.com/vincentqb>`__)
+-  موتو هيرا (`mthrok <https://github.com/mthrok>`__)
+-  جيف هوانج (`hwangjeff <https://github.com/hwangjeff>`__)
+-  (فخري) كارولين تشين (`carolineechen <https://github.com/carolineechen>`__)
+-  (فخري) شياوهوي تشانغ (`xiaohui-zhang <https://github.com/xiaohui-zhang>`__)
+-  (فخري) زهاوهينغ ني (`nateanl <https://github.com/nateanl>`__)
+-  (فخري) كريستيان بوهرش (`cpuhrsch <https://github.com/cpuhrsch>`__)
+-  (فخري) فينسنت كيو بي (`vincentqb <https://github.com/vincentqb>`__)
 
 TorchRec
-~~~~~~~~
+========
 
--  Dmytro Ivchenko (`divchenko <https://github.com/divchenko>`__)
--  Colin Taylor (`colin2328 <https://github.com/colin2328>`__)
+-  ديميترو إيفتشينكو (`divchenko <https://github.com/divchenko>`__)
+-  كولين تايلور (`colin2328 <https://github.com/colin2328>`__)
 
 TorchX
-~~~~~~
+======
 
--  Tristan Rice (`d4l3k <https://github.com/d4l3k>`__)
--  Kiuk Chung (`kiukchung <https://github.com/kiukchung>`__)
+-  تريستان رايس (`d4l3k <https://github.com/d4l3k>`__)
+-  كيوك تشونغ (`kiukchung <https://github.com/kiukchung>`__)
 
 TorchData / TorchArrow
-~~~~~~~~~~~~~~~~~~~~~~
+======================
 
--  Wenlei Xie (`wenleix <https://github.com/wenleix>`__)
--  (emeritus) Vitaly Fedyunin (`VitalyFedyunin <https://github.com/VitalyFedyunin>`__)
+-  وينلي شي (`wenleix <https://github.com/wenleix>`__)
+-  (فخري) فيتالي فيدونين (`VitalyFedyunin <https://github.com/VitalyFedyunin>`__)
