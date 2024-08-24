@@ -1,64 +1,58 @@
 .. _broadcasting-semantics:
 
-Broadcasting semantics
-======================
+دلالات البث
+==========
 
-Many PyTorch operations support NumPy's broadcasting semantics.
-See https://numpy.org/doc/stable/user/basics.broadcasting.html for details.
+تدعم العديد من عمليات PyTorch دلالات البث الخاصة بـ NumPy.
+راجع https://numpy.org/doc/stable/user/basics.broadcasting.html لمزيد من التفاصيل.
 
-In short, if a PyTorch operation supports broadcast, then its Tensor arguments can be
-automatically expanded to be of equal sizes (without making copies of the data).
+باختصار، إذا كانت عملية PyTorch تدعم البث، فيمكن توسيع وسائط Tensor الخاصة بها تلقائيًا لتكون ذات أحجام متساوية (دون إجراء نسخ من البيانات).
 
-General semantics
------------------
-Two tensors are "broadcastable" if the following rules hold:
+دلالات عامة
+---------
+يُعتبر وسيطا Tensor "قابلين للبث" إذا تحققت القواعد التالية:
 
-- Each tensor has at least one dimension.
-- When iterating over the dimension sizes, starting at the trailing dimension,
-  the dimension sizes must either be equal, one of them is 1, or one of them
-  does not exist.
+- يجب أن يكون لكل Tensor بُعد واحد على الأقل.
+- عند التكرار عبر أحجام الأبعاد، بدءًا من البعد الأخير، يجب أن تكون أحجام الأبعاد إما متساوية، أو أن يكون أحدها 1، أو أن أحدها لا يوجد.
 
-For Example::
+على سبيل المثال::
 
     >>> x=torch.empty(5,7,3)
     >>> y=torch.empty(5,7,3)
-    # same shapes are always broadcastable (i.e. the above rules always hold)
+    # نفس الأشكال قابلة للبث دائمًا (أي أن القواعد المذكورة أعلاه دائمًا ما تكون صحيحة)
 
     >>> x=torch.empty((0,))
     >>> y=torch.empty(2,2)
-    # x and y are not broadcastable, because x does not have at least 1 dimension
+    # x و y غير قابلين للبث، لأن x لا يحتوي على بُعد واحد على الأقل
 
-    # can line up trailing dimensions
+    # يمكن محاذاة الأبعاد الأخيرة
     >>> x=torch.empty(5,3,4,1)
     >>> y=torch.empty(  3,1,1)
-    # x and y are broadcastable.
-    # 1st trailing dimension: both have size 1
-    # 2nd trailing dimension: y has size 1
-    # 3rd trailing dimension: x size == y size
-    # 4th trailing dimension: y dimension doesn't exist
+    # x و y قابلان للبث.
+    # البعد الأخير الأول: كلاهما له حجم 1
+    # البعد الأخير الثاني: حجم y هو 1
+    # البعد الأخير الثالث: حجم x == حجم y
+    # البعد الأخير الرابع: البعد غير موجود في y
 
-    # but:
+    # لكن:
     >>> x=torch.empty(5,2,4,1)
     >>> y=torch.empty(  3,1,1)
-    # x and y are not broadcastable, because in the 3rd trailing dimension 2 != 3
+    # x و y غير قابلين للبث، لأن الحجم في البعد الأخير الثالث 2 != 3
 
-If two tensors :attr:`x`, :attr:`y` are "broadcastable", the resulting tensor size
-is calculated as follows:
+إذا كان وسيطا Tensor :attr:`x`، :attr:`y` "قابلين للبث"، فيتم حساب حجم Tensor الناتج على النحو التالي:
 
-- If the number of dimensions of :attr:`x` and :attr:`y` are not equal, prepend 1
-  to the dimensions of the tensor with fewer dimensions to make them equal length.
-- Then, for each dimension size, the resulting dimension size is the max of the sizes of
-  :attr:`x` and :attr:`y` along that dimension.
+- إذا كان عدد أبعاد :attr:`x` و :attr:`y` غير متساويين، فقم بإلحاق 1 بأبعاد Tensor ذات الأبعاد الأقل لجعلها ذات طول متساوٍ.
+- بعد ذلك، لكل حجم بُعد، يكون حجم البعد الناتج هو الحد الأقصى لأحجام :attr:`x` و :attr:`y` على طول ذلك البعد.
 
-For Example::
+على سبيل المثال::
 
-    # can line up trailing dimensions to make reading easier
+    # يمكن محاذاة الأبعاد الأخيرة لجعل القراءة أسهل
     >>> x=torch.empty(5,1,4,1)
     >>> y=torch.empty(  3,1,1)
     >>> (x+y).size()
     torch.Size([5, 3, 4, 1])
 
-    # but not necessary:
+    # لكن ليس ضروريًا:
     >>> x=torch.empty(1)
     >>> y=torch.empty(3,1,7)
     >>> (x+y).size()
@@ -67,48 +61,46 @@ For Example::
     >>> x=torch.empty(5,2,4,1)
     >>> y=torch.empty(3,1,1)
     >>> (x+y).size()
-    RuntimeError: The size of tensor a (2) must match the size of tensor b (3) at non-singleton dimension 1
+    RuntimeError: يجب أن يتطابق حجم tensor a (2) مع حجم tensor b (3) في البعد غير المفرد 1
 
-In-place semantics
-------------------
-One complication is that in-place operations do not allow the in-place tensor to change shape
-as a result of the broadcast.
+دلالات في المكان
+-------------
+أحد التعقيدات هو أن العمليات في المكان لا تسمح لtensor في المكان بتغيير الشكل نتيجة للبث.
 
-For Example::
+على سبيل المثال::
 
     >>> x=torch.empty(5,3,4,1)
     >>> y=torch.empty(3,1,1)
     >>> (x.add_(y)).size()
     torch.Size([5, 3, 4, 1])
 
-    # but:
+    # لكن:
     >>> x=torch.empty(1,3,1)
     >>> y=torch.empty(3,1,7)
     >>> (x.add_(y)).size()
-    RuntimeError: The expanded size of the tensor (1) must match the existing size (7) at non-singleton dimension 2.
+    RuntimeError: يجب أن يتطابق الحجم الموسع للtensor (1) مع الحجم الموجود (7) في البعد غير المفرد 2.
 
-Backwards compatibility
+التوافق مع الإصدارات السابقة
 -----------------------
-Prior versions of PyTorch allowed certain pointwise functions to execute on tensors with different shapes,
-as long as the number of elements in each tensor was equal.  The pointwise operation would then be carried
-out by viewing each tensor as 1-dimensional.  PyTorch now supports broadcasting and the "1-dimensional"
-pointwise behavior is considered deprecated and will generate a Python warning in cases where tensors are
-not broadcastable, but have the same number of elements.
+سمحت الإصدارات السابقة من PyTorch لوظائف نقطة معينة بالتنفيذ على وسائط Tensor ذات أشكال مختلفة،
+طالما كان عدد العناصر في كل Tensor متساويًا. ثم يتم تنفيذ عملية النقطة الواحدة
+من خلال النظر إلى كل Tensor كأبعاد أحادية. تدعم PyTorch الآن البث، ويُعتبر سلوك "الأبعاد الأحادية"
+قديمًا وسيؤدي إلى ظهور تحذير Python في الحالات التي لا تكون فيها وسائط Tensor قابلة للبث، ولكن لها نفس عدد العناصر.
 
-Note that the introduction of broadcasting can cause backwards incompatible changes in the case where
-two tensors do not have the same shape, but are broadcastable and have the same number of elements.
-For Example::
+لاحظ أن تقديم البث يمكن أن يتسبب في حدوث تغييرات غير متوافقة مع الإصدارات السابقة في الحالة التي
+لا يكون فيها وسيطا Tensor لهما نفس الشكل، ولكنهما قابلان للبث ولديهما نفس عدد العناصر.
+على سبيل المثال::
 
     >>> torch.add(torch.ones(4,1), torch.randn(4))
 
-would previously produce a Tensor with size: torch.Size([4,1]), but now produces a Tensor with size: torch.Size([4,4]).
-In order to help identify cases in your code where backwards incompatibilities introduced by broadcasting may exist,
-you may set `torch.utils.backcompat.broadcast_warning.enabled` to `True`, which will generate a python warning
-in such cases.
+كان من شأنه أن ينتج سابقًا Tensor بحجم: torch.Size([4,1])، ولكنه ينتج الآن Tensor بحجم: torch.Size([4,4]).
+وللمساعدة في تحديد الحالات في رمزك حيث قد توجد عدم توافق مع الإصدارات السابقة التي قد تسببها البث،
+يمكنك تعيين `torch.utils.backcompat.broadcast_warning.enabled` إلى `True`، والذي سيؤدي إلى ظهور تحذير Python
+في مثل هذه الحالات.
 
-For Example::
+على سبيل المثال::
 
     >>> torch.utils.backcompat.broadcast_warning.enabled=True
     >>> torch.add(torch.ones(4,1), torch.ones(4))
-    __main__:1: UserWarning: self and other do not have the same shape, but are broadcastable, and have the same number of elements.
-    Changing behavior in a backwards incompatible manner to broadcasting rather than viewing as 1-dimensional.
+    __main__:1: UserWarning: self وother ليس لهما نفس الشكل، ولكنهما قابلان للبث، ولديهما نفس عدد العناصر.
+    تغيير السلوك بطريقة غير متوافقة مع الإصدارات السابقة إلى البث بدلاً من النظر إليها كأبعاد أحادية.
