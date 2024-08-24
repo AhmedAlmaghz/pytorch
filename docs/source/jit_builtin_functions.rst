@@ -1,10 +1,16 @@
-.. _builtin-functions:
+:المتوفرة مسبقا في TorchScript:
+==========================
+
+هذه مرجع كامل للوظائف وطرق Tensor المتاحة في TorchScript.
+
+.. المحتويات:: :المحلي:
+
+.. وحدة تلقائية:: torch.jit.supported_ops
 
 TorchScript Builtins
-====================
 
-This is a full reference of functions and Tensor methods accessible in TorchScript
+هذه هي المرجع الكامل للوظائف وطرق Tensor المتاحة في TorchScript.
 
-.. contents:: :local:
+.. contents:: :local: المحتويات
 
-.. automodule:: torch.jit.supported_ops
+.. automodule:: torch.jit.supported_ops الوحدات النمطية المدعومة في TorchScript
