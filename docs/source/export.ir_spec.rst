@@ -1,131 +1,90 @@
 .. _export.ir_spec:
 
-torch.export IR Specification
+مواصفات تنسيق IR في torch.export
 =============================
 
-Export IR is an intermediate representation (IR) for compilers, which bears
-similarities to MLIR and TorchScript. It is specifically designed to express the
-semantics of PyTorch programs. Export IR primarily represents computation in a
-streamlined list of operations, with limited support for dynamism such as
-control flows.
+Export IR هو تمثيل وسيط (IR) للمترجمين، والذي يشبه MLIR و TorchScript. وهو مصمم خصيصًا للتعبير عن دلالية برامج PyTorch. يمثل Export IR الحساب بشكل أساسي في قائمة مبسطة من العمليات، مع دعم محدود للديناميكية مثل تدفقات التحكم.
 
-To create an Export IR graph, a frontend can be used that soundly captures a
-PyTorch program via a trace-specializing mechanism. The resulting Export IR can
-then be optimized and executed by a backend. This can be done today through
-:func:`torch.export.export`.
+لإنشاء رسم بياني لـ Export IR، يمكن استخدام واجهة أمامية تقوم بالتقاط برنامج PyTorch بشكل صحيح عبر آلية التخصص في التتبع. بعد ذلك، يمكن تحسين IR الناتج وتنفيذه بواسطة backend. يمكن القيام بذلك اليوم من خلال: func: `torch.export.export`.
 
-The key concepts that will be covered in this document include:
+تشمل المفاهيم الرئيسية التي سيتم تغطيتها في هذه الوثيقة ما يلي:
 
-- ExportedProgram: the data structure containing the Export IR program
-- Graph: which consists of a list of nodes.
-- Nodes: which represents operations, control flow, and metadata stored on this node.
-- Values are produced and consumed by nodes.
-- Types are associated with values and nodes.
-- The size and memory layout of values are also defined.
+- ExportedProgram: بنية البيانات التي تحتوي على برنامج Export IR
+- Graph: الذي يتكون من قائمة من العقد.
+- العقد: التي تمثل العمليات وتدفق التحكم والبيانات الوصفية المخزنة في هذه العقدة.
+- القيم التي تنتجها العقد ويستهلكها.
+- ترتبط الأنواع بالقيم والعقد.
+- يتم أيضًا تحديد حجم القيم وتخطيط الذاكرة.
 
-Assumptions
-------------
+افتراضات
+--------
 
-This doc assumes that the audience is sufficiently familiar with PyTorch,
-specifically with :class:`torch.fx` and its related toolings. Thus it will stop
-describing contents present in :class:`torch.fx` documentation and paper.
+يفترض هذا المستند أن القارئ على دراية كافية بـ PyTorch، وخاصة بـ: class: `torch.fx` وأدواته ذات الصلة. وبالتالي، فإنه سيتوقف عن وصف المحتويات الموجودة في: class: `torch.fx` الوثائق والورق.
 
-What is Export IR
+ما هو Export IR
 -----------------
 
-Export IR is a graph-based intermediate representation IR of PyTorch programs.
-Export IR is realized on top of :class:`torch.fx.Graph`. In other words, **all
-Export IR graphs are also valid FX graphs**, and if interpreted using standard
-FX semantics, Export IR can be interpreted soundly. One implication is that an
-exported graph can be converted to a valid Python program via standard FX
-codegen.
+Export IR هو تمثيل وسيط قائم على الرسم البياني لبرامج PyTorch. يتم تحقيق Export IR بناءً على: class: `torch.fx.Graph`. وبعبارة أخرى، **جميع رسومات Export IR صالحة أيضًا لرسومات FX**، وإذا تم تفسيرها باستخدام الدلالات القياسية لـ FX، فيمكن تفسير IR التصدير بشكل صحيح. أحد الآثار المترتبة على ذلك هو أنه يمكن تحويل الرسم البياني المصدر إلى برنامج Python صالح عبر توليد كود FX القياسي.
 
-This documentation will primarily focus on highlighting areas where Export IR
-differs from FX in terms of its strictness, while skipping parts where it shares
-similarities with FX.
+ستركز هذه الوثيقة بشكل أساسي على تسليط الضوء على المجالات التي يختلف فيها Export IR عن FX من حيث صرامته، مع تخطي الأجزاء التي تشترك فيها مع FX.
 
 ExportedProgram
 ---------------
 
-The top-level Export IR construct is an :class:`torch.export.ExportedProgram`
-class. It bundles the computational graph of a PyTorch model (which is usually a
-:class:`torch.nn.Module`) with the parameters or weights that this model
-consumes.
+البناء الأعلى لـ Export IR هو فئة: class: `torch.export.ExportedProgram`. فهو يحزم الرسم البياني الحسابي لنموذج PyTorch (والذي يكون عادةً: class: `torch.nn.Module`) مع المعلمات أو الأوزان التي يستهلكها هذا النموذج.
 
-Some notable attributes of the :class:`torch.export.ExportedProgram` class are:
+بعض السمات البارزة لفئة: class: `torch.export.ExportedProgram` هي:
 
-- ``graph_module`` (:class:`torch.fx.GraphModule`): Data structure containing
-  the flattened computational graph of the PyTorch model. The graph can be
-  directly accessed through `ExportedProgram.graph`.
-- ``graph_signature`` (:class:`torch.export.ExportGraphSignature`): The graph
-  signature, which specifies the parameters and buffer names used and mutated
-  within the graph. Instead of storing parameters and buffers as attributes of
-  the graph, they are lifted as inputs to the graph. The graph_signature is
-  utilized to keep track of additional information on these parameters and
-  buffers.
-- ``state_dict`` (``Dict[str, Union[torch.Tensor, torch.nn.Parameter]]``): Data
-  structure containing the parameters and buffers.
-- ``range_constraints`` (``Dict[sympy.Symbol, RangeConstraint]``): For programs
-  that are exported with data dependent behavior, the metadata on each node will
-  contain symbolic shapes (which look like ``s0``, ``i0``). This attribute maps
-  the symbolic shapes to their lower/upper ranges.
+- ``graph_module`` (:class:`torch.fx.GraphModule`): بنية البيانات التي تحتوي على الرسم البياني المسطح للنموذج PyTorch. يمكن الوصول إلى الرسم البياني مباشرة من خلال `ExportedProgram.graph`.
+- ``graph_signature`` (:class:`torch.export.ExportGraphSignature`): توقيع الرسم البياني، والذي يحدد أسماء المعلمات والمخازن المؤقتة المستخدمة والمعدلة داخل الرسم البياني. بدلاً من تخزين المعلمات والمخازن المؤقتة كسمات للرسم البياني، يتم رفعها كمدخلات للرسم البياني. يتم استخدام توقيع الرسم البياني لتتبع معلومات إضافية حول هذه المعلمات والمخازن المؤقتة.
+- ``state_dict`` (``Dict [str، Union [torch.Tensor، torch.nn.Parameter]]``): بنية البيانات التي تحتوي على المعلمات والمخازن المؤقتة.
+- ``range_constraints`` (``Dict [sympy.Symbol، RangeConstraint]``): بالنسبة للبرامج التي يتم تصديرها مع سلوك يعتمد على البيانات، ستتضمن البيانات الوصفية لكل عقدة أشكالًا رمزية (تبدو مثل ``s0``، ``i0``). تقوم هذه السمة بتعيين الأشكال الرمزية إلى نطاقاتها الدنيا/العليا.
 
 Graph
 -----
 
-An Export IR Graph is a PyTorch program represented in the form of a DAG
-(directed acyclic graph).  Each node in this graph represents a particular
-computation or operation, and edges of this graph consist of references between
-nodes.
+رسم بياني لـ Export IR هو برنامج PyTorch ممثَّل في شكل رسم بياني موجَّه غير دوري (DAG). تمثل كل عقدة في هذا الرسم البياني عملية حسابية أو عملية محددة، وتتكون حواف هذا الرسم البياني من مراجع بين العقد.
 
-We can view Graph having this schema:
+يمكننا عرض الرسم البياني الذي يحتوي على هذا المخطط:
 
 .. code-block:: python
 
    class Graph:
      nodes: List[Node]
 
-In practice, Export IR's graph is realized as :class:`torch.fx.Graph` Python class.
+في الممارسة العملية، يتم تحقيق الرسم البياني لـ Export IR كفئة Python: class: `torch.fx.Graph`.
 
-An Export IR graph contains the following nodes (Nodes will be described in more
-details in the next section):
+يحتوي الرسم البياني لـ Export IR على العقد التالية (سيتم وصف العقد بمزيد من التفاصيل في القسم التالي):
 
-- 0 or more nodes of op type ``placeholder``
-- 0 or more nodes of op type ``call_function``
-- exactly 1 node of op type ``output``
+- 0 أو أكثر من العقد من النوع "placeholder"
+- 0 أو أكثر من العقد من النوع "call_function"
+- بالضبط 1 عقدة من النوع "output"
 
-**Collorary:** The smallest valid Graph will be of one node. i.e. nodes is never empty.
+**نتيجة منطقية:** أصغر رسم بياني صالح سيكون من عقدة واحدة. أي أن العقد لا تكون فارغة أبدًا.
 
-**Definition:**
-The set of ``placeholder`` nodes of a Graph represents the **inputs** of the
-Graph of GraphModule. The `output` node of a Graph represents the **outputs**
-of the Graph of GraphModule.
+**التعريف:**
+تمثل مجموعة من العقد "placeholder" في الرسم البياني **مدخلات** الرسم البياني لـ GraphModule. تمثل عقدة "output" في الرسم البياني **الإخراج** من الرسم البياني لـ GraphModule.
 
-Example::
+مثال::
 
    from torch import nn
 
    class MyModule(nn.Module):
 
-       def forward(self, x, y):
+       def forward(self، x، y):
          return x + y
 
-   mod = torch.export.export(MyModule())
+   mod = torch.export.export(MyModule ())
    print(mod.graph)
 
-The above is the textual representation of a Graph, with each line being a node.
+ما سبق هو التمثيل النصي لرسم بياني، مع كل سطر يمثل عقدة.
 
 Node
 ----
 
-A Node represents a particular computation or operation and is represented in
-Python using the :class:`torch.fx.Node` class. Edges between nodes are
-represented as direct references to other nodes via the ``args`` property of the
-Node class. Using the same FX machinery, we can represent the following
-operations that a computational graph typically needs, such as operator calls,
-placeholders (aka inputs), conditionals, and loops.
+تمثل العقدة عملية حسابية أو عملية محددة ويتم تمثيلها في Python باستخدام فئة: class: `torch.fx.Node`. يتم تمثيل الحواف بين العقد كمراجع مباشرة إلى العقد الأخرى عبر خاصية "args" لفئة Node. باستخدام نفس آلية FX، يمكننا تمثيل العمليات التالية التي يحتاجها الرسم البياني الحسابي عادةً، مثل استدعاءات المشغل، والمواضع الاحتياطية (المعروفة باسم المدخلات)، والعبارات الشرطية، والحلقات.
 
-The Node has the following schema:
+لدى العقدة المخطط التالي:
 
 .. code-block:: python
 
@@ -139,224 +98,182 @@ The Node has the following schema:
      kwargs: Dict[str, object]
      meta: Dict[str, object]
 
-**FX Text Format**
+**تنسيق نص FX**
 
-As in the example above, notice that each line has this format::
+كما هو موضح في المثال أعلاه، لاحظ أن لكل سطر هذا التنسيق::
 
-   %<name>:[...] = <op_name>[target=<target>](args = (%arg1, %arg2, arg3, arg4, …)), kwargs = {"keyword": arg5})
+   %<name>: [...] = <op_name> [target=<target>](args = (%arg1، %arg2، arg3، arg4، ...))، kwargs = {"keyword": arg5})
 
-This format captures everything present in the Node class, with the exception of
-``meta``, in a compact format.
+يستحوذ هذا التنسيق على كل ما هو موجود في فئة العقدة، باستثناء "meta"، بتنسيق مضغوط.
 
-Concretely:
+بشكل ملموس:
 
-- **<name>** is the name of the node as it would appear in ``node.name``.
+- **<name>** هو اسم العقدة كما سيظهر في ``node.name``.
 
-- **<op_name>** is the ``node.op`` field, which must be one of these:
-  `<call_function>`, `<placeholder>`,
-  `<get_attr>`, or `<output>`.
+- **<op_name>** هو حقل "node.op"، والذي يجب أن يكون واحدًا من هذه: `<call_function>`، `<placeholder>`،
+  `<get_attr>`، أو `<output>`.
 
-- **<target>** is the target of the node as ``node.target``. The meaning of this
-  field depends on ``op_name``.
+- **<target>** هو الهدف من العقدة كما هو موضح في ``node.target``. يعتمد معنى هذا
+  الحقل على "op_name".
 
-- **args1, … args 4…** are what is listed in the ``node.args`` tuple. If a
-  value in the list is an :class:`torch.fx.Node`, then it will be especially
-  indicated with a leading **%.**
+- **args1، ... args 4 ...** هي ما هو مدرج في قائمة "node.args". إذا كانت
+  القيمة في القائمة عبارة عن: class: `torch.fx.Node`، فسيتم الإشارة إليه بشكل خاص برمز **%.**
 
-For example, a call to the add operator would appear as::
+على سبيل المثال، ستظهر مكالمة لدالة الإضافة على النحو التالي::
 
-   %add1 = call_function[target = torch.op.aten.add.Tensor](args = (%x, %y), kwargs = {})
+   %add1 = call_function [target = torch.op.aten.add.Tensor] (args = (%x، %y)، kwargs = {})
 
-Where ``%x``, ``%y`` are two other Nodes that have names x and y.  Worth noting
-that the string ``torch.op.aten.add.Tensor`` represents the callable object that
-is actually stored in the target field, not merely its string name.
+حيث ``%x``، ``%y`` هما عقدتان أخريان لهما الأسماء x و y. من الجدير بالذكر أن السلسلة "torch.op.aten.add.Tensor" تمثل الكائن القابل للاستدعاء الذي يتم تخزينه بالفعل في حقل الهدف، وليس مجرد اسمه كسلسلة.
 
-The final line of this text format is::
+السطر الأخير من هذا التنسيق النصي هو::
 
    return [add]
 
-which is a Node with ``op_name = output``, indicating that we are returning this
-one element.
+وهي عقدة مع ``op_name = output``، مما يشير إلى أننا نقوم بإرجاع هذا العنصر.
 
 call_function
 ^^^^^^^^^^^^^
 
-A ``call_function`` node represents a call to an operator.
+تمثل عقدة "call_function" استدعاء لمشغل.
 
-**Definitions**
+**التعاريف**
 
-- **Functional:** We say a callable is “functional” if it satisfies all the
-  following requirements:
+- **وظيفي:** نقول إن الدالة القابلة للاستدعاء "وظيفية" إذا استوفت جميع المتطلبات التالية:
 
-  - Non-mutating: The operator does not mutate the value of its input (for
-    tensors, this includes both metadata and data).
-  - No side effects: The operator does not mutate states that are visible
-    from outside, like changing values of module parameters.
+  - غير متحول: لا يقوم المشغل بتعديل قيمة مدخله (بالنسبة إلى التنسورات، يتضمن ذلك كلاً من البيانات الوصفية والبيانات).
+  - لا توجد تأثيرات جانبية: لا يقوم المشغل بتعديل الحالات التي يمكن رؤيتها
+    من الخارج، مثل تغيير قيم معلمات الوحدة النمطية.
 
-- **Operator:** is a functional callable with a predefined schema. Examples of
-  such operators include functional ATen operators.
+- **المشغل:** هو دالة قابلة للاستدعاء وظيفية ذات مخطط محدد مسبقًا. تشمل أمثلة
+  مثل هذه المشغلات مشغلات ATen الوظيفية.
 
-**Representation in FX**
+**التمثيل في FX**
 
 .. code-block::
 
-    %name = call_function[target = operator](args = (%x, %y, …), kwargs = {})
+    %name = call_function [target = operator] (args = (%x، %y، ...)، kwargs = {})
 
 
-**Differences from vanilla FX call_function**
+**الاختلافات عن call_function الفانيليا FX**
 
-1. In FX graph, a call_function can refer to any callable, in Export IR, we
-   restrict it to only a select subset of ATen operators, custom operators, and
-   control flow operators.
+1. في الرسم البياني لـ FX، يمكن أن تشير "call_function" إلى أي دالة قابلة للاستدعاء، في Export IR، فنحن
+   تقييد إلى مجموعة فرعية مختارة فقط من مشغلي ATen والمشغلين المخصصين ومشغلي تدفق التحكم.
 
-2. In Export IR, constant arguments will be embedded within the graph.
+2. في Export IR، ستتم تضمين الحجج الثابتة داخل الرسم البياني.
 
-3. In FX graph, a get_attr node can represent reading any attribute stored in
-   the graph module. However, in Export IR this is restricted to readign only
-   submodules as all parameters/buffers will be passed in as inputs to the graph
-   module.
+3. في الرسم البياني لـ FX، يمكن أن تمثل عقدة "get_attr" قراءة أي سمة مخزنة في
+   :class:`torch.fx.GraphModule`. ومع ذلك، في Export IR، يقتصر هذا على قراءة فقط
+   الوحدات الفرعية حيث يتم تمرير جميع المعلمات/المخازن المؤقتة كمدخلات إلى الوحدة النمطية للرسم البياني.
 
-Metadata
+بيانات وصفية
 ~~~~~~~~
 
-``Node.meta`` is a dict attached to every FX node. However, the FX spec does not
-specify what metadata can or will be there. Export IR provides a stronger
-contract, specifically all ``call_function`` nodes will guarantee having and
-only having the following metadata fields:
+``Node.meta`` عبارة عن قاموس مرفق بكل عقدة FX. ومع ذلك، لا تحدد مواصفات FX البيانات الوصفية التي يمكن أو ستكون موجودة. يوفر Export IR عقدًا أقوى، وتحديدًا جميع العقد "call_function" التي ستضمن وجود الحقول التالية للبيانات الوصفية فقط:
 
-- ``node.meta["stack_trace"]`` is a string containing the Python stack trace
-  referencing the original Python source code. An example stack trace looks
-  like::
+- ``node.meta ["stack_trace"]`` عبارة عن سلسلة تحتوي على تتبع المكدس Python الذي يشير إلى كود المصدر Python الأصلي. يبدو مثال على تتبع المكدس كما يلي::
 
-    File "my_module.py", line 19, in forward
-    return x + dummy_helper(y)
-    File "helper_utility.py", line 89, in dummy_helper
+    File "my_module.py"، line 19، in forward
+    return x + dummy_helper (y)
+    File "helper_utility.py"، line 89، in dummy_helper
     return y + 1
 
-- ``node.meta["val"]`` describes the output of running the operation. It can be
-  of type `<symint>`, `<FakeTensor>`, a
-  ``List[Union[FakeTensor, SymInt]]``, or ``None``.
+- ``node.meta ["val"]`` يصف إخراج تشغيل العملية. يمكن أن يكون
+  من النوع `<symint>`، `<FakeTensor>`،
+  قائمة ``List [Union [FakeTensor، SymInt]]``، أو ``None``.
 
-- ``node.meta["nn_module_stack"]`` describes the "stacktrace" of the
-  :class:`torch.nn.Module` from which the node came, if it was from a
-  :class:`torch.nn.Module` call. For example, if a node containing the ``addmm``
-  op called from a :class:`torch.nn.Linear` module inside of a
-  :class:`torch.nn.Sequential` module, the ``nn_module_stack`` would look
-  something like::
+- ``node.meta ["nn_module_stack"]`` يصف "stacktrace" من: class: `torch.nn.Module` الذي جاءت منه العقدة، إذا كان من: class: `torch.nn.Module` مكالمة. على سبيل المثال، إذا احتوت عقدة تحتوي على عملية "addmm" على مكالمة من: class: `torch.nn.Linear` الوحدة النمطية داخل: class: `torch.nn.Sequential` الوحدة النمطية، فإن "nn_module_stack" ستبدو شيئًا مثل::
 
-    {'self_linear': ('self.linear', <class 'torch.nn.Linear'>), 'self_sequential': ('self.sequential', <class 'torch.nn.Sequential'>)}
+    {'self_linear': ('self.linear'، <class 'torch.nn.Linear'>)، 'self_sequential': ('self.sequential'، <class 'torch.nn.Sequential'>)}
 
-- ``node.meta["source_fn_stack"]`` contains the torch function or the leaf
-  :class:`torch.nn.Module` class this node was called from before decomposition.
-  For example, a node containing the ``addmm`` op from a
-  :class:`torch.nn.Linear` module call would contain :class:`torch.nn.Linear` in
-  their ``source_fn``, and a node containing the ``addmm`` op from a
-  :class:`torch.nn.functional.Linear` module call would contain
-  :class:`torch.nn.functional.Linear` in their ``source_fn``.
+- ``node.meta ["source_fn_stack"]`` يحتوي على الدالة ذات اللهب أو: class: `torch.nn.Module` الفئة التي تم استدعاء هذه العقدة منها قبل التفكيك. على سبيل المثال، ستتضمن العقدة التي تحتوي على عملية "addmm" من مكالمة: class: `torch.nn.Linear` الوحدة النمطية: class: `torch.nn.Linear` في "source_fn" الخاصة بهم، وستتضمن العقدة التي تحتوي على عملية "addmm" من مكالمة: class: `torch.nn.functional.Linear` الوحدة النمطية: class: `torch.nn.functional.Linear` في "source_fn" الخاصة بهم.
 
 placeholder
 ^^^^^^^^^^^
 
-Placeholder represents an input to a graph. Its semantics are exactly the same as in FX.
-Placeholder nodes must be the first N nodes in the nodes list of a graph. N can be zero.
+يمثل الموضع الاحتياطي إدخالًا إلى الرسم البياني. دلالتها هي نفسها الموجودة في FX. يجب أن تكون عقد المواضع الاحتياطية هي العقد N الأولى في قائمة العقد في الرسم البياني. يمكن أن يكون N صفرًا.
 
-**Representation in FX**
+**التمثيل في FX**
 
 .. code-block:: python
 
-   %name = placeholder[target = name](args = ())
+   %name = placeholder [target = name] (args = ())
 
-The target field is a string which is the name of input.
+حقل الهدف هو سلسلة وهي اسم الإدخال.
 
-``args``, if non-empty, should be of size 1 representing the default value of this input.
+إذا لم تكن فارغة، فيجب أن يكون "args" بحجم 1 لتمثيل القيمة الافتراضية لهذا الإدخال.
 
-**Metadata**
+**بيانات وصفية**
 
-Placeholder nodes also have ``meta[‘val’]``, like ``call_function`` nodes. The
-``val`` field in this case represents the input shape/dtype that the graph is
-expected to receive for this input parameter.
+تحتوي عقد المواضع الاحتياطية أيضًا على ``meta ['val']``، مثل عقد "call_function". في هذه الحالة، يمثل حقل "val" شكل/نوع البيانات الذي يتوقع الرسم البياني استلامه لهذا معلمة الإدخال.
 
 output
 ^^^^^^
 
-An output call represents a return statement in a function; it thus terminates the
-current graph.  There is one and only one output node, and it will always be the
-last node of the graph.
+تمثل مكالمة الإخراج عبارة return في دالة؛ وبالتالي فإنه ينهي الرسم البياني الحالي. هناك عقدة إخراج واحدة فقط، وستكون دائمًا العقدة الأخيرة في الرسم البياني.
 
-**Representation in FX**
+**التمثيل في FX**
 
 .. code-block::
 
-   output[](args = (%something, …))
+   output [] (args = (%something، ...))
 
-This has the exact semantics as in :class:`torch.fx`. ``args`` represents the node
-to be returned.
+لهذا نفس الدلالات الموجودة في: class: `torch.fx`. تمثل "args" العقدة
+يتم إرجاعه.
 
-**Metadata**
+**بيانات وصفية**
 
-Output node has the same metadata as ``call_function`` nodes.
+تحتوي عقدة الإخراج على نفس البيانات الوصفية مثل عقد "call_function".
 
 get_attr
 ^^^^^^^^
 
-``get_attr`` nodes represent reading a submodule from the encapsulating
-:class:`torch.fx.GraphModule`. Unlike a vanilla FX graph from
-:func:`torch.fx.symbolic_trace` in which ``get_attr`` nodes are used to read
-attributes such as parameters and buffers from the top-level
-:class:`torch.fx.GraphModule`, parameters and buffers are passed in as
-inputs to the graph module, and stored in the top-level
-:class:`torch.export.ExportedProgram`.
+تمثل عقد "get_attr" قراءة وحدة فرعية من: class: `torch.fx.GraphModule` المضمنة. على عكس الرسم البياني لـ FX العادي من: func: `torch.fx.symbolic_trace` الذي يتم فيه استخدام عقد "get_attr" لقراءة السمات مثل المعلمات والمخازن المؤقتة من: class: `torch.fx.GraphModule` أعلى مستوى، يتم تمرير المعلمات والمخازن المؤقتة كمدخلات إلى الوحدة النمطية للرسم البياني، ويتم تخزينها في: class: `torch.export.ExportedProgram` أعلى مستوى.
 
-**Representation in FX**
+**التمثيل في FX**
 
 .. code-block:: python
 
-   %name = get_attr[target = name](args = ())
+   %name = get_attr [target = name] (args = ())
 
-**Example**
+**مثال**
 
-Consider the following model::
+ضع في اعتبارك النموذج التالي::
 
-  from functorch.experimental.control_flow import cond
+  من functorch.experimental.control_flow import cond
 
-  def true_fn(x):
-      return x.sin()
+  def true_fn (x):
+      return x.sin ()
 
-  def false_fn(x):
-      return x.cos()
+  def false_fn (x):
+      return x.cos ()
 
-  def f(x, y):
-      return cond(y, true_fn, false_fn, [x])
+  def f (x، y):
+      return cond (y، true_fn، false_fn، [x])
 
 Graph::
 
-  graph():
-      %x_1 : [num_users=1] = placeholder[target=x_1]
-      %y_1 : [num_users=1] = placeholder[target=y_1]
-      %true_graph_0 : [num_users=1] = get_attr[target=true_graph_0]
-      %false_graph_0 : [num_users=1] = get_attr[target=false_graph_0]
-      %conditional : [num_users=1] = call_function[target=torch.ops.higher_order.cond](args = (%y_1, %true_graph_0, %false_graph_0, [%x_1]), kwargs = {})
+  الرسم البياني ():
+      %x_1: [num_users=1] = placeholder [target=x_1]
+      %y_1: [num_users=1] = placeholder [target=y_1]
+      %true_graph_0: [num_users=1] = get_attr [target=true_graph_0]
+      %false_graph_0: [num_users=1] = get_attr [target=false_graph_0]
+      %conditional: [num_users=1] = call_function [target=torch.ops.higher_order.cond] (args = (%y_1، %true_graph_0، %false_graph_0، [%x_1])، kwargs = {})
       return conditional
 
-The line, ``%true_graph_0 : [num_users=1] = get_attr[target=true_graph_0]``,
-reads the submodule ``true_graph_0`` which contains the ``sin`` operator.
+السطر، ``%true_graph_0: [num_users=1] = get_attr [target=true_graph_0]``،
+يقرأ الوحدة الفرعية "true_graph_0" التي تحتوي على عملية "sin".
 
-References
-----------
+مراجع
 
 SymInt
 ^^^^^^
 
-A SymInt is an object that can either be a literal integer or a symbol that represents
-an Integer (represented in Python by ``sympy.Symbol`` class). When SymInt is a
-symbol, it describes a variable of type integer that is unknown to the graph at
-compile time, that is, its value is only known at runtime.
+SymInt هو كائن يمكن أن يكون إما عددًا صحيحًا حرفيًا أو رمزًا يمثل عددًا صحيحًا (يمثله في بايثون بواسطة فئة ``sympy.Symbol``). عندما يكون SymInt رمزًا، فهو يصف متغيرًا من النوع العدد الصحيح غير معروف للرسم البياني في وقت الترجمة، أي أن قيمته معروفة فقط في وقت التشغيل.
 
 FakeTensor
 ^^^^^^^^^^
 
-A FakeTensor is an object that contains the metadata of a tensor. It can be
-viewed as having the following metadata.
+FakeTensor هو كائن يحتوي على البيانات الوصفية (الميتاداتا) لموتر (tensor). يمكن اعتباره على أنه يحتوي على البيانات الوصفية التالية:
 
 .. code-block:: python
 
@@ -364,42 +281,29 @@ viewed as having the following metadata.
      size: List[SymInt]
      dtype: torch.dtype
      device: torch.device
-     dim_order: List[int]  # This doesn't exist yet
+     dim_order: List[int]  # هذا لا وجود له بعد
 
-The size field of FakeTensor is a list of integers or SymInts. If SymInts are
-present, this means this tensor has a dynamic shape. If integers are present, it
-is assumed that the tensor will have that exact static shape. The rank of the
-TensorMeta is never dynamic. The dtype field represents the dtype of the
-output of that node. There are no implicit type promotions in Edge IR. There
-are no strides in FakeTensor.
+حقل الحجم (size) في FakeTensor هو قائمة من الأعداد الصحيحة أو SymInts. إذا كانت SymInts موجودة، فهذا يعني أن هذا الموتر له شكل ديناميكي. إذا كانت هناك أعداد صحيحة، فيفترض أن يكون للموتر نفس الشكل الثابت. رتبة TensorMeta غير ديناميكية أبدًا. يمثل حقل dtype نوع البيانات (dtype) للناتج من ذلك العقدة. لا توجد ترقيات نوع ضمنية في Edge IR. لا توجد خطوات في FakeTensor.
 
-In other words:
+بعبارة أخرى:
 
-- If the operator in node.target returns a Tensor, then ``node.meta['val']`` is a
-  FakeTensor describing that tensor.
-- If the operator in node.target returns an n-tuple of Tensors, then
-  ``node.meta['val']`` is an n-tuple of FakeTensors describing each tensor.
-- If the operator in node.target returns an int/float/scalar that is known at
-  compile time, then ``node.meta['val']`` is None.
-- If the operator in node.target returns an int/float/scalar that is not known
-  at compile time, then ``node.meta['val']`` is of type SymInt.
+- إذا كان المشغل في node.target يعيد موترًا، فإن ``node.meta['val']`` هو FakeTensor يصف ذلك الموتر.
+- إذا كان المشغل في node.target يعيد مجموعة من الموترات، فإن ``node.meta['val']`` هو مجموعة من FakeTensors تصف كل موتر.
+- إذا كان المشغل في node.target يعيد عددًا صحيحًا/فاصلة عائمة/مقياسًا معروفًا في وقت الترجمة، فإن ``node.meta['val']`` هو None.
+- إذا كان المشغل في node.target يعيد عددًا صحيحًا/فاصلة عائمة/مقياسًا غير معروف في وقت الترجمة، فإن ``node.meta['val']`` هو من النوع SymInt.
 
-For example:
+على سبيل المثال:
 
-- ``aten::add`` returns a Tensor; so its spec will be a FakeTensor with dtype
-  and size of the tensor returned by this operator.
-- ``aten::sym_size`` returns an integer; so its val will be a SymInt because its
-  value is only available at runtime.
-- ``max_pool2d_with_indexes`` returns a tuple of (Tensor, Tensor); so the spec
-  will also be a 2-tuple of FakeTensor objects, the first TensorMeta describes
-  the first element of the return value etc.
+- ``aten::add`` يعيد موترًا؛ لذلك سيكون مواصفاته FakeTensor مع dtype وحجم الموتر الذي يعيده هذا المشغل.
+- ``aten::sym_size`` يعيد عددًا صحيحًا؛ لذلك سيكون قيمته SymInt لأن قيمته متاحة فقط في وقت التشغيل.
+- ``max_pool2d_with_indexes`` يعيد مجموعة من (موتر، موتر)؛ لذلك فإن المواصفات ستكون أيضًا مجموعة من كائنين FakeTensor، يصف أول كائن TensorMeta العنصر الأول من القيمة المعادة، إلخ.
 
-Python code::
+كود بايثون::
 
     def add_one(x):
       return torch.ops.aten(x, 1)
 
-Graph::
+الرسم البياني::
 
     graph():
       %ph_0 : [#users=1] = placeholder[target=ph_0]
@@ -410,64 +314,62 @@ FakeTensor::
 
     FakeTensor(dtype=torch.int, size=[2,], device=CPU)
 
-Pytree-able Types
+أنواع Pytree-able
 ^^^^^^^^^^^^^^^^^
 
-We define a type “Pytree-able”, if it is either a leaf type or a container type
-that contains other Pytree-able types.
+نحن نحدد نوعًا "Pytree-able"، إذا كان نوع ورقة أو نوع حاوية يحتوي على أنواع Pytree-able أخرى.
 
-Note:
+ملاحظة:
 
-    The concept of pytree is the same as the one documented
-    `here <https://jax.readthedocs.io/en/latest/pytrees.html>`__ for JAX:
+    مفهوم pytree هو نفسه الموثق
+    `هنا <https://jax.readthedocs.io/en/latest/pytrees.html>`__ لـ JAX:
 
-
-The following types are defined as **leaf type**:
+الأنواع التالية محددة على أنها **نوع ورقة**:
 
 .. list-table::
    :widths: 50 50
    :header-rows: 1
 
-   * - Type
-     - Definition
-   * - Tensor
+   * - النوع
+     - التعريف
+   * - موتر
      - :class:`torch.Tensor`
-   * - Scalar
-     - Any numerical types from Python, including integral types, floating point types, and zero dimensional tensors.
+   * - قياسي
+     - أي أنواع رقمية من بايثون، بما في ذلك الأنواع العددية الصحيحة، وأنواع الفاصلة العائمة، والموترات ذات البعد الصفري.
    * - int
-     - Python int (binded as int64_t in C++)
+     - بايثون int (مرتبط بـ int64_t في C++)
    * - float
-     - Python float (binded as double in C++)
+     - بايثون float (مرتبط بـ double في C++)
    * - bool
-     - Python bool
+     - بايثون bool
    * - str
-     - Python string
+     - سلسلة بايثون
    * - ScalarType
      - :class:`torch.dtype`
    * - Layout
      - :class:`torch.layout`
    * - MemoryFormat
      - :class:`torch.memory_format`
-   * - Device
+   * - جهاز
      - :class:`torch.device`
 
-The following types are defined as **container type**:
+الأنواع التالية محددة على أنها **نوع حاوية**:
 
 .. list-table::
    :widths: 50 50
    :header-rows: 1
 
-   * - Type
-     - Definition
-   * - Tuple
-     - Python tuple
-   * - List
-     - Python list
-   * - Dict
-     - Python dict with Scalar keys
+   * - النوع
+     - التعريف
+   * - مجموعة
+     - مجموعة بايثون
+   * - قائمة
+     - قائمة بايثون
+   * - قاموس
+     - قاموس بايثون بمفاتيح قياسية
    * - NamedTuple
-     - Python namedtuple
+     - مجموعة بايثون مسماة
    * - Dataclass
-     - Must be registered through `register_dataclass <https://github.com/pytorch/pytorch/blob/901aa85b58e8f490631ce1db44e6555869a31893/torch/export/__init__.py#L693>`__
-   * - Custom class
-     - Any custom class defined with `_register_pytree_node <https://github.com/pytorch/pytorch/blob/901aa85b58e8f490631ce1db44e6555869a31893/torch/utils/_pytree.py#L72>`__
+     - يجب تسجيلها من خلال `register_dataclass <https://github.com/pytorch/pytorch/blob/901aa85b58e8f490631ce1db44e6555869a31893/torch/export/__init__.py#L693>`__
+   * - فئة مخصصة
+     - أي فئة مخصصة محددة باستخدام `_register_pytree_node <https://github.com/pytorch/pytorch/blob/901aa85b58e8f490631ce1db44e6555869a31893/torch/utils/_pytree.py#L72>`__
