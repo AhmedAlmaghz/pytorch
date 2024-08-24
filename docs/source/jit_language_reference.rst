@@ -2,84 +2,60 @@
     :local:
     :depth: 2
 
+.. _torchScript-language-reference:
 
-.. testsetup::
+مرجع لغة تورتشسكريبت TorchScript Language Reference
+===============================================
 
-    # These are hidden from the docs, but these are necessary for `doctest`
-    # since the `inspect` module doesn't play nicely with the execution
-    # environment for `doctest`
-    import torch
+TorchScript هي مجموعة فرعية ثابتة من Python يمكن كتابتها مباشرة (باستخدام
+مُزيّن :func:`@torch.jit.script <torch.jit.script>`) أو إنشاؤها تلقائيًا من كود Python عبر
+التتبع. عند استخدام التتبع، يتم تحويل الكود تلقائيًا إلى هذه المجموعة الفرعية من
+Python عن طريق تسجيل مشغلي التنسور الفعليين فقط وببساطة تنفيذ وحذف
+كود Python المحيط الآخر.
 
-    original_script = torch.jit.script
-    def script_wrapper(obj, *args, **kwargs):
-        obj.__module__ = 'FakeMod'
-        return original_script(obj, *args, **kwargs)
+عند كتابة TorchScript مباشرة باستخدام مُزيّن ``@torch.jit.script``، يجب
+على المبرمج أن يستخدم فقط المجموعة الفرعية من Python المدعومة في TorchScript. يوثق هذا القسم
+ما هو مدعوم في TorchScript كما لو كان مرجعًا للغة لِلُغة قائمة بذاتها. أي ميزات لـ Python غير مذكورة في هذا المرجع ليست
+جزءًا من TorchScript. راجع `الوظائف المضمنة` للحصول على مرجع كامل لأساليب التنسور PyTorch المتاحة، والوحدات، والوظائف.
 
-    torch.jit.script = script_wrapper
-
-    original_trace = torch.jit.trace
-    def trace_wrapper(obj, *args, **kwargs):
-        obj.__module__ = 'FakeMod'
-        return original_trace(obj, *args, **kwargs)
-
-    torch.jit.trace = trace_wrapper
-
-.. _language-reference:
-
-TorchScript Language Reference
-==============================
-
-TorchScript is a statically typed subset of Python that can either be written directly (using
-the :func:`@torch.jit.script <torch.jit.script>` decorator) or generated automatically from Python code via
-tracing. When using tracing, code is automatically converted into this subset of
-Python by recording only the actual operators on tensors and simply executing and
-discarding the other surrounding Python code.
-
-When writing TorchScript directly using ``@torch.jit.script`` decorator, the programmer must
-only use the subset of Python supported in TorchScript. This section documents
-what is supported in TorchScript as if it were a language reference for a stand
-alone language. Any features of Python not mentioned in this reference are not
-part of TorchScript. See `Builtin Functions` for a complete reference of available
-PyTorch tensor methods, modules, and functions.
-
-As a subset of Python, any valid TorchScript function is also a valid Python
-function. This makes it possible to `disable TorchScript` and debug the
-function using standard Python tools like ``pdb``. The reverse is not true: there
-are many valid Python programs that are not valid TorchScript programs.
-Instead, TorchScript focuses specifically on the features of Python that are
-needed to represent neural network models in PyTorch.
+باعتبارها مجموعة فرعية من Python، فإن أي دالة TorchScript صالحة هي أيضًا دالة Python
+صالحة. هذا يجعل من الممكن `تعطيل TorchScript` والتنقيح
+الدالة باستخدام أدوات Python القياسية مثل ``pdb``. العكس غير صحيح: هناك
+العديد من برامج Python الصحيحة التي ليست برامج TorchScript صحيحة.
+بدلاً من ذلك، يركز TorchScript بشكل محدد على ميزات Python اللازمة
+لتمثيل نماذج الشبكات العصبية في PyTorch.
 
 .. _types:
 .. _supported type:
 
-Types
+الأنواع
 ~~~~~
 
-The largest difference between TorchScript and the full Python language is that
-TorchScript only supports a small set of types that are needed to express neural
-net models. In particular, TorchScript supports:
+أكبر اختلاف بين TorchScript ولغة Python الكاملة هو أن
+TorchScript يدعم فقط مجموعة صغيرة من الأنواع اللازمة للتعبير عن الشبكات العصبية
+النماذج. على وجه الخصوص، يدعم TorchScript ما يلي:
 
 .. csv-table::
-   :header: "Type", "Description"
+   :header: "النوع", "الوصف"
 
-   "``Tensor``", "A PyTorch tensor of any dtype, dimension, or backend"
-   "``Tuple[T0, T1, ..., TN]``", "A tuple containing subtypes ``T0``, ``T1``, etc. (e.g. ``Tuple[Tensor, Tensor]``)"
-   "``bool``", "A boolean value"
-   "``int``", "A scalar integer"
-   "``float``", "A scalar floating point number"
-   "``str``", "A string"
-   "``List[T]``", "A list of which all members are type ``T``"
-   "``Optional[T]``", "A value which is either None or type ``T``"
-   "``Dict[K, V]``", "A dict with key type ``K`` and value type ``V``. Only ``str``, ``int``, and ``float`` are allowed as key types."
-   "``T``", "A `TorchScript Class`_"
-   "``E``", "A `TorchScript Enum`_"
-   "``NamedTuple[T0, T1, ...]``", "A :func:`collections.namedtuple <collections.namedtuple>` tuple type"
-   "``Union[T0, T1, ...]``", "One of the subtypes ``T0``, ``T1``, etc."
+   "``Tensor``", "تنسور PyTorch بأي نوع بيانات، أو بُعد، أو خلفية"
+   "``Tuple[T0, T1, ..., TN]``", "مجموعة تحتوي على الأنواع الفرعية ``T0``، ``T1``، إلخ (على سبيل المثال ``Tuple[Tensor، Tensor]``)"
+   "``bool``", "قيمة منطقية"
+   "``int``", "عدد صحيح قياسي"
+   "``float``", "رقم نقطة عائمة قياسي"
+   "``str``", "سلسلة"
+   "``List[T]``", "قائمة يكون جميع أعضائها من النوع ``T``"
+   "``Optional[T]``", "قيمة تكون إما None أو من النوع ``T``"
+   "``Dict[K، V]``"، "قاموس بنوع مفتاح ``K`` ونوع قيمة ``V``. يُسمح فقط بـ ``str``، ``int``، و ``float`` كأنواع مفاتيح."
+   "``T``"، " `فئة TorchScript`_"
+   "``E``"، " `مُعدَّد TorchScript`_"
+   "``NamedTuple[T0, T1, ...]``"، "نوع مجموعة :func:`collections.namedtuple <collections.namedtuple>`"
+   "``Union[T0, T1, ...]``"، "واحد من الأنواع الفرعية ``T0``، ``T1``، إلخ."
 
-Unlike Python, each variable in TorchScript function must have a single static type.
-This makes it easier to optimize TorchScript functions.
+على عكس Python، يجب أن يكون لكل متغير في دالة TorchScript نوع ثابت واحد.
+هذا يجعل من السهل تحسين وظائف TorchScript.
 
-Example (a type mismatch)
+مثال (عدم تطابق النوع)
 
 .. testcode::
 
@@ -118,51 +94,51 @@ Example (a type mismatch)
          return r
                 ~ <--- HERE...
 
-Unsupported Typing Constructs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TorchScript does not support all features and types of the :mod:`typing` module. Some of these
-are more fundamental things that are unlikely to be added in the future while others
-may be added if there is enough user demand to make it a priority.
+بنيات الأنواع غير المدعومة
+^^^^^^^^^^^^^^^^^^^
+لا يدعم TorchScript جميع الميزات والأنواع في وحدة :mod:`typing`. بعض هذه
+الأشياء الأساسية التي من غير المرجح أن تضاف في المستقبل في حين أن البعض الآخر
+قد يتم إضافتها إذا كان هناك طلب كافٍ من المستخدمين لجعلها أولوية.
 
-These types and features from the :mod:`typing` module are unavailable in TorchScript.
+هذه الأنواع والميزات من وحدة :mod:`typing` غير متوفرة في TorchScript.
 
 .. csv-table::
-   :header: "Item", "Description"
+   :header: "البند", "الوصف"
 
-   ":any:`typing.Any`", ":any:`typing.Any` is currently in development but not yet released"
-   ":any:`typing.NoReturn`", "Not implemented"
-   ":any:`typing.Sequence`", "Not implemented"
-   ":any:`typing.Callable`", "Not implemented"
-   ":any:`typing.Literal`", "Not implemented"
-   ":any:`typing.ClassVar`", "Not implemented"
-   ":any:`typing.Final`", "This is supported for :any:`module attributes <Module Attributes>` class attribute annotations but not for functions"
-   ":any:`typing.AnyStr`", "TorchScript does not support :any:`bytes` so this type is not used"
-   ":any:`typing.overload`", ":any:`typing.overload` is currently in development but not yet released"
-   "Type aliases", "Not implemented"
-   "Nominal vs structural subtyping", "Nominal typing is in development, but structural typing is not"
-   "NewType", "Unlikely to be implemented"
-   "Generics", "Unlikely to be implemented"
+   ":any:`typing.Any`", ":any:`typing.Any` قيد التطوير حاليًا ولكن لم يتم إصداره بعد"
+   ":any:`typing.NoReturn`", "غير منفذ"
+   ":any:`typing.Sequence`", "غير منفذ"
+   ":any:`typing.Callable`", "غير منفذ"
+   ":any:`typing.Literal`", "غير منفذ"
+   ":any:`typing.ClassVar`", "غير منفذ"
+   ":any:`typing.Final`", "هذا مدعوم لـ :any:`module attributes <Module Attributes>` ملاحظات النوع فئة ولكن ليس للوظائف"
+   ":any:`typing.AnyStr`", "لا يدعم TorchScript :any:`bytes` لذلك لا يستخدم هذا النوع"
+   ":any:`typing.overload`", ":any:`typing.overload` قيد التطوير حاليًا ولكن لم يتم إصداره بعد"
+   "أسماء الأنواع"، "غير منفذ"
+   "التفرع الاسمي مقابل التفرع الهيكلي"، "التفرع الاسمي قيد التطوير، ولكن التفرع الهيكلي غير مدعوم"
+   "NewType"، "من غير المرجح أن يتم تنفيذه"
+   "Generics"، "من غير المرجح أن يتم تنفيذه"
 
-Any other functionality from the :any:`typing` module not explicitly listed in this documentation is unsupported.
+أي وظائف أخرى من وحدة :any:`typing` غير مدرجة صراحة في هذه الوثيقة غير مدعومة.
 
-Default Types
+الأنواع الافتراضية
 ^^^^^^^^^^^^^
 
-By default, all parameters to a TorchScript function are assumed to be Tensor.
-To specify that an argument to a TorchScript function is another type, it is possible to use
-MyPy-style type annotations using the types listed above.
+بشكل افتراضي، يفترض أن جميع المعلمات لدالة TorchScript هي Tensor.
+لتحديد أن حجة لدالة TorchScript هي من نوع آخر، من الممكن استخدام
+ملاحظات النوع على طريقة MyPy باستخدام الأنواع المذكورة أعلاه.
 
 .. testcode::
 
     import torch
 
     @torch.jit.script
-    def foo(x, tup):
+    def foo(x، tup):
         # type: (int, Tuple[Tensor, Tensor]) -> Tensor
-        t0, t1 = tup
+        t0، t1 = tup
         return t0 + t1 + x
 
-    print(foo(3, (torch.rand(3), torch.rand(3))))
+    print(foo(3, (torch.rand(3)، torch.rand(3))))
 
 .. testoutput::
     :hide:
@@ -170,8 +146,8 @@ MyPy-style type annotations using the types listed above.
     ...
 
 .. note::
-  It is also possible to annotate types with Python 3 type hints from the
-  ``typing`` module.
+  من الممكن أيضًا استخدام ملاحظات النوع باستخدام تلميحات النوع Python 3 من
+  وحدة ``typing``.
 
   .. testcode::
 
@@ -191,11 +167,11 @@ MyPy-style type annotations using the types listed above.
     ...
 
 
-An empty list is assumed to be ``List[Tensor]`` and empty dicts
-``Dict[str, Tensor]``. To instantiate an empty list or dict of other types,
-use `Python 3 type hints`.
+يفترض أن تكون القائمة الفارغة ``List[Tensor]`` والقواميس الفارغة
+``Dict[str, Tensor]``. لإنشاء قائمة أو قاموس فارغ من الأنواع الأخرى،
+استخدم `تلميحات النوع Python 3`.
 
-Example (type annotations for Python 3):
+مثال (ملاحظات النوع لـ Python 3):
 
 .. testcode::
 
@@ -221,23 +197,23 @@ Example (type annotations for Python 3):
 
 
 
-Optional Type Refinement
-^^^^^^^^^^^^^^^^^^^^^^^^
+تحسين النوع الاختياري
+^^^^^^^^^^^^^^^^^
 
-TorchScript will refine the type of a variable of type ``Optional[T]`` when
-a comparison to ``None`` is made inside the conditional of an if-statement or checked in an ``assert``.
-The compiler can reason about multiple ``None`` checks that are combined with
-``and``, ``or``, and ``not``. Refinement will also occur for else blocks of if-statements
-that are not explicitly written.
+سيحسن TorchScript نوع متغير من النوع ``Optional[T]`` عند
+إجراء مقارنة مع ``None`` داخل الشرط الشرطي لـ if-statement أو تم التحقق منه في ``assert``.
+يمكن لمترجم البرنامج أن يستنتج عمليات فحص "None" المتعددة التي يتم دمجها مع
+``and``، ``or``، و ``not``. سيحدث التحسين أيضًا بالنسبة إلى كتل else لبيانات if-statements
+التي لم يتم كتابتها بشكل صريح.
 
-The ``None`` check must be within the if-statement's condition; assigning
-a ``None`` check to a variable and using it in the if-statement's condition will
-not refine the types of variables in the check.
-Only local variables will be refined, an attribute like ``self.x`` will not and must assigned to
-a local variable to be refined.
+يجب أن يكون فحص "None" داخل شرط if-statement؛ تعيين
+فحص "None" إلى متغير واستخدامه في شرط if-statement لن
+تحسين أنواع المتغيرات في الفحص.
+سيتم تحسين المتغيرات المحلية فقط، ولن يتم تحسين سمة مثل ``self.x`` ويجب تعيينها إلى
+متغير محلي ليتم تحسينه.
 
 
-Example (refining types on parameters and locals):
+مثال (تحسين الأنواع على المعلمات والمتغيرات المحلية):
 
 .. testcode::
 
@@ -250,7 +226,7 @@ Example (refining types on parameters and locals):
 
         def __init__(self, z):
             super().__init__()
-            # If `z` is None, its type cannot be inferred, so it must
+            # If `z` is None، its type cannot be inferred، so it must
             # be specified (above)
             self.z = z
 
@@ -278,17 +254,17 @@ Example (refining types on parameters and locals):
 .. _TorchScript Classes:
 .. _torchscript-classes:
 
-TorchScript Classes
+فئات TorchScript
 ^^^^^^^^^^^^^^^^^^^
 
 .. warning::
 
-    TorchScript class support is experimental. Currently it is best suited
-    for simple record-like types (think a ``NamedTuple`` with methods
-    attached).
+    دعم فئة TorchScript تجريبي. حاليًا، فهو مناسب بشكل أفضل
+    لأنواع السجلات البسيطة (تخيل ``NamedTuple`` مع أساليب
+    مرفقة).
 
-Python classes can be used in TorchScript if they are annotated with :func:`@torch.jit.script <torch.jit.script>`,
-similar to how you would declare a TorchScript function:
+يمكن استخدام الفئات Python في TorchScript إذا تم وضع علامة عليها باستخدام :func:`@torch.jit.script <torch.jit.script>`،
+مشابه لكيفية إعلان دالة TorchScript:
 
 .. testcode::
     :skipif: True  # TODO: fix the source file resolving so this can be tested
@@ -302,21 +278,21 @@ similar to how you would declare a TorchScript function:
         self.x += inc
 
 
-This subset is restricted:
+هذه المجموعة الفرعية مقيدة:
 
-* All functions must be valid TorchScript functions (including ``__init__()``).
-* Classes must be new-style classes, as we use ``__new__()`` to construct them with pybind11.
-* TorchScript classes are statically typed. Members can only be declared by assigning to
-  self in the ``__init__()`` method.
+* يجب أن تكون جميع الوظائف وظائف TorchScript صالحة (بما في ذلك ``__init__()``).
+* يجب أن تكون الفئات فئات جديدة، حيث نستخدم ``__new__()`` لبنائها باستخدام pybind11.
+* فئات TorchScript ثابتة النوع. يمكن الإعلان عن الأعضاء فقط عن طريق تعيين
+  self في طريقة ``__init__()``.
 
-    For example, assigning to ``self`` outside of the ``__init__()`` method: ::
+    على سبيل المثال، تعيين ``self`` خارج طريقة ``__init__()``: ::
 
         @torch.jit.script
         class Foo:
           def assign_x(self):
             self.x = torch.rand(2, 3)
 
-    Will result in: ::
+    ستؤدي إلى: ::
 
         RuntimeError:
         Tried to set nonexistent attribute: x. Did you forget to initialize it in __init__()?:
@@ -324,12 +300,12 @@ This subset is restricted:
           self.x = torch.rand(2, 3)
           ~~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
 
-* No expressions except method definitions are allowed in the body of the class.
-* No support for inheritance or any other polymorphism strategy, except for inheriting
-  from ``object`` to specify a new-style class.
+* لا يُسمح بأي تعبيرات باستثناء تعريفات الأساليب في جسم الفئة.
+* لا يوجد دعم للوراثة أو أي استراتيجية تعدد الأشكال الأخرى، باستثناء الوراثة
+  من ``object`` لتحديد فئة جديدة.
 
-After a class is defined, it can be used in both TorchScript and Python interchangeably
-like any other TorchScript type:
+بعد تعريف الفئة، يمكن استخدامها في كل من TorchScript وPython بشكل متناوب
+مثل أي نوع TorchScript آخر:
 
 ::
 
@@ -353,15 +329,13 @@ like any other TorchScript type:
 .. _TorchScript Enums:
 .. _torchscript-enums:
 
-TorchScript Enums
+مُعدَّدات TorchScript
 ^^^^^^^^^^^^^^^^^^^
 
-Python enums can be used in TorchScript without any extra annotation or code:
-
+يمكن استخدام المُعدَّدات Python في TorchScript دون أي ملاحظات أو رموز إضافية:
 ::
 
     from enum import Enum
-
 
     class Color(Enum):
         RED = 1
@@ -371,18 +345,16 @@ Python enums can be used in TorchScript without any extra annotation or code:
     def enum_fn(x: Color, y: Color) -> bool:
         if x == Color.RED:
             return True
-
         return x == y
 
-After an enum is defined, it can be used in both TorchScript and Python interchangeably
-like any other TorchScript type. The type of the values of an enum must be ``int``,
-``float``, or ``str``. All values must be of the same type; heterogeneous types for enum
-values are not supported.
-
+بعد تعريف Enum، يمكن استخدامه في كل من TorchScript وPython بشكل متبادل
+مثل أي نوع آخر من TorchScript. يجب أن يكون نوع قيم Enum إما "int"
+أو "float"، أو "str". يجب أن تكون جميع القيم من نفس النوع؛ لا تُدعم الأنواع المتغايرة للقيم
+Enum.
 
 Named Tuples
 ^^^^^^^^^^^^
-Types produced by :func:`collections.namedtuple <collections.namedtuple>` can be used in TorchScript.
+يمكن استخدام الأنواع التي ينتجها :func:`collections.namedtuple <collections.namedtuple>` في TorchScript.
 
 .. testcode::
 
@@ -404,21 +376,19 @@ Types produced by :func:`collections.namedtuple <collections.namedtuple>` can be
 
     ...
 
-
 .. _jit_iterables:
 
 Iterables
 ^^^^^^^^^
 
-Some functions (for example, :any:`zip` and :any:`enumerate`) can only operate on iterable types.
-Iterable types in TorchScript include ``Tensor``\s, lists, tuples, dictionaries, strings,
-:any:`torch.nn.ModuleList` and :any:`torch.nn.ModuleDict`.
-
+يمكن لبعض الوظائف (على سبيل المثال، :any:`zip` و:any:`enumerate`) أن تعمل فقط على الأنواع القابلة للتحديد.
+تشمل الأنواع القابلة للتحديد في TorchScript كلًا من "Tensor"s، والقوائم، والمجاميع، والقواميس، والسلاسل،
+:any:`torch.nn.ModuleList` و:any:`torch.nn.ModuleDict`.
 
 Expressions
 ~~~~~~~~~~~
 
-The following Python Expressions are supported.
+يتم دعم تعبيرات Python التالية.
 
 Literals
 ^^^^^^^^
@@ -434,17 +404,15 @@ Literals
 
 List Construction
 """""""""""""""""
-An empty list is assumed have type ``List[Tensor]``.
-The types of other list literals are derived from the type of the members.
-See `Default Types`_ for more details.
+يُفترض أن تكون القائمة الفارغة من النوع ``List[Tensor]``.
+تُستمد أنواع قوائم الأحرف الأخرى من نوع الأعضاء.
+راجع `Default Types`_ لمزيد من التفاصيل.
 
 ::
 
     [3, 4]
     []
     [torch.rand(3), torch.rand(4)]
-
-
 
 Tuple Construction
 """"""""""""""""""
@@ -453,12 +421,11 @@ Tuple Construction
     (3, 4)
     (3,)
 
-
 Dict Construction
 """""""""""""""""
-An empty dict is assumed have type ``Dict[str, Tensor]``.
-The types of other dict literals are derived from the type of the members.
-See `Default Types`_ for more details.
+يُفترض أن يكون القاموس الفارغ من النوع ``Dict[str, Tensor]``.
+تُستمد أنواع القواميس الأخرى من نوع الأعضاء.
+راجع `Default Types`_ لمزيد من التفاصيل.
 
 ::
 
@@ -466,10 +433,9 @@ See `Default Types`_ for more details.
     {}
     {'a': torch.rand(3), 'b': torch.rand(4)}
 
-
 Variables
 ^^^^^^^^^
-See `Variable Resolution`_ for how variables are resolved.
+راجع `Variable Resolution`_ لمعرفة كيفية حل المتغيرات.
 
 ::
 
@@ -524,13 +490,13 @@ Subscripts and Slicing
 
 Function Calls
 ^^^^^^^^^^^^^^
-Calls to `builtin functions`
+مكالمات `builtin functions`
 
 ::
 
     torch.rand(3, dtype=torch.int)
 
-Calls to other script functions:
+مكالمات لوظائف النص البرمجي الأخرى:
 
 .. testcode::
 
@@ -546,17 +512,15 @@ Calls to other script functions:
 
 Method Calls
 ^^^^^^^^^^^^
-Calls to methods of builtin types like tensor: ``x.mm(y)``
+مكالمات لطرق الأنواع المضمنة مثل tensor: ``x.mm(y)``
 
-On modules, methods must be compiled before they can be called. The TorchScript
-compiler recursively compiles methods it sees when compiling other methods. By default,
-compilation starts on the ``forward`` method. Any methods called by ``forward`` will
-be compiled, and any methods called by those methods, and so on. To start compilation at
-a method other than ``forward``, use the :func:`@torch.jit.export <torch.jit.export>` decorator
-(``forward`` implicitly is marked ``@torch.jit.export``).
+بالنسبة إلى الوحدات النمطية، يجب تجميع الطرق قبل إمكانية استدعائها. يقوم مترجم TorchScript بتجميع الطرق بشكل متكرر
+يراها عند تجميع طرق أخرى. بشكل افتراضي، يبدأ التجميع في طريقة "forward". يتم تجميع أي طرق تستدعيها "forward"
+وسيتم تجميعها، وأي طرق تستدعيها تلك الطرق، وهكذا. لبدء التجميع في طريقة أخرى غير "forward"، استخدم الديكور
+:func:`@torch.jit.export <torch.jit.export>` (يتم وضع علامة "forward" بشكل ضمني على أنها ``@torch.jit.export``).
 
-Calling a submodule directly (e.g. ``self.resnet(input)``) is equivalent to
-calling its ``forward`` method (e.g. ``self.resnet.forward(input)``).
+إن استدعاء وحدة فرعية مباشرة (على سبيل المثال، ``self.resnet(input)``) يعادل
+استدعاء طريقة "forward" الخاصة بها (على سبيل المثال، ``self.resnet.forward(input)``).
 
 .. testcode::
     :skipif: torchvision is None
@@ -592,7 +556,6 @@ calling its ``forward`` method (e.g. ``self.resnet.forward(input)``).
     # `top_level_method`, and `other_helper`
     my_script_module = torch.jit.script(MyModule())
 
-
 Ternary Expressions
 ^^^^^^^^^^^^^^^^^^^
 ::
@@ -615,11 +578,10 @@ Accessing Module Parameters
     self.my_parameter
     self.my_submodule.my_parameter
 
-
 Statements
 ~~~~~~~~~~
 
-TorchScript supports the following types of statements:
+يدعم TorchScript أنواع البيانات التالية:
 
 Simple Assignments
 ^^^^^^^^^^^^^^^^^^
@@ -658,8 +620,8 @@ If Statements
     else:
         r = 3 * a
 
-In addition to bools, floats, ints, and Tensors can be used in a conditional
-and will be implicitly casted to a boolean.
+بالإضافة إلى bools، يمكن استخدام floats وints وTensors في شرط
+وسيتم تحويلها ضمنيًا إلى قيمة منطقية.
 
 While Loops
 ^^^^^^^^^^^
@@ -669,7 +631,6 @@ While Loops
     while a < 4:
         print(a)
         a += 1
-
 
 For loops with range
 ^^^^^^^^^^^^^^^^^^^^
@@ -681,8 +642,7 @@ For loops with range
 
 For loops over tuples
 ^^^^^^^^^^^^^^^^^^^^^
-These unroll the loop, generating a body for
-each member of the tuple. The body must type-check correctly for each member.
+يتم فك حلقات التكرار هذه، وتوليد جسم لكل عضو في المصفوفة. يجب أن يتحقق الجسم من النوع بشكل صحيح لكل عضو.
 
 ::
 
@@ -690,14 +650,13 @@ each member of the tuple. The body must type-check correctly for each member.
     for x in tup:
         print(x)
 
-
 For loops over constant nn.ModuleList
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To use a ``nn.ModuleList`` inside a compiled method, it must be marked
-constant by adding the name of the attribute to the ``__constants__``
-list for the type. For loops over a ``nn.ModuleList`` will unroll the body of the
-loop at compile time, with each member of the constant module list.
+لاستخدام ``nn.ModuleList`` داخل طريقة مجمعة، يجب وضع علامة عليه
+ثابت عن طريق إضافة اسم السمة إلى قائمة ``__constants__``
+لنوع البيانات. يتم فك حلقات التكرار على ``nn.ModuleList`` ثابتة في وقت التجميع، مع كل عضو في
+قائمة الوحدات النمطية الثابتة.
 
 .. testcode::
 
@@ -724,8 +683,6 @@ loop at compile time, with each member of the constant module list.
 
     m = torch.jit.script(MyModule())
 
-
-
 Break and Continue
 ^^^^^^^^^^^^^^^^^^
 ::
@@ -746,16 +703,15 @@ Return
 Variable Resolution
 ~~~~~~~~~~~~~~~~~~~
 
-TorchScript supports a subset of Python's variable resolution (i.e. scoping)
-rules. Local variables behave the same as in Python, except for the restriction
-that a variable must have the same type along all paths through a function.
-If a variable has a different type on different branches of an if statement, it
-is an error to use it after the end of the if statement.
+يدعم TorchScript مجموعة فرعية من قواعد Python لحل المتغيرات
+(أي النطاق). تتصرف المتغيرات المحلية بنفس الطريقة التي تعمل بها في Python، باستثناء القيد
+يجب أن يكون للمتغير نفس النوع على جميع المسارات عبر الدالة.
+إذا كان للمتغير نوع مختلف على فروع مختلفة من عبارة if، فمن الخطأ استخدامه بعد نهاية
+إذا كان البيان.
 
-Similarly, a variable is not allowed to be used if it is only *defined* along some
-paths through the function.
+وبالمثل، لا يُسمح باستخدام متغير إذا كان محددًا فقط على طول بعض المسارات عبر الدالة.
 
-Example:
+مثال:
 
 .. testcode::
 
@@ -785,29 +741,27 @@ Example:
          print(y)
                ~ <--- HERE...
 
-Non-local variables are resolved to Python values at compile time when the
-function is defined. These values are then converted into TorchScript values using
-the rules described in `Use of Python Values`_.
+يتم حل المتغيرات غير المحلية إلى قيم Python في وقت التجميع عند
+يتم تعريف الدالة. يتم بعد ذلك تحويل هذه القيم إلى قيم TorchScript باستخدام
+القواعد الموضحة في `Use of Python Values`_.
 
 Use of Python Values
 ~~~~~~~~~~~~~~~~~~~~
 
-To make writing TorchScript more convenient, we allow script code to refer
-to Python values in the surrounding scope. For instance, any time there is a
-reference to ``torch``, the TorchScript compiler is actually resolving it to the
-``torch`` Python module when the function is declared.  These Python values are
-not a first class part of TorchScript. Instead they are de-sugared at compile-time
-into the primitive types that TorchScript supports. This depends
-on the dynamic type of the Python valued referenced when compilation occurs.
-This section describes the rules that are used when accessing Python values in TorchScript.
+لجعل كتابة TorchScript أكثر ملاءمة، نسمح لرمز النص البرمجي بالإشارة
+إلى قيم Python في النطاق المحيط. على سبيل المثال، في أي وقت يكون هناك مرجع لـ ``torch``،
+يقوم مترجم TorchScript فعليًا بحلها إلى الوحدة النمطية لـ Python ``torch`` عندما يتم الإعلان عن الدالة. هذه القيم
+Python ليست جزءًا من الدرجة الأولى في TorchScript. بدلاً من ذلك، يتم إلغاء السكر في وقت التجميع
+إلى الأنواع الأولية التي يدعمها TorchScript. يعتمد هذا على النوع الديناميكي لقيمة Python المشار إليها عند حدوث التجميع.
+يوضح هذا القسم القواعد المستخدمة عند الوصول إلى قيم Python في TorchScript.
 
 Functions
 ^^^^^^^^^
 
-TorchScript can call Python functions. This functionality is very useful when
-incrementally converting a model to TorchScript. The model can be moved function-by-function
-to TorchScript, leaving calls to Python functions in place. This way you can incrementally
-check the correctness of the model as you go.
+يمكن لـ TorchScript استدعاء وظائف Python. هذه الوظيفة مفيدة جدًا عند
+تحويل نموذج بشكل متزايد إلى TorchScript. يمكن نقل النموذج من وظيفة إلى وظيفة
+إلى TorchScript، مع ترك استدعاءات لوظائف Python في مكانها. بهذه الطريقة يمكنك بشكل متزايد
+التحقق من صحة النموذج أثناء التنقل.
 
 
 .. autofunction:: torch.jit.is_scripting
@@ -817,20 +771,19 @@ check the correctness of the model as you go.
 
 Attribute Lookup On Python Modules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TorchScript can lookup attributes on modules. `Builtin functions` like ``torch.add``
-are accessed this way. This allows TorchScript to call functions defined in
-other modules.
+يمكن لـ TorchScript البحث عن السمات في الوحدات النمطية. يتم الوصول إلى `Builtin functions` مثل ``torch.add``
+بهذه الطريقة. يسمح هذا لـ TorchScript باستدعاء الوظائف المحددة في
+الوحدات النمطية الأخرى.
 
 .. _constant:
 
 Python-defined Constants
 ^^^^^^^^^^^^^^^^^^^^^^^^
-TorchScript also provides a way to use constants that are defined in Python.
-These can be used to hard-code hyper-parameters into the function, or to
-define universal constants. There are two ways of specifying that a Python
-value should be treated as a constant.
+يوفر TorchScript أيضًا طريقة لاستخدام الثوابت المحددة في Python.
+يمكن استخدام هذه الثوابت لترميز المعلمات الأساسية للنموذج، أو لتحديد الثوابت العالمية. هناك طريقتان لتحديد أن قيمة Python
+يجب التعامل معه كقيمة ثابتة.
 
-1. Values looked up as attributes of a module are assumed to be constant:
+1. يتم افتراض أن تكون القيم التي يتم البحث عنها كسمات للوحدة النمطية ثابتة:
 
 .. testcode::
 
@@ -841,16 +794,15 @@ value should be treated as a constant.
     def fn():
         return math.pi
 
-2. Attributes of a ScriptModule can be marked constant by annotating them with ``Final[T]``
-
+2. يمكن وضع علامة على سمات ScriptModule على أنها ثابتة عن طريق وضع علامة عليها ``Final[T]``
 ::
 
     import torch
     import torch.nn as nn
 
     class Foo(nn.Module):
-        # `Final` from the `typing_extensions` module can also be used
-        a : torch.jit.Final[int]
+        # يمكن أيضًا استخدام `Final` من وحدة `typing_extensions`
+        a: torch.jit.Final[int]
 
         def __init__(self):
             super().__init__()
@@ -861,7 +813,7 @@ value should be treated as a constant.
 
     f = torch.jit.script(Foo())
 
-Supported constant Python types are
+أنواع Python الثابتة المدعومة هي:
 
 * ``int``
 * ``float``
@@ -869,40 +821,36 @@ Supported constant Python types are
 * ``torch.device``
 * ``torch.layout``
 * ``torch.dtype``
-* tuples containing supported types
-* ``torch.nn.ModuleList`` which can be used in a TorchScript for loop
-
-
-
+* tuples تحتوي على أنواع مدعومة
+* ``torch.nn.ModuleList`` والتي يمكن استخدامها في حلقات TorchScript
 
 .. _module attributes:
 
-Module Attributes
+خصائص الوحدة النمطية
 ^^^^^^^^^^^^^^^^^
 
-The ``torch.nn.Parameter`` wrapper and ``register_buffer`` can be used to assign
-tensors to a module. Other values assigned to a module that is compiled
-will be added to the compiled module if their types can be inferred. All `types`_
-available in TorchScript can be used as module attributes. Tensor attributes are
-semantically the same as buffers. The type of empty lists and dictionaries and ``None``
-values cannot be inferred and must be specified via
-`PEP 526-style <https://www.python.org/dev/peps/pep-0526/#class-and-instance-variable-annotations>`_ class annotations.
-If a type cannot be inferred and is not explicitly annotated, it will not be added as an attribute
-to the resulting :class:`ScriptModule`.
+يمكن استخدام غلاف ``torch.nn.Parameter`` و ``register_buffer`` لتخصيص
+tensors إلى وحدة نمطية. يتم إضافة القيم الأخرى المخصصة لوحدة نمطية مجمعة
+إلى الوحدة النمطية المجمّعة إذا أمكن استنتاج أنواعها. يمكن استخدام جميع `الأنواع`_
+المتوفرة في TorchScript كخصائص للوحدة النمطية. الخصائص tensor مماثلة
+للأجهزة من الناحية الدلالية. لا يمكن استنتاج نوع القوائم والقواميس الفارغة
+وقيم ``None`` ويجب تحديدها عبر
+`ملاحظات PEP 526-style <https://www.python.org/dev/peps/pep-0526/#class-and-instance-variable-annotations>`_ class.
+إذا لم يمكن استنتاج نوع ولم يتم تحديده بشكل صريح، فلن يتم إضافته كخاصية
+إلى :class: `ScriptModule` الناتج.
 
-Example:
+مثال:
 
 .. testcode::
 
     from typing import List, Dict
 
     class Foo(nn.Module):
-        # `words` is initialized as an empty list, so its type must be specified
+        # يتم تهيئة `words` كقائمة فارغة، لذلك يجب تحديد نوعها
         words: List[str]
 
-        # The type could potentially be inferred if `a_dict` (below) was not
-        # empty, but this annotation ensures `some_dict` will be made into the
-        # proper type
+        # يمكن استنتاج النوع إذا لم تكن `a_dict` (أدناه) فارغة، ولكن هذا التعليق
+        # يضمن أن يتم تحويل `some_dict` إلى النوع الصحيح
         some_dict: Dict[str, int]
 
         def __init__(self, a_dict):
@@ -910,7 +858,7 @@ Example:
             self.words = []
             self.some_dict = a_dict
 
-            # `int`s can be inferred
+            # يمكن استنتاج الأنواع `int`
             self.my_int = 10
 
         def forward(self, input):
