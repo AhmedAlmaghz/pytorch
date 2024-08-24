@@ -1,8 +1,5 @@
-.. role:: hidden
-    :class: hidden-section
-
-Probability distributions - torch.distributions
-==================================================
+التوزيعات الاحتمالية - torch.distributions
+===================================
 
 .. automodule:: torch.distributions
 .. currentmodule:: torch.distributions
@@ -33,7 +30,7 @@ Probability distributions - torch.distributions
     :show-inheritance:
 
 :hidden:`Beta`
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: torch.distributions.beta
 .. autoclass:: Beta
@@ -404,8 +401,8 @@ Probability distributions - torch.distributions
     :members:
     :member-order: bysource
 
-.. This module needs to be documented. Adding here in the meantime
-.. for tracking purposes
+.. يجب توثيق هذا النموذج. إضافته هنا في الوقت الحالي
+.. لأغراض التتبع
 .. py:module:: torch.distributions.bernoulli
 .. py:module:: torch.distributions.beta
 .. py:module:: torch.distributions.binomial
@@ -423,7 +420,7 @@ Probability distributions - torch.distributions
 .. py:module:: torch.distributions.gumbel
 .. py:module:: torch.distributions.half_cauchy
 .. py:module:: torch.distributions.half_normal
-.. py:module:: torch.distributions.independent
+.. py:module:: torchMultiplier: torch.distributions.independent
 .. py:module:: torch.distributions.inverse_gamma
 .. py:module:: torch.distributions.kumaraswamy
 .. py:module:: torch.distributions.laplace
