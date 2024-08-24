@@ -1,16 +1,13 @@
-Customization
-=============
+التخصيص
+========
 
-This section describes how to customize TorchElastic to fit your needs.
+يصف هذا القسم كيفية تخصيص TorchElastic ليناسب احتياجاتك.
 
-Launcher
-------------------------
+مطلق التطبيق
+-----------
 
-The launcher program that ships with TorchElastic
-should be sufficient for most use-cases (see :ref:`launcher-api`).
-You can implement a custom launcher by
-programmatically creating an agent and passing it specs for your workers as
-shown below.
+من المفترض أن يكون برنامج الإطلاق المرفق مع TorchElastic كافيًا لمعظم حالات الاستخدام (راجع :ref: `launcher-api`).
+يمكنك تنفيذ مطلق تطبيق مخصص من خلال إنشاء وكيل برمجيًا وإمرار مواصفات له للعمال كما هو موضح أدناه.
 
 .. code-block:: python
 
@@ -32,25 +29,22 @@ shown below.
     try:
         run_result = agent.run()
         if run_result.is_failed():
-            print(f"worker 0 failed with: run_result.failures[0]")
+            print(f"فشل العامل 0 مع: run_result.failures[0]")
         else:
-            print(f"worker 0 return value is: run_result.return_values[0]")
+            print(f"قيمة الإرجاع للعامل 0 هي: run_result.return_values[0]")
     except Exception ex:
-        # handle exception
+        # التعامل مع الاستثناء
 
-
-Rendezvous Handler
+معالج الالتقاء
 ------------------------
 
-To implement your own rendezvous, extend ``torch.distributed.elastic.rendezvous.RendezvousHandler``
-and implement its methods.
+لتنفيذ الالتقاء الخاص بك، قم بتوسيع ``torch.distributed.elastic.rendezvous.RendezvousHandler``
+وتنفيذ طرقه.
 
-.. warning:: Rendezvous handlers are tricky to implement. Before you begin
-          make sure you completely understand the properties of rendezvous.
-          Please refer to :ref:`rendezvous-api` for more information.
+.. warning:: معالجات الالتقاء معقدة في التنفيذ. قبل أن تبدأ، تأكد من أنك تفهم تمامًا خصائص الالتقاء.
+          يرجى الرجوع إلى :ref:`rendezvous-api` لمزيد من المعلومات.
 
-Once implemented you can pass your custom rendezvous handler to the worker
-spec when creating the agent.
+بمجرد التنفيذ، يمكنك تمرير معالج الالتقاء المخصص إلى مواصفات العامل عند إنشاء الوكيل.
 
 .. code-block:: python
 
@@ -61,15 +55,13 @@ spec when creating the agent.
     elastic_agent = LocalElasticAgent(spec, start_method=start_method)
     elastic_agent.run(spec.role)
 
-
-Metric Handler
+معالج القياس
 -----------------------------
 
-TorchElastic emits platform level metrics (see :ref:`metrics-api`).
-By default metrics are emitted to `/dev/null` so you will not see them.
-To have the metrics pushed to a metric handling service in your infrastructure,
-implement a `torch.distributed.elastic.metrics.MetricHandler` and `configure` it in your
-custom launcher.
+يقوم TorchElastic بإصدار قياسات على مستوى المنصة (راجع :ref: `metrics-api`).
+وبشكل افتراضي، يتم إصدار القياسات إلى `/dev/null` لذلك لن تراها.
+لإرسال القياسات إلى خدمة التعامل مع القياسات في البنية التحتية الخاصة بك،
+قم بتنفيذ `torch.distributed.elastic.metrics.MetricHandler` و`configure` في مطلق التطبيق المخصص الخاص بك.
 
 .. code-block:: python
 
@@ -79,7 +71,7 @@ custom launcher.
 
   class MyMetricHandler(metrics.MetricHandler):
       def emit(self, metric_data: metrics.MetricData):
-          # push metric_data to your metric sink
+          # إرسال metric_data إلى مصدر القياس الخاص بك
 
   def main():
     metrics.configure(MyMetricHandler())
@@ -88,17 +80,15 @@ custom launcher.
     agent = LocalElasticAgent(spec)
     agent.run()
 
-Events Handler
+معالج الأحداث
 -----------------------------
 
-TorchElastic supports events recording (see :ref:`events-api`).
-The events module defines API that allows you to record events and
-implement custom EventHandler. EventHandler is used for publishing events
-produced during torchelastic execution to different sources, e.g.  AWS CloudWatch.
-By default it uses `torch.distributed.elastic.events.NullEventHandler` that ignores
-events. To configure custom events handler you need to implement
-`torch.distributed.elastic.events.EventHandler` interface and `configure` it
-in your custom launcher.
+يدعم TorchElastic تسجيل الأحداث (راجع :ref:`events-api`).
+تعرف وحدة الأحداث واجهة برمجة التطبيقات التي تسمح لك بتسجيل الأحداث وتنفيذ معالج الأحداث المخصص. يستخدم معالج الأحداث لنشر الأحداث
+التي يتم إنتاجها أثناء تنفيذ torchelastic إلى مصادر مختلفة، على سبيل المثال. سحابة أمازون ووتش.
+بشكل افتراضي، يستخدم `torch.distributed.elastic.events.NullEventHandler` الذي يتجاهل
+الأحداث. لتهيئة معالج أحداث مخصص، تحتاج إلى تنفيذ واجهة `torch.distributed.elastic.events.EventHandler` و`configure`
+في مطلق التطبيق المخصص الخاص بك.
 
 .. code-block:: python
 
@@ -108,7 +98,7 @@ in your custom launcher.
 
   class MyEventHandler(events.EventHandler):
       def record(self, event: events.Event):
-          # process event
+          # معالجة الحدث
 
   def main():
     events.configure(MyEventHandler())
