@@ -1,43 +1,34 @@
 .. _torch-library-docs:
 
 torch.library
-===================================
+===============
 .. py:module:: torch.library
 .. currentmodule:: torch.library
 
-torch.library is a collection of APIs for extending PyTorch's core library
-of operators. It contains utilities for testing custom operators, creating new
-custom operators, and extending operators defined with PyTorch's C++ operator
-registration APIs (e.g. aten operators).
+تمثل torch.library مجموعة من واجهات برمجة التطبيقات (APIs) لتوسيع المكتبة الأساسية لـ PyTorch من المشغلات. تحتوي على برامج مساعدة لاختبار المشغلات المخصصة، وإنشاء مشغلات مخصصة جديدة، وتوسيع المشغلات المحددة باستخدام واجهات برمجة تطبيقات تسجيل مشغل C++ الخاصة بـ PyTorch (مثل مشغلات aten).
 
-For a detailed guide on effectively using these APIs, please see
-Please see :ref:`custom-ops-landing-page`
-for more details on how to effectively use these APIs.
+للحصول على دليل مفصل حول الاستخدام الفعال لهذه الواجهات، يرجى الاطلاع على:
 
-Testing custom ops
+يرجى الاطلاع على :ref:`custom-ops-landing-page` للحصول على مزيد من التفاصيل حول كيفية الاستخدام الفعال لهذه الواجهات.
+
+اختبار المشغلات المخصصة
 ------------------
 
-Use :func:`torch.library.opcheck` to test custom ops for incorrect usage of the
-Python torch.library and/or C++ TORCH_LIBRARY APIs. Also, if your operator supports
-training, use :func:`torch.autograd.gradcheck` to test that the gradients are
-mathematically correct.
+استخدم :func:`torch.library.opcheck` لاختبار المشغلات المخصصة للبحث عن الاستخدام غير الصحيح لواجهة برمجة تطبيقات Python torch.library و/أو واجهات برمجة تطبيقات C++ TORCH_LIBRARY. أيضًا، إذا كان مشغل التدريب الخاص بك يدعم التدريب، فاستخدم :func:`torch.autograd.gradcheck` لاختبار دقة التدرجات رياضيًا.
 
 .. autofunction:: opcheck
 
-Creating new custom ops in Python
----------------------------------
+إنشاء مشغلات مخصصة جديدة في Python
+------------------------------
 
-Use :func:`torch.library.custom_op` to create new custom ops.
+استخدم :func:`torch.library.custom_op` لإنشاء مشغلات مخصصة جديدة.
 
 .. autofunction:: custom_op
 
-Extending custom ops (created from Python or C++)
--------------------------------------------------
+توسيع المشغلات المخصصة (المنشأة من Python أو C++)
+------------------------------------------
 
-Use the register.* methods, such as :func:`torch.library.register_kernel` and
-func:`torch.library.register_fake`, to add implementations
-for any operators (they may have been created using :func:`torch.library.custom_op` or
-via PyTorch's C++ operator registration APIs).
+استخدم طرق register.*، مثل :func:`torch.library.register_kernel` و:func:`torch.library.register_fake`، لإضافة عمليات تنفيذ لأي مشغلات (قد تكون تم إنشاؤها باستخدام :func:`torch.library.custom_op` أو عبر واجهات برمجة تطبيقات تسجيل مشغل C++ الخاصة بـ PyTorch).
 
 .. autofunction:: register_kernel
 .. autofunction:: register_autograd
@@ -51,20 +42,15 @@ via PyTorch's C++ operator registration APIs).
 
     .. automethod:: set_kernel_enabled
 
-Low-level APIs
---------------
+واجهات برمجة التطبيقات منخفضة المستوى
+------------------------------
 
-The following APIs are direct bindings to PyTorch's C++ low-level
-operator registration APIs.
+تمثل واجهات برمجة التطبيقات التالية روابط مباشرة إلى واجهات برمجة التطبيقات منخفضة المستوى لتسجيل المشغل C++ الخاصة بـ PyTorch.
 
 .. warning::
-   The low-level operator registration APIs and the PyTorch Dispatcher are a
-   complicated PyTorch concept. We recommend you use the higher level APIs above
-   (that do not require a torch.library.Library object) when possible.
-   This blog post <http://blog.ezyang.com/2020/09/lets-talk-about-the-pytorch-dispatcher/>`_
-   is a good starting point to learn about the PyTorch Dispatcher.
+   تعد واجهات برمجة التطبيقات لتسجيل المشغل منخفض المستوى ومبدل PyTorch مفهومًا معقدًا في PyTorch. نوصي باستخدام واجهات برمجة التطبيقات عالية المستوى المذكورة أعلاه (التي لا تتطلب كائن torch.library.Library) كلما أمكن ذلك. تمثل هذه التدوينة <http://blog.ezyang.com/2020/09/lets-talk-about-the-pytorch-dispatcher/>`_ نقطة انطلاق جيدة لمعرفة المزيد حول مبدل PyTorch.
 
-A tutorial that walks you through some examples on how to use this API is available on `Google Colab <https://colab.research.google.com/drive/1RRhSfk7So3Cn02itzLWE9K4Fam-8U011?usp=sharing>`_.
+يتوفر البرنامج التعليمي الذي يشرح لك بعض الأمثلة حول كيفية استخدام هذه الواجهة على `Google Colab <https://colab.research.google.com/drive/1RRhSfk7So3Cn02itzLWE9K4Fam-8U011?usp=sharing>`_.
 
 .. autoclass:: torch.library.Library
   :members:
