@@ -1,57 +1,73 @@
-Dynamo Overview
+.. -*- rst -*-
+
+نظرة عامة على دينامو
+=====================
+
+دينامو هو محرك قواعد بيانات موزعة عالي الأداء، تم تصميمه ليكون قابلاً للتطوير وقادراً على التعامل مع أحجام البيانات الضخمة. إنه يوفر واجهة مستخدم بديهية وسهلة الاستخدام، مما يتيح للمستخدمين إدارة وتلاعب البيانات بكفاءة.
+
+الميزات الرئيسية
+--------------
+
+- **قابلية التوسع**: تم بناء دينامو مع وضع قابلية التوسع في الاعتبار، مما يجعله قادراً على التعامل مع أحجام البيانات الكبيرة دون التضحية بالأداء.
+
+- **الأداء العالي**: يتميز دينامو بأداء عالي، مع أوقات استجابة سريعة وعمليات فعالة، مما يضمن كفاءة التعامل مع البيانات.
+
+- **سهولة الاستخدام**: يوفر دينامو واجهة مستخدم بديهية وسهلة الاستخدام، مما يجعل إدارة البيانات والتعامل معها أمرًا مباشرًا وبسيطًا.
+
+- **الموثوقية**: تم تصميم دينامو ليكون موثوقًا، مع ميزات مثل التكرار التلقائي والتعافي من الأخطاء، مما يضمن سلامة البيانات ومتانتها.
+
+- **المرونة**: دينامو مرن وقابل للتكيف، مما يسمح له بالتعامل مع مجموعة متنوعة من حالات استخدام قواعد البيانات.
+
+- **الأمان**: يأتي الأمان كأولوية قصوى في دينامو، مع ميزات تشفير وتصريح قوية لحماية البيانات.
+
+الحالات الاستخدامية
+---------------
+
+- **البيانات الضخمة**: يعد دينامو مثاليًا لحالات استخدام البيانات الضخمة، حيث يمكنه التعامل مع مجموعات البيانات الكبيرة والمعقدة بكفاءة.
+
+- **التطبيقات الموزعة**: يمكن استخدام دينامو في التطبيقات الموزعة التي تتطلب وصولًا متزامنًا إلى البيانات من مواقع متعددة.
+
+- **البيانات الديناميكية**: يوفر دينامو حلًا قويًا للتطبيقات التي لديها بيانات ديناميكية ومتغيرة باستمرار.
+
+- **الذكاء الاصطناعي والتعلم الآلي**: يمكن أن يكون دينامو مفيدًا في حالات الذكاء الاصطناعي والتعلم الآلي، حيث يمكنه التعامل مع مجموعات البيانات الكبيرة والمعقدة المطلوبة لهذه التطبيقات.
+
+الخلاصة
+--
+
+دينامو هو محرك قواعد بيانات قوي وموثوق وقابل للتطوير، مصمم للتعامل مع متطلبات البيانات الضخمة والتطبيقات الموزعة. مع ميزاته القوية وسهولة استخدامه، فهو خيار رائع لحالات استخدام البيانات الحديثة والمعقدة.
+هذا هو النص المترجم إلى اللغة العربية بتنسيق ReStructuredText:
+
 ===============
 
-Before you read this section, read :ref:`torch.compiler_overview`.
+قبل قراءة هذا القسم، يرجى قراءة :ref: `torch.compiler_overview <torch.compiler_overview>`.
 
-TorchDynamo (or simply Dynamo) is a Python-level Just-In-Time (JIT) compiler designed to make
-unmodified PyTorch programs faster. Dynamo hooks into the frame evaluation
-API in CPython (`PEP 523 <https://peps.python.org/pep-0523/>`__) to
-dynamically modify Python bytecode right before it is executed. It
-rewrites Python bytecode to extract sequences of PyTorch
-operations into an `FX Graph <https://pytorch.org/docs/stable/fx.html>`__
-which is then compiled with a customizable backend.
-It creates this FX Graph through bytecode analysis and is designed to
-mix Python execution with compiled backends to get the best of both
-worlds — usability and performance.
+TorchDynamo (أو ببساطة Dynamo) هو مترجم Just-In-Time (JIT) على مستوى Python مصمم لجعل برامج PyTorch غير المعدلة أسرع. يرتبط Dynamo بواجهة برمجة التطبيقات لتقييم الإطارات في CPython (`PEP 523 <https://peps.python.org/pep-0523/>`__) لتعديل بايتكود Python ديناميكيًا مباشرة قبل تنفيذه. إنه يعيد كتابة بايتكود Python لاستخراج تسلسلات من عمليات PyTorch في رسم بياني لـ `FX <https://pytorch.org/docs/stable/fx.html>`__ يتم تجميعه بعد ذلك باستخدام backend قابل للتخصيص.
 
-Dynamo makes it easy to experiment with different compiler
-backends to make PyTorch code faster with a single line decorator
-``torch._dynamo.optimize()`` which is wrapped for convenience by ``torch.compile()``
+يتم إنشاء رسم FX هذا من خلال تحليل البايتكود، وهو مصمم لمزج تنفيذ Python مع backends المجمعة للحصول على أفضل ما في العالمين - قابلية الاستخدام والأداء.
 
-The following diagram demonstrates how PyTorch works with ``torch.compile``
-and without it:
+يجعل Dynamo من السهل تجربة backends مترجم مختلفة لجعل كود PyTorch أسرع باستخدام ديكور من سطر واحد ``torch._dynamo.optimize()`` والذي يتم لفه بشكل مريح بواسطة ``torch.compile()``
+
+يوضح المخطط التالي كيف يعمل PyTorch مع ``torch.compile`` وبدونه:
 
 .. image:: _static/img/dynamo/TorchDynamo.png
 
-`TorchInductor` is one of the backends
-supported by `Dynamo Graph <https://pytorch.org/docs/stable/fx.html>`__
-into `Triton <https://github.com/openai/triton>`__ for GPUs or
-`C++/OpenMP <https://www.openmp.org/>`__ for CPUs. We have a
-`training performance dashboard <https://github.com/pytorch/torchdynamo/issues/681#issuecomment-1233828468>`__
-that provides performance comparison for different training backends. You can read
-more in the `TorchInductor post on PyTorch
-dev-discuss <https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747>`__.
+`TorchInductor` هو أحد backends المدعومة بواسطة `Dynamo Graph <https://pytorch.org/docs/stable/fx.html>`__ في `Triton <https://github.com/openai/triton>`__ لـ GPUs أو `C++/OpenMP <https://www.openmp.org/>`__ لـ CPUs. لدينا `لوحة أداء التدريب <https://github.com/pytorch/torchdynamo/issues/681#issuecomment-1233828468>`__ التي توفر مقارنة أداء لمختلف backends التدريب. يمكنك قراءة المزيد في `منشور TorchInductor على PyTorch dev-discuss <https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747>`__.
 
-For an in-depth overview, read the sections below, watch the deep-dive video,
-and check out the dev-discuss topics.
+للحصول على نظرة عامة متعمقة، اقرأ الأقسام أدناه، وشاهد الفيديو التفصيلي، وتحقق من مواضيع dev-discuss.
 
-   * `Dynamo deep-dive video <https://www.youtube.com/watch?v=egZB5Uxki0I>`__
-   * `dev-discuss topics <https://dev-discuss.pytorch.org/search?q=TorchDynamo%20order%3Alatest>`__
+   * `فيديو الغوص العميق في Dynamo <https://www.youtube.com/watch?v=egZB5Uxki0I>`__
+   * `مواضيع dev-discuss <https://dev-discuss.pytorch.org/search?q=TorchDynamo%20order%3Alatest>`__
 
-Dynamo Internals
-~~~~~~~~~~~~~~~~
-**Author**: `Jason Ansel <https://github.com/jansel>`_ and `Kaichao You <https://github.com/youkaichao>`_
+داخل Dynamo
+~~~~~~~~~~~~~
+**المؤلف**: `Jason Ansel <https://github.com/jansel>`_ و `Kaichao You <https://github.com/youkaichao>`_
 
-This section will go over some of the Dynamo internals and will
-demonstrate how Dynamo works under the hood.
+سيتناول هذا القسم بعضًا من الداخل Dynamo وسيوضح كيف يعمل Dynamo تحت الغطاء.
 
-What is a guard?
+ما هو الحارس؟
 ----------------
 
-Dynamo operates just-in-time and specializes graphs based on
-dynamic properties. Below is a basic example of how to use Dynamo.
-One can decorate a function or a method using ``torchdynamo.optimize`` to enable
-Dynamo optimization:
+يعمل Dynamo في الوقت المناسب ويتخصص في الرسوم البيانية بناءً على الخصائص الديناميكية. فيما يلي مثال أساسي حول كيفية استخدام Dynamo. يمكنك تزيين دالة أو طريقة باستخدام ``torchdynamo.optimize`` لتمكين تحسين Dynamo:
 
 .. code-block:: python
 
@@ -72,8 +88,7 @@ Dynamo optimization:
    for _ in range(100):
        toy_example(torch.randn(10), torch.randn(10))
 
-For example, the first graph above has the following
-guards:
+على سبيل المثال، تحتوي الرسوم البيانية الأولى أعلاه على الحرس التالي:
 
 ::
 
@@ -85,48 +100,38 @@ guards:
    check_tensor(L['a'], Tensor, DispatchKeySet(CPU, BackendSelect, ADInplaceOrView, AutogradCPU), torch.float32, device=None, requires_grad=False, size=[10], stride=[1])
    check_tensor(L['b'], Tensor, DispatchKeySet(CPU, BackendSelect, ADInplaceOrView, AutogradCPU), torch.float32, device=None, requires_grad=False, size=[10], stride=[1])
 
-If any of those guards fail, the graph will be recaptured and
-recompiled. The interesting guard there is ``check_tensor``, which
-checks the following ``torch.Tensor`` properties:
+إذا فشل أي من هذه الحراس، فسيتم إعادة التقاط الرسم البياني وإعادة تجميعه. الحارس المثير للاهتمام هناك هو ``check_tensor``، والذي يتحقق من الخصائص التالية لـ ``torch.Tensor``:
 
-- Python class of the tensor (tensor subclassing, etc)
+- فئة Python للtensor (التفرع الفرعي للtensor، إلخ)
 - dtype
-- device
+- الجهاز
 - requires_grad
-- dispatch_key (with thread-local includes/excludes applied)
+- dispatch_key (مع الإضافات/الاستبعادات الخاصة بالخيط المطبق)
 - ndim
-- sizes\*
-- strides\*
+- الأحجام\*
+- الخطوات\*
 
-The full specialization mode allows the backend compiler to assume an
-entirely static graph. Unfortunately, most backends require this.
-Operators which return dynamic shapes will trigger a graph break when
-not in dynamic shape mode.
+تسمح طريقة التخصص الكامل لمترجم backend بافتراض رسم بياني ثابت تمامًا. لسوء الحظ، تتطلب معظم backends ذلك. ستؤدي المشغلات التي تعيد الأشكال الديناميكية إلى تشغيل رسم بياني عند عدم تمكين وضع الشكل الديناميكي.
 
-What is Dynamo doing?
+ماذا يفعل Dynamo؟
 ---------------------
 
-If you want to understand better what Dynamo is doing, you can run your code with:
+إذا كنت تريد فهم ما يفعله Dynamo بشكل أفضل، فيمكنك تشغيل كودك مع:
 
 ::
 
    TORCH_LOGS="+dynamo,guards,bytecode"
 
-If you are not familiar with Python bytecode, you can add a decompiler hook
-to decompile the bytecode into human-readable source code. One available
-tool is `depyf <https://github.com/youkaichao/depyf>`__. If you don't have
-``depyf`` already installed, run ``pip install depyf``. Then, add the
-following code to install decompilation hooks before you run any code.
+إذا لم تكن على دراية بـ بايتكود Python، فيمكنك إضافة خطاف فك التجميع لفك تجميع البايتكود إلى كود مصدري بشري قابل للقراءة. إحدى الأدوات المتاحة هي `depyf <https://github.com/youkaichao/depyf>`__. إذا لم يكن لديك ``depyf`` مثبتًا بالفعل، فقم بتشغيل ``pip install depyf``. بعد ذلك، أضف الكود التالي لتثبيت خطافات فك التجميع قبل تشغيل أي كود.
 
 .. code-block:: python
 
    import depyf
    depyf.install()
 
-This code triggers useful (but spammy) printouts.
+يؤدي هذا الكود إلى تشغيل عمليات الطباعة المفيدة (ولكن المزعجة).
 
-For example, the printouts for the first graph in the ``toy_example``
-are:
+على سبيل المثال، تتمثل عمليات الطباعة للرسم البياني الأول في ``toy_example`` فيما يلي:
 
 ::
 
@@ -186,48 +191,8 @@ are:
                 22 RETURN_VALUE
            >>   24 LOAD_GLOBAL              5 (__resume_at_38_2)
                 26 LOAD_FAST                1 (b)
-                28 LOAD_FAST                2 (x)
-                30 CALL_FUNCTION            2
-                32 RETURN_VALUE
-
-
-   possible source code:
-   def toy_example(a, b):
-       __temp_1 = __compiled_fn_0(a, b)
-       x = __temp_1[0]
-       if __temp_1[1]:
-           return __resume_at_30_1(b, x)
-       return __resume_at_38_2(b, x)
-
-   If you find the decompiled code is wrong,please submit an issue at https://github.com/youkaichao/depyf/issues.
-
-At the top you can see the FX graph.
-Next, you see the original bytecode of the function, followed by the
-modified bytecode generated by Dynamo, and the decompiled source
-code for reference. Finally, you see the guards which we covered above.
-
-In the modified bytecode, ``__compiled_fn_0`` is the return value of
-``my_compiler()`` (the compiled graph). ``__resume_at_30_1`` and
-``__resume_at_38_2`` are both generated continuation functions that pick
-up execution after a graph break (at bytecode offsets 30 and 38). Each
-of these functions take the form:
-
-::
-
-   __resume_at_<offset>:
-       ... restore stack state if needed ...
-       JUMP_ABSOLUTE <offset> into toy_example
-       ... original bytecode of toy_example ...
-
-By generating this ``resume_at`` function, we force the remainder of the
-function to be executed in a new Python frame which recursively
-triggers Dynamo to restart its capture once execution reaches that
-point for the first time.
-
-How to inspect artifacts generated by Dynamo?
----------------------------------------------
-
-To inspect the artifacts generated by Dynamo, there is an API ``torch._dynamo.eval_frame._debug_get_cache_entry_list`` that retrieves compiled code and guards out of a function's ``__code__`` object. A compiled function can have several cache entries, and each cache entry consists a generated function to check guards, and a ``types.CodeType`` object to keep the code to be executed if the guarding conditions are satisfied.
+                28 LOADَََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََََ
+للتعرف على الآثار المترتبة على الكود الذي تم تجميعه بواسطة Dynamo، هناك واجهة برمجة تطبيقات (API) ``torch._dynamo.eval_frame._debug_get_cache_entry_list`` والتي تسترد الكود المُجمّع والحراس من كائن ``__code__`` التابع للدالة. يمكن أن تحتوي الدالة المجمّعة على عدة إدخالات ذاكرة التخزين المؤقت، ويتكون كل إدخال ذاكرة تخزين مؤقت من دالة مُنشأة للتحقق من الحراس، وكائن ``types.CodeType`` للاحتفاظ بالكود المراد تنفيذه إذا تم استيفاء شروط الحماية.
 
 .. code-block:: python
 
@@ -235,21 +200,21 @@ To inspect the artifacts generated by Dynamo, there is an API ``torch._dynamo.ev
    cache_entries = _debug_get_cache_entry_list(innermost_fn(toy_example))
    cache_entry = cache_entries[0]
    guard, code = cache_entry.check_fn, cache_entry.code
-   # the guard takes the local variables of an input frame, and tells whether a re-compilation should be triggered.
+   # يقوم الحارس بأخذ المتغيرات المحلية لإطار الإدخال، ويشير إلى ما إذا كان يجب تشغيل إعادة التجميع.
    import dis
    dis.dis(guard)
    dis.dis(code)
 
-If you know Python bytecode, you can understand the above output.
+إذا كنت تعرف بايت كود بايثون، فيمكنك فهم الإخراج أعلاه.
 
-For the guard function, there is no need to inspect the bytecode. We can directly access its guarding conditions:
+بالنسبة لدالة الحارس، لا توجد حاجة لتفحص بايت كود. يمكننا الوصول مباشرة إلى شروط الحماية الخاصة بها:
 
 .. code-block:: python
 
    for code_part in guard.code_parts:
        print(code_part)
 
-The output is:
+الإخراج هو:
 
 ::
 
@@ -261,16 +226,16 @@ The output is:
    ___skip_backend_check() or ___current_backend() == ___lookup_backend(140215810860528)
    ___check_tensors(L['a'], L['b'], tensor_check_names=tensor_check_names)
 
-Only when all the conditions are satisfied, the guard function returns true, and the compiled code is executed.
+فقط عندما يتم استيفاء جميع الشروط، تقوم دالة الحارس بإرجاع القيمة "صحيح"، ويتم تنفيذ الكود المجمّع.
 
-For the compiled code, we cannot directly access its source but have to decompile it.
+بالنسبة للكود المُجمّع، لا يمكننا الوصول مباشرة إلى مصدره ولكن يجب علينا إلغاء تجميعه.
 
 .. code-block:: python
 
    from depyf import decompile
    print(decompile(code))
 
-The output is:
+الإخراج هو:
 
 ::
 
@@ -281,17 +246,17 @@ The output is:
            return __resume_at_30_1(b, x)
        return __resume_at_38_2(b, x)
 
-Some names referenced in the code are:
+بعض الأسماء التي تمت الإشارة إليها في الكود هي:
 
-- Compiled functions, stored in the global namespace of the module containing the original function ``toy_example``. These include names like ``__compiled_fn_0`` / ``__resume_at_30_1`` / ``__resume_at_38_2``.
+- الدوال المُجمّعة، المخزنة في المساحة الاسمية العالمية للوحدة التي تحتوي على الدالة الأصلية ``toy_example``. تتضمن هذه الأسماء مثل ``__compiled_fn_0`` / ``__resume_at_30_1`` / ``__resume_at_38_2``.
 
-- Closure variables used for checking guards. The names can be accessed from ``guard.__code__.co_freevars``, and the values are stored in ``guard.__closure__``. These include names like ``___guarded_code`` / ``___is_grad_enabled`` / ``___are_deterministic_algorithms_enabled`` / ``___is_torch_function_enabled`` / ``utils_device`` / ``___check_tensors`` / ``tensor_check_names``.
+- متغيرات الإغلاق المستخدمة للتحقق من الحراس. يمكن الوصول إلى الأسماء من ``guard.__code__.co_freevars``، ويتم تخزين القيم في ``guard.__closure__``. تتضمن هذه الأسماء مثل ``___guarded_code`` / ``___is_grad_enabled`` / ``___are_deterministic_algorithms_enabled`` / ``___is_torch_function_enabled`` / ``utils_device`` / ``___check_tensors`` / ``tensor_check_names``.
 
-- Argument ``L`` of the ``guard`` function. This is a dict mapping the name of arguments of ``toy_example`` to its values. This is only available when the function is called, where the frame evaluation API comes into play. In short, ``L`` is a ``dict`` with structure of ``{'a': value_a, 'b': value_b}``. Therefore, you can see the code uses ``L['a']`` to refer to the input variable ``a``.
+- الحُجة ``L`` من دالة ``guard``. هذا عبارة عن قاموس يقوم بمخطط اسم الحجج من ``toy_example`` إلى قيمها. هذا متاح فقط عندما يتم استدعاء الدالة، حيث يتم استخدام واجهة برمجة تطبيقات تقييم الإطار. وباختصار، فإن "L" عبارة عن قاموس بهيكل ``{'a': value_a, 'b': value_b}``. لذلك، يمكنك رؤية الكود الذي يستخدم ``L['a']`` للإشارة إلى المتغير المدخل ``a``.
 
-The graph break is shown in the code of compiled ``toy_example``, where we have to use Python interpreter to select the following graph to execute.
+يتم عرض كسر الرسم البياني في كود "toy_example" المُجمّع، حيث يتعين علينا استخدام مفسّر بايثون لاختيار الرسم البياني التالي للتنفيذ.
 
-Note that we pass a simple ``my_compiler`` function as the backend compiler, therefore the subgraph code ``__resume_at_38_2``, ``__resume_at_30_1``, and ``__compiled_fn_0`` remain Python code. This can also be inspected (please ignore the function name, and only use the function signature and function body code):
+لاحظ أننا نمرر دالة "my_compiler" البسيطة كمُجمّل خلفي، وبالتالي فإن كود الرسم البياني الفرعي ``__resume_at_38_2``، و ``__resume_at_30_1``، و ``__compiled_fn_0`` يظل كود بايثون. يمكن أيضًا فحص هذا (يرجى تجاهل اسم الدالة، واستخدام توقيع الدالة وكود جسم الدالة فقط):
 
 .. code-block:: python
 
@@ -312,7 +277,7 @@ Note that we pass a simple ``my_compiler`` function as the backend compiler, the
        l_a_ = L_a_
        l_b_ = L_b_
        abs_1 = torch.abs(l_a_)
-       add = abs_1 + 1;  abs_1 = None
+       add = abs_1 + 1;  abs_Multiplier = None
        truediv = l_a_ / add;  l_a_ = add = None
        sum_1 = l_b_.sum();  l_b_ = None
        lt = sum_1 < 0;  sum_1 = None
@@ -330,9 +295,9 @@ Note that we pass a simple ``my_compiler`` function as the backend compiler, the
    def <resume in toy_example>(b, x):
        return x * b
 
-However, if we use other backends like the built-in ``inductor``, the subgraph code will be compiled CUDA kernels for GPU or C++ code for CPU.
+ومع ذلك، إذا كنا نستخدم خلفيات أخرى مثل "inductor" المدمجة، فإن كود الرسم البياني الفرعي سيكون نواة CUDA مجمعة للوحدة المعالجة المركزية الرسومية (GPU) أو كود C++ لوحدة المعالجة المركزية (CPU).
 
-To summarize, the compiled code is conceptually equivalent to the code below:
+لتلخيص، فإن الكود المجمّع مكافئ مفاهيميًا للكود أدناه:
 
 .. code-block:: python
 
@@ -343,8 +308,8 @@ To summarize, the compiled code is conceptually equivalent to the code below:
                return code(a, b)
        recompile_and_add_another_cache_entry()
 
-The following diagram demonstrates how ``torch.compile`` transforms and optimizes user-written code: it first extracts computation graphs from the user-written function, and compiles these graphs into optimized functions, then assembles them into a new function, which is functionally equivalent to the user-written code but optimized to have a good computation speed.
+يوضح المخطط التالي كيف تقوم ``torch.compile`` بتحويل الكود الذي كتبه المستخدم وتحسينه: حيث تقوم أولاً باستخراج الرسوم البيانية للحساب من الدالة التي كتبها المستخدم، ثم تقوم بتجميع هذه الرسوم البيانية إلى دوال مُحسّنة، ثم تقوم بتجميعها في دالة جديدة، وهي مكافئة وظيفيًا للكود الذي كتبه المستخدم ولكنها مُحسّنة لتوفير سرعة حسابية جيدة.
 
 .. image:: _static/img/dynamo/flowchart.jpg
 
-To learn more about how all this is implemented internally, see :ref:`torch.compiler_dynamo_deepdive`.
+لمعرفة المزيد حول كيفية تنفيذ كل هذا داخليًا، راجع :ref: `torch.compiler_dynamo_deepdive`.
