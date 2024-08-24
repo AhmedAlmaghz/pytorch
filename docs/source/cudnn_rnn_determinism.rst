@@ -1,16 +1,15 @@
 .. warning::
-    There are known non-determinism issues for RNN functions on some versions of cuDNN and CUDA.
-    You can enforce deterministic behavior by setting the following environment variables:
+   هناك مشكلات عدم حتمية معروفة لوظائف RNN على بعض إصدارات cuDNN وCUDA. يمكنك فرض سلوك حتمي من خلال تعيين متغيرات البيئة التالية:
 
-    On CUDA 10.1, set environment variable ``CUDA_LAUNCH_BLOCKING=1``.
-    This may affect performance.
+   على CUDA 10.1، قم بتعيين متغير البيئة ``CUDA_LAUNCH_BLOCKING=1``.
+   قد يؤثر هذا على الأداء.
 
-    On CUDA 10.2 or later, set environment variable
-    (note the leading colon symbol)
-    ``CUBLAS_WORKSPACE_CONFIG=:16:8``
-    or
-    ``CUBLAS_WORKSPACE_CONFIG=:4096:2``.
+   على CUDA 10.2 أو أحدث، قم بتعيين متغير البيئة
+   (لاحظ رمز الاستعمار المبدئي)
+   ``CUBLAS_WORKSPACE_CONFIG=:16:8``
+   أو
+   ``CUBLAS_WORKSPACE_CONFIG=:4096:2``.
 
-    See the `cuDNN 8 Release Notes`_ for more information.
+   لمزيد من المعلومات، راجع `ملاحظات إصدار cuDNN 8`_.
 
-.. _cuDNN 8 Release Notes: https://docs.nvidia.com/deeplearning/sdk/cudnn-release-notes/rel_8.html
+.. _ملاحظات إصدار cuDNN 8: https://docs.nvidia.com/deeplearning/sdk/cudnn-release-notes/rel_8.html
