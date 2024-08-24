@@ -1,142 +1,140 @@
-Pytorch 2.4: Getting Started on Intel GPU
-=========================================
+# PyTorch 2.4: البدء مع معالج الرسوميات Intel GPU
+=================================================
 
-The support for Intel GPUs is released alongside PyTorch v2.4.
+تم إطلاق الدعم لمعالجات الرسوميات Intel GPUs بالتزامن مع إصدار PyTorch v2.4.
 
-This release only supports build from source for Intel GPUs.
+يدعم هذا الإصدار فقط البناء من المصدر لمعالجات الرسوميات Intel GPUs.
 
-Hardware Prerequisites
-----------------------
+متطلبات الأجهزة
+----------------
 
 .. list-table::
    :header-rows: 1
 
-   * - Supported Hardware
+   * - الأجهزة المدعومة
      - Intel® Data Center GPU Max Series
-   * - Supported OS
+   * - نظام التشغيل المدعوم
      - Linux
 
+يتوافق PyTorch لمعالجات الرسوميات Intel GPUs مع Intel® Data Center GPU Max Series ويدعم فقط نظام التشغيل Linux مع الإصدار 2.4.
 
-PyTorch for Intel GPUs is compatible with Intel® Data Center GPU Max Series and only supports OS Linux with release 2.4.
+متطلبات البرمجيات
+----------------
 
-Software Prerequisites
-----------------------
+كمتطلب أساسي، قم بتثبيت التعريف والبرامج المطلوبة باتباع `متطلبات تثبيت PyTorch لمعالجات الرسوميات Intel GPUs <https://www.intel.com/content/www/us/en/developer/articles/tool/pytorch-prerequisites-for-intel-gpus.html>`_.
 
-As a prerequisite, install the driver and required packages by following the `PyTorch Installation Prerequisites for Intel GPUs <https://www.intel.com/content/www/us/en/developer/articles/tool/pytorch-prerequisites-for-intel-gpus.html>`_.
+إعداد البيئة
+--------
 
-Set up Environment
-------------------
-
-Before you begin, you need to set up the environment. This can be done by sourcing the ``setvars.sh`` script provided by the ``intel-for-pytorch-gpu-dev`` and  ``intel-pti-dev`` packages.
+قبل البدء، تحتاج إلى إعداد البيئة. يمكن القيام بذلك عن طريق تشغيل نص ``setvars.sh`` المقدم من حزم ``intel-for-pytorch-gpu-dev`` و ``intel-pti-dev``.
 
 .. code-block::
 
    source ${ONEAPI_ROOT}/setvars.sh
 
 .. note::
-   The ``ONEAPI_ROOT`` is the folder you installed your ``intel-for-pytorch-gpu-dev`` and  ``intel-pti-dev`` packages. Typically, it is located at ``/opt/intel/oneapi/`` or ``~/intel/oneapi/``.
+   ``ONEAPI_ROOT`` هو المجلد الذي قمت بتثبيت حزم ``intel-for-pytorch-gpu-dev`` و ``intel-pti-dev`` فيه. عادة ما يقع في ``/opt/intel/oneapi/`` أو ``~/intel/oneapi/``.
 
-Build from source
+البناء من المصدر
 -----------------
 
-Now we have all the required packages installed and environment acitvated. Use the following commands to install ``pytorch``, ``torchvision``, ``torchaudio`` by building from source. For more details, refer to official guides in `PyTorch from source <https://github.com/pytorch/pytorch?tab=readme-ov-file#intel-gpu-support>`_, `Vision from source <https://github.com/pytorch/vision/blob/main/CONTRIBUTING.md#development-installation>`_ and `Audio from source <https://pytorch.org/audio/main/build.linux.html>`_.
+الآن بعد أن قمنا بتثبيت جميع الحزم المطلوبة وتم تفعيل البيئة، استخدم الأوامر التالية لتثبيت ``pytorch`` و ``torchvision`` و ``torchaudio`` عن طريق البناء من المصدر. لمزيد من التفاصيل، يرجى الرجوع إلى الأدلة الرسمية في `بناء PyTorch من المصدر <https://github.com/pytorch/pytorch?tab=readme-ov-file#intel-gpu-support>`_، و `بناء Vision من المصدر <https://github.com/pytorch/vision/blob/main/CONTRIBUTING.md#development-installation>`_، و `بناء Audio من المصدر <https://pytorch.org/audio/main/build.linux.html>`_.
 
 .. code-block::
 
-   # Get PyTorch Source Code
+   # الحصول على كود PyTorch المصدري
    git clone --recursive https://github.com/pytorch/pytorch
    cd pytorch
-   git checkout main # or checkout the specific release version >= v2.4
+   git checkout main # أو استخدم أمر "git checkout" لإصدار محدد >= v2.4
    git submodule sync
    git submodule update --init --recursive
 
-   # Get required packages for compilation
+   # الحصول على الحزم المطلوبة للترجمة
    conda install cmake ninja
    pip install -r requirements.txt
 
-   # Pytorch for Intel GPUs only support Linux platform for now.
-   # Install the required packages for pytorch compilation.
+   # PyTorch لمعالجات الرسوميات Intel GPUs يدعم فقط منصة Linux حاليا.
+   # تثبيت الحزم المطلوبة لترجمة PyTorch.
    conda install intel::mkl-static intel::mkl-include
 
-   # (optional) If using torch.compile with inductor/triton, install the matching version of triton
-   # Run from the pytorch directory after cloning
-   # For Intel GPU support, please explicitly `export USE_XPU=1` before running command.
+   # (اختياري) إذا كنت تستخدم torch.compile مع inductor/triton، قم بتثبيت الإصدار المطابق من triton
+   # قم بتشغيل الأمر من مجلد pytorch بعد استنساخه
+   # لدعم معالج الرسوميات Intel GPU، يرجى تصدير USE_XPU=1 قبل تشغيل الأمر.
    USE_XPU=1 make triton
 
-   # If you would like to compile PyTorch with new C++ ABI enabled, then first run this command:
+   # إذا كنت ترغب في ترجمة PyTorch مع تمكين C++ ABI الجديد، قم بتشغيل هذا الأمر أولاً:
    export _GLIBCXX_USE_CXX11_ABI=1
 
-   # pytorch build from source
+   # بناء PyTorch من المصدر
    export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
    python setup.py develop
    cd ..
 
-   # (optional) If using torchvison.
-   # Get torchvision Code
+   # (اختياري) إذا كنت تستخدم torchvison.
+   # الحصول على كود torchvision
    git clone https://github.com/pytorch/vision.git
    cd vision
-   git checkout main # or specific version
+   git checkout main # أو استخدم إصدارا محددا
    python setup.py develop
    cd ..
 
-   # (optional) If using torchaudio.
-   # Get torchaudio Code
+   # (اختياري) إذا كنت تستخدم torchaudio.
+   # الحصول على كود torchaudio
    git clone https://github.com/pytorch/audio.git
    cd audio
    pip install -r requirements.txt
-   git checkout main # or specific version
+   git checkout main # أو استخدم إصدارا محددا
    git submodule sync
    git submodule update --init --recursive
    python setup.py develop
    cd ..
 
-Check availability for Intel GPU
+التحقق من توفر معالج الرسوميات Intel GPU
 --------------------------------
 
 .. note::
-   Make sure the environment is properly set up by following `Environment Set up <#set-up-environment>`_ before running the code.
+   تأكد من إعداد البيئة بشكل صحيح باتباع قسم `إعداد البيئة <#set-up-environment>`_ قبل تشغيل الكود.
 
-To check if your Intel GPU is available, you would typically use the following code:
+للتحقق مما إذا كان معالج الرسوميات Intel GPU الخاص بك متاحا، يمكنك عادة استخدام الكود التالي:
 
 .. code-block::
 
    import torch
-   torch.xpu.is_available()  # torch.xpu is the API for Intel GPU support
+   torch.xpu.is_available()  # torch.xpu هو واجهة برمجة التطبيقات API لدعم معالج الرسوميات Intel GPU
 
-If the output is ``False``, ensure that you have Intel GPU in your system and correctly follow the `PyTorch Installation Prerequisites for Intel GPUs <https://www.intel.com/content/www/us/en/developer/articles/tool/pytorch-prerequisites-for-intel-gpus.html>`_. Then, check that the PyTorch compilation is correctly finished.
+إذا كانت النتيجة ``False``، فتأكد من وجود معالج رسوميات Intel GPU في نظامك واتبع `متطلبات تثبيت PyTorch لمعالجات الرسوميات Intel GPUs <https://www.intel.com/content/www/us/en/developer/articles/tool/pytorch-prerequisites-for-intel-gpus.html>`_ بشكل صحيح. بعد ذلك، تحقق من اكتمال ترجمة PyTorch بنجاح.
 
-Minimum Code Change
+تغييرات الكود الدنيا
 -------------------
 
-If you are migrating code from ``cuda``, you would change references from ``cuda`` to ``xpu``. For example:
+إذا كنت تقوم بترحيل الكود من ``cuda``، فستقوم بتغيير المراجع من ``cuda`` إلى ``xpu``. على سبيل المثال:
 
 .. code-block::
 
-   # CUDA CODE
+   # كود CUDA
    tensor = torch.tensor([1.0, 2.0]).to("cuda")
 
-   # CODE for Intel GPU
+   # كود معالج الرسوميات Intel GPU
    tensor = torch.tensor([1.0, 2.0]).to("xpu")
 
-The following points outline the support and limitations for PyTorch with Intel GPU:
+توضح النقاط التالية الدعم والقيود لـ PyTorch مع معالج الرسوميات Intel GPU:
 
-#. Both training and inference workflows are supported.
-#. Both eager mode and ``torch.compile`` is supported.
-#. Data types such as FP32, BF16, FP16, and Automatic Mixed Precision (AMP) are all supported.
-#. Models that depend on third-party components, will not be supported until PyTorch v2.5 or later.
+#. يتم دعم كل من سير عمل التدريب والاستدلال.
+#. يتم دعم كل من الوضع الفوري ``torch.compile``.
+#. يتم دعم أنواع البيانات مثل FP32 و BF16 و FP16 والدقة المختلطة التلقائية (AMP).
+#. لن يتم دعم النماذج التي تعتمد على المكونات الخارجية حتى إصدار PyTorch v2.5 أو أحدث.
 
-Examples
+أمثلة
 --------
 
-This section contains usage examples for both inference and training workflows.
+يحتوي هذا القسم على أمثلة للاستخدام لكل من سير عمل الاستدلال والتدريب.
 
-Inference Examples
+أمثلة الاستدلال
 ^^^^^^^^^^^^^^^^^^
 
-Here is a few inference workflow examples.
+فيما يلي بعض الأمثلة على سير عمل الاستدلال.
 
-
-Inference with FP32
+الاستدلال مع FP32
 """""""""""""""""""
 
 .. code-block::
@@ -148,17 +146,17 @@ Inference with FP32
    model.eval()
    data = torch.rand(1, 3, 224, 224)
 
-   ######## code changes #######
+   ######## تغييرات الكود #######
    model = model.to("xpu")
    data = data.to("xpu")
-   ######## code changes #######
+   ######## تغييرات الكود #######
 
    with torch.no_grad():
        model(data)
 
-   print("Execution finished")
+   print("انتهى التنفيذ")
 
-Inference with AMP
+الاستدلال مع AMP
 """"""""""""""""""
 
 .. code-block::
@@ -170,23 +168,23 @@ Inference with AMP
    model.eval()
    data = torch.rand(1, 3, 224, 224)
 
-   #################### code changes #################
+   #################### تغييرات الكود #################
    model = model.to("xpu")
    data = data.to("xpu")
-   #################### code changes #################
+   #################### تغييرات الكود #################
 
    with torch.no_grad():
        d = torch.rand(1, 3, 224, 224)
-       ############################# code changes #####################
+       ############################# تغييرات الكود #####################
        d = d.to("xpu")
-       # set dtype=torch.bfloat16 for BF16
+       # قم بضبط dtype=torch.bfloat16 لنوع البيانات BF16
        with torch.autocast(device_type="xpu", dtype=torch.float16, enabled=True):
-       ############################# code changes #####################
+       ############################# تغييرات الكود #####################
            model(data)
 
-   print("Execution finished")
+   print("انتهى التنفيذ")
 
-Inference with ``torch.compile``
+الاستدلال باستخدام ``torch.compile``
 """"""""""""""""""""""""""""""""
 
 .. code-block::
@@ -199,24 +197,24 @@ Inference with ``torch.compile``
    data = torch.rand(1, 3, 224, 224)
    ITERS = 10
 
-   ######## code changes #######
+   ######## تغييرات الكود #######
    model = model.to("xpu")
    data = data.to("xpu")
-   ######## code changes #######
+   ######## تغييرات الكود #######
 
    model = torch.compile(model)
    for i in range(ITERS):
        with torch.no_grad():
            model(data)
 
-   print("Execution finished")
+   print("انتهى التنفيذ")
 
-Training Examples
+أمثلة التدريب
 ^^^^^^^^^^^^^^^^^
 
-Here is a few training workflow examples.
+فيما يلي بعض الأمثلة على سير عمل التدريب.
 
-Train with FP32
+التدريب مع FP32
 """""""""""""""
 
 .. code-block::
@@ -247,16 +245,16 @@ Train with FP32
    criterion = torch.nn.CrossEntropyLoss()
    optimizer = torch.optim.SGD(model.parameters(), lr=LR, momentum=0.9)
    model.train()
-   ######################## code changes #######################
+   ######################## تغييرات الكود #######################
    model = model.to("xpu")
    criterion = criterion.to("xpu")
-   ######################## code changes #######################
+   ######################## تغييرات الكود #######################
 
    for batch_idx, (data, target) in enumerate(train_loader):
-       ########## code changes ##########
+       ########## تغييرات الكود ##########
        data = data.to("xpu")
        target = target.to("xpu")
-       ########## code changes ##########
+       ########## تغييرات الكود ##########
        optimizer.zero_grad()
        output = model(data)
        loss = criterion(output, target)
@@ -271,9 +269,9 @@ Train with FP32
        "checkpoint.pth",
    )
 
-   print("Execution finished")
+   print("انتهى التنفيذ")
 
-Train with AMP
+التدريب مع AMP
 """"""""""""""
 
 .. code-block::
@@ -308,17 +306,17 @@ Train with AMP
    scaler = torch.amp.GradScaler(enabled=use_amp)
 
    model.train()
-   ######################## code changes #######################
+   ######################## تغييرات الكود #######################
    model = model.to("xpu")
    criterion = criterion.to("xpu")
-   ######################## code changes #######################
+   ######################## تغييرات الكود #######################
 
    for batch_idx, (data, target) in enumerate(train_loader):
-       ########## code changes ##########
+       ########## تغييرات الكود ##########
        data = data.to("xpu")
        target = target.to("xpu")
-       ########## code changes ##########
-       # set dtype=torch.bfloat16 for BF16
+       ########## تغييرات الكود ##########
+       # قم بضبط dtype=torch.bfloat16 لنوع البيانات BF16
        with torch.autocast(device_type="xpu", dtype=torch.float16, enabled=use_amp):
            output = model(data)
            loss = criterion(output, target)
@@ -336,4 +334,4 @@ Train with AMP
        "checkpoint.pth",
    )
 
-   print("Execution finished")
+   print("انتهى التنفيذ")
