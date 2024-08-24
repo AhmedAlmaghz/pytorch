@@ -1,219 +1,131 @@
 .. _multiprocessing-best-practices:
 
-Multiprocessing best practices
-==============================
+أفضل الممارسات في المعالجة المتعددة
+==================================
 
-:mod:`torch.multiprocessing` is a drop in replacement for Python's
-:mod:`python:multiprocessing` module. It supports the exact same operations,
-but extends it, so that all tensors sent through a
-:class:`python:multiprocessing.Queue`, will have their data moved into shared
-memory and will only send a handle to another process.
+:mod:`torch.multiprocessing` هو بديل مباشر لوحدة :mod:`python:multiprocessing` في بايثون. تدعم الوحدة نفس العمليات تمامًا، ولكنها تمددها، بحيث يتم نقل جميع المنسقات التي يتم إرسالها عبر :class:`python:multiprocessing.Queue` إلى الذاكرة المشتركة، ولن يتم إرسال سوى مؤشر إلى عملية أخرى.
 
 .. note::
 
-    When a :class:`~torch.Tensor` is sent to another process, the
-    :class:`~torch.Tensor` data is shared. If :attr:`torch.Tensor.grad` is
-    not ``None``, it is also shared. After a :class:`~torch.Tensor` without
-    a :attr:`torch.Tensor.grad` field is sent to the other process, it
-    creates a standard process-specific ``.grad`` :class:`~torch.Tensor` that
-    is not automatically shared across all processes, unlike how the
-    :class:`~torch.Tensor`'s data has been shared.
+   عندما يتم إرسال :class:`~torch.Tensor` إلى عملية أخرى، يتم مشاركة بيانات :class:`~torch.Tensor`. إذا لم يكن :attr:`torch.Tensor.grad` ``None``، فإنه يتم مشاركته أيضًا. بعد إرسال :class:`~torch.Tensor` بدون حقل :attr:`torch.Tensor.grad` إلى العملية الأخرى، فإنه يقوم بإنشاء منسق ``grad`` قياسي خاص بالعملية لا يتم مشاركته تلقائيًا عبر جميع العمليات، على عكس بيانات :class:`~torch.Tensor` التي تم مشاركتها.
 
-This allows to implement various training methods, like Hogwild, A3C, or any
-others that require asynchronous operation.
+يسمح ذلك بتنفيذ طرق تدريب مختلفة، مثل Hogwild وA3C، أو أي طرق أخرى تتطلب عملية غير متزامنة.
 
 .. _multiprocessing-cuda-note:
 
-CUDA in multiprocessing
------------------------
+استخدام CUDA في المعالجة المتعددة
+------------------------------
 
-The CUDA runtime does not support the ``fork`` start method; either the ``spawn`` or ``forkserver`` start method are
-required to use CUDA in subprocesses.
+لا يدعم وقت تشغيل CUDA طريقة "fork" لبدء التشغيل؛ حيث تتطلب طريقة "spawn" أو "forkserver" لبدء التشغيل لاستخدام CUDA في العمليات الفرعية.
 
 .. note::
-  The start method can be set via either creating a context with
-  ``multiprocessing.get_context(...)`` or directly using
-  ``multiprocessing.set_start_method(...)``.
+   يمكن تعيين طريقة بدء التشغيل إما من خلال إنشاء سياق باستخدام ``multiprocessing.get_context(...)`` أو مباشرة باستخدام ``multiprocessing.set_start_method(...)``.
 
-Unlike CPU tensors, the sending process is required to keep the original tensor
-as long as the receiving process retains a copy of the tensor. It is implemented
-under the hood but requires users to follow the best practices for the program
-to run correctly. For example, the sending process must stay alive as long as
-the consumer process has references to the tensor, and the refcounting can not
-save you if the consumer process exits abnormally via a fatal signal. See
-:ref:`this section <multiprocessing-cuda-sharing-details>`.
+على عكس المنسقات التي تعمل على وحدة المعالجة المركزية (CPU)، يجب على العملية المرسلة الاحتفاظ بالمنسق الأصلي طالما أن العملية المستقبلة تحتفظ بنسخة من المنسق. يتم تنفيذ ذلك تحت الغطاء، ولكنه يتطلب من المستخدمين اتباع أفضل الممارسات لتشغيل البرنامج بشكل صحيح. على سبيل المثال، يجب أن تبقى العملية المرسلة نشطة طالما أن العملية المستقبلة لديها مراجع للمنسق، ولا يمكن للعد المرجعي أن ينقذك إذا خرجت العملية المستقبلة بشكل غير طبيعي عبر إشارة خطيرة. راجع :ref:`هذا القسم <multiprocessing-cuda-sharing-details>`.
 
-See also: :ref:`cuda-nn-ddp-instead`
+انظر أيضًا: :ref:`cuda-nn-ddp-instead`
 
-
-Best practices and tips
+أفضل الممارسات والنصائح
 -----------------------
 
-Avoiding and fighting deadlocks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تجنب المأزق ومحاربتها
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-There are a lot of things that can go wrong when a new process is spawned, with
-the most common cause of deadlocks being background threads. If there's any
-thread that holds a lock or imports a module, and ``fork`` is called, it's very
-likely that the subprocess will be in a corrupted state and will deadlock or
-fail in a different way. Note that even if you don't, Python built in
-libraries do - no need to look further than :mod:`python:multiprocessing`.
-:class:`python:multiprocessing.Queue` is actually a very complex class, that
-spawns multiple threads used to serialize, send and receive objects, and they
-can cause aforementioned problems too. If you find yourself in such situation
-try using a :class:`~python:multiprocessing.queues.SimpleQueue`, that doesn't
-use any additional threads.
+هناك الكثير من الأشياء التي يمكن أن تسوء عندما تتم توليد عملية جديدة، مع كون السبب الأكثر شيوعًا للمأزق هو الخيوط الخلفية. إذا كان هناك أي خيط يحتفظ بقفل أو يستورد وحدة نمطية، ويتم استدعاء "fork"، فمن المحتمل جدًا أن تكون العملية الفرعية في حالة تالفة وتتوقف أو تفشل بطريقة أخرى. لاحظ أنه حتى إذا لم تقم بذلك، فإن مكتبات بايثون المدمجة تفعل ذلك - لا داعي للنظر إلى أبعد من :mod:`python:multiprocessing`. :class:`python:multiprocessing.Queue` هو في الواقع فئة معقدة للغاية، تقوم بتوليد خيوط متعددة تستخدم لتهيئة التسلسل وإرسال الأشياء واستقبالها، ويمكن أن تسبب هذه الخيوط المشكلات المذكورة أعلاه أيضًا. إذا وجدت نفسك في مثل هذا الموقف، فحاول استخدام :class:`~python:multiprocessing.queues.SimpleQueue`، الذي لا يستخدم أي خيوط إضافية.
 
-We're trying our best to make it easy for you and ensure these deadlocks don't
-happen but some things are out of our control. If you have any issues you can't
-cope with for a while, try reaching out on forums, and we'll see if it's an
-issue we can fix.
+نبذل قصارى جهدنا لجعل الأمر سهلاً عليك وضمان عدم حدوث هذه المآزق، ولكن بعض الأمور خارجة عن سيطرتنا. إذا كانت لديك أي مشكلات لا يمكنك التعامل معها لبعض الوقت، فحاول التواصل عبر المنتديات، وسنرى ما إذا كانت هناك مشكلة يمكننا إصلاحها.
 
-Reuse buffers passed through a Queue
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+إعادة استخدام المصدّرات التي تم تمريرها عبر طابور الانتظار
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Remember that each time you put a :class:`~torch.Tensor` into a
-:class:`python:multiprocessing.Queue`, it has to be moved into shared memory.
-If it's already shared, it is a no-op, otherwise it will incur an additional
-memory copy that can slow down the whole process. Even if you have a pool of
-processes sending data to a single one, make it send the buffers back - this
-is nearly free and will let you avoid a copy when sending next batch.
+تذكر أنه في كل مرة تضع فيها :class:`~torch.Tensor` في :class:`python:multiprocessing.Queue`، يجب نقله إلى الذاكرة المشتركة. إذا كان مشتركًا بالفعل، فسيتم تجاهل الأمر، وإلا فسيؤدي ذلك إلى نسخ ذاكرة إضافية يمكن أن تبطئ العملية بأكملها. حتى إذا كان لديك مجموعة من العمليات التي ترسل البيانات إلى عملية واحدة، فقم بجعلها ترسل المصدّرات مرة أخرى - فهذا مجاني تقريبًا وسيسمح لك بتجنب النسخ عند إرسال الدفعة التالية.
 
-Asynchronous multiprocess training (e.g. Hogwild)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التدريب متعدد العمليات غير المتزامن (مثل Hogwild)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Using :mod:`torch.multiprocessing`, it is possible to train a model
-asynchronously, with parameters either shared all the time, or being
-periodically synchronized. In the first case, we recommend sending over the whole
-model object, while in the latter, we advise to only send the
-:meth:`~torch.nn.Module.state_dict`.
+باستخدام :mod:`torch.multiprocessing`، من الممكن تدريب نموذج بشكل غير متزامن، مع مشاركة المعلمات إما طوال الوقت، أو يتم مزامنتها بشكل دوري. في الحالة الأولى، نوصي بإرسال كائن النموذج بالكامل، بينما في الحالة الأخيرة، ننصح بإرسال :meth:`~torch.nn.Module.state_dict` فقط.
 
-We recommend using :class:`python:multiprocessing.Queue` for passing all kinds
-of PyTorch objects between processes. It is possible to e.g. inherit the tensors
-and storages already in shared memory, when using the ``fork`` start method,
-however it is very bug prone and should be used with care, and only by advanced
-users. Queues, even though they're sometimes a less elegant solution, will work
-properly in all cases.
+نوصي باستخدام :class:`python:multiprocessing.Queue` لتمرير جميع أنواع كائنات PyTorch بين العمليات. من الممكن، على سبيل المثال، وراثة المنسقات والتخزين الموجود بالفعل في الذاكرة المشتركة، عند استخدام طريقة "fork" لبدء التشغيل، ومع ذلك، فهي عرضة للأخطاء ويجب استخدامها بحذر، فقط من قبل المستخدمين المتقدمين. تعد الطوابير، على الرغم من أنها في بعض الأحيان حل أقل أناقة، ستعمل بشكل صحيح في جميع الحالات.
 
 .. warning::
 
-    You should be careful about having global statements, that are not guarded
-    with an ``if __name__ == '__main__'``. If a different start method than
-    ``fork`` is used, they will be executed in all subprocesses.
+   يجب أن تكون حذرًا بشأن وجود عبارات عامة، والتي لا يتم حمايتها باستخدام ``if __name__ == '__main__'``. إذا تم استخدام طريقة بدء تشغيل مختلفة عن "fork"، فسيتم تنفيذها في جميع العمليات الفرعية.
 
 Hogwild
 ~~~~~~~
 
-A concrete Hogwild implementation can be found in the `examples repository`__,
-but to showcase the overall structure of the code, there's also a minimal
-example below as well::
+يمكن العثور على تنفيذ ملموس لـ Hogwild في مستودع الأمثلة__، ولكن لإظهار الهيكل العام للرمز، هناك أيضًا مثال بسيط أدناه::
 
-    import torch.multiprocessing as mp
-    from model import MyModel
+   import torch.multiprocessing as mp
+   from model import MyModel
 
-    def train(model):
-        # Construct data_loader, optimizer, etc.
-        for data, labels in data_loader:
-            optimizer.zero_grad()
-            loss_fn(model(data), labels).backward()
-            optimizer.step()  # This will update the shared parameters
+   def train(model):
+       # إنشاء data_loader وoptimizer، إلخ
+       for data, labels in data_loader:
+           optimizer.zero_grad()
+           loss_fn(model(data), labels).backward()
+           optimizer.step()  # سيقوم هذا بتحديث المعلمات المشتركة
 
-    if __name__ == '__main__':
-        num_processes = 4
-        model = MyModel()
-        # NOTE: this is required for the ``fork`` method to work
-        model.share_memory()
-        processes = []
-        for rank in range(num_processes):
-            p = mp.Process(target=train, args=(model,))
-            p.start()
-            processes.append(p)
-        for p in processes:
-            p.join()
+   if __name__ == '__main__':
+       num_processes = 4
+       model = MyModel()
+       # ملاحظة: هذا مطلوب لكي تعمل طريقة "fork"
+       model.share_memory()
+       processes = []
+       for rank in range(num_processes):
+           p = mp.Process(target=train, args=(model,))
+           p.start()
+           processes.append(p)
+       for p in processes:
+           p.join()
 
 .. __: https://github.com/pytorch/examples/tree/master/mnist_hogwild
 
+وحدة المعالجة المركزية في المعالجة المتعددة
+------------------------------
 
+يمكن أن يؤدي الاستخدام غير المناسب للمعالجة المتعددة إلى الإفراط في اشتراك وحدة المعالجة المركزية، مما يتسبب في تنافس العمليات المختلفة على موارد وحدة المعالجة المركزية، مما يؤدي إلى انخفاض الكفاءة.
 
-CPU in multiprocessing
-----------------------
+سيوضح هذا البرنامج التعليمي ما هو الإفراط في اشتراك وحدة المعالجة المركزية وكيفية تجنبه.
 
-Inappropriate multiprocessing can lead to CPU oversubscription, causing
-different processes to compete for CPU resources, resulting in low
-efficiency.
+الإفراط في اشتراك وحدة المعالجة المركزية
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This tutorial will explain what CPU oversubscription is and how to
-avoid it.
+الإفراط في اشتراك وحدة المعالجة المركزية هو مصطلح تقني يشير إلى حالة يتم فيها تجاوز العدد الإجمالي لوحدات المعالجة المركزية الافتراضية (vCPUs) المخصصة لنظام ما للعدد الإجمالي لوحدات المعالجة المركزية الافتراضية المتوفرة على الأجهزة.
 
-CPU oversubscription
-^^^^^^^^^^^^^^^^^^^^
+يؤدي هذا إلى حدوث تنافس شديد على موارد وحدة المعالجة المركزية. في مثل هذه الحالات، يكون هناك تبديل متكرر بين العمليات، مما يزيد من النفقات العامة للتبديل بين العمليات ويقلل من كفاءة النظام بشكل عام.
 
-CPU oversubscription is a technical term that refers to a situation
-where the total number of vCPUs allocated to a system exceeds the total
-number of vCPUs available on the hardware.
+راجع الإفراط في اشتراك وحدة المعالجة المركزية مع أمثلة التعليمات البرمجية في تنفيذ Hogwild في مستودع `الأمثلة <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__.
 
-This leads to severe contention for CPU resources. In such cases, there
-is frequent switching between processes, which increases processes
-switching overhead and decreases overall system efficiency.
-
-See CPU oversubscription with the code examples in the Hogwild
-implementation found in the `example
-repository <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__.
-
-When running the training example with the following command on CPU
-using 4 processes:
+عند تشغيل مثال التدريب باستخدام الأمر التالي على وحدة المعالجة المركزية (CPU) باستخدام 4 عمليات:
 
 .. code-block:: bash
 
    python main.py --num-processes 4
 
-Assuming there are N vCPUs available on the machine, executing the above
-command will generate 4 subprocesses. Each subprocess will allocate N
-vCPUs for itself, resulting in a requirement of 4*N vCPUs. However, the
-machine only has N vCPUs available. Consequently, the different
-processes will compete for resources, leading to frequent process
-switching.
+افترض أن هناك N وحدة معالجة مركزية افتراضية (vCPUs) متوفرة على الجهاز، فإن تنفيذ الأمر السابق سيؤدي إلى إنشاء 4 عمليات فرعية. ستقوم كل عملية فرعية بتخصيص N وحدة معالجة مركزية افتراضية لنفسها، مما يؤدي إلى متطلبات تبلغ 4*N وحدة معالجة مركزية افتراضية. ومع ذلك، لا يحتوي الجهاز سوى على N وحدة معالجة مركزية افتراضية. وبالتالي، ستنافس العمليات المختلفة على الموارد، مما يؤدي إلى التبديل المتكرر للعمليات.
 
-The following observations indicate the presence of CPU over
-subscription:
+تشير الملاحظات التالية إلى وجود إفراط في اشتراك وحدة المعالجة المركزية:
 
-#. High CPU Utilization: By using the ``htop`` command, you can observe
-   that the CPU utilization is consistently high, often reaching or
-   exceeding its maximum capacity. This indicates that the demand for
-   CPU resources exceeds the available physical cores, causing
-   contention and competition among processes for CPU time.
+#. ارتفاع استخدام وحدة المعالجة المركزية: من خلال استخدام الأمر ``htop``، يمكنك ملاحظة أن استخدام وحدة المعالجة المركزية مرتفع باستمرار، وغالبًا ما يصل إلى أو يتجاوز سعتها القصوى. يشير هذا إلى أن الطلب على موارد وحدة المعالجة المركزية يتجاوز عدد الأنوية المادية، مما يتسبب في حدوث تنافس بين العمليات على وقت وحدة المعالجة المركزية.
 
-#. Frequent Context Switching with Low System Efficiency: In an
-   oversubscribed CPU scenario, processes compete for CPU time, and the
-   operating system needs to rapidly switch between different processes
-   to allocate resources fairly. This frequent context switching adds
-   overhead and reduces the overall system efficiency.
+#. التبديل المتكرر للسياق مع انخفاض كفاءة النظام: في حالة الإفراط في اشتراك وحدة المعالجة المركزية، تتنافس العمليات على وقت وحدة المعالجة المركزية، ويجب على نظام التشغيل التبديل بسرعة بين العمليات المختلفة لتخصيص الموارد بشكل عادل. يضيف هذا التبديل المتكرر للسياق النفقات العامة ويقلل من الكفاءة الإجمالية للنظام.
 
-Avoid CPU oversubscription
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+تجنب الإفراط في اشتراك وحدة المعالجة المركزية
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A good way to avoid CPU oversubscription is proper resource allocation.
-Ensure that the number of processes or threads running concurrently does
-not exceed the available CPU resources.
+تتمثل إحدى الطرق الجيدة لتجنب الإفراط في اشتراك وحدة المعالجة المركزية في التخصيص المناسب للموارد. تأكد من أن عدد العمليات أو الخيوط التي تعمل بشكل متزامن لا يتجاوز موارد وحدة المعالجة المركزية المتاحة.
 
-In this case, a solution would be to specify the appropriate number of
-threads in the subprocesses. This can be achieved by setting the number
-of threads for each process using the ``torch.set_num_threads(int)``
-function in subprocess.
+في هذه الحالة، قد يتمثل الحل في تحديد عدد الخيوط المناسب في العمليات الفرعية. يمكن تحقيق ذلك من خلال تعيين عدد الخيوط لكل عملية باستخدام دالة ``torch.set_num_threads(int)`` في العملية الفرعية.
 
-Assuming there are N vCPUs on the machine and M processes will be
-generated, the maximum ``num_threads`` value used by each process would
-be ``floor(N/M)``. To avoid CPU oversubscription in the mnist_hogwild
-example, the following changes are needed for the file ``train.py`` in
-`example
-repository <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__.
+افترض أن هناك N وحدة معالجة مركزية افتراضية (vCPUs) على الجهاز وM عملية سيتم إنشاؤها، فإن القيمة القصوى لـ ``num_threads`` التي تستخدمها كل عملية ستكون ``floor(N/M)``. لتجنب الإفراط في اشتراك وحدة المعالجة المركزية في مثال mnist_hogwild، يلزم إجراء التغييرات التالية لملف ``train.py`` في مستودع `الأمثلة <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__.
 
 .. code:: python
 
    def train(rank, args, model, device, dataset, dataloader_kwargs):
        torch.manual_seed(args.seed + rank)
 
-       #### define the num threads used in current sub-processes
+       #### تحديد عدد الخيوط المستخدمة في العمليات الفرعية الحالية
        torch.set_num_threads(floor(N/M))
 
        train_loader = torch.utils.data.DataLoader(dataset, **dataloader_kwargs)
@@ -222,11 +134,4 @@ repository <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__.
        for epoch in range(1, args.epochs + 1):
            train_epoch(epoch, args, model, device, train_loader, optimizer)
 
-Set ``num_thread`` for each process using
-``torch.set_num_threads(floor(N/M))``. where you replace N with the
-number of vCPUs available and M with the chosen number of processes. The
-appropriate ``num_thread`` value will vary depending on the specific
-task at hand. However, as a general guideline, the maximum value for the
-``num_thread`` should be ``floor(N/M)`` to avoid CPU oversubscription.
-In the `mnist_hogwild <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__ training example, after avoiding CPU over
-subscription, you can achieve a 30x performance boost.
+قم بتعيين ``num_thread`` لكل عملية باستخدام ``torch.set_num_threads(floor(N/M))``. حيث تستبدل N بعدد وحدات المعالجة المركزية الافتراضية المتوفرة وM بعدد العمليات المحدد. ستختلف القيمة المناسبة لـ ``num_thread`` حسب المهمة المحددة. ومع ذلك، كقاعدة عامة، يجب أن تكون القيمة القصوى لـ ``num_thread`` هي ``floor(N/M)`` لتجنب الإفراط في اشتراك وحدة المعالجة المركزية. في مثال التدريب `mnist_hogwild <https://github.com/pytorch/examples/tree/main/mnist_hogwild>`__، بعد تجنب الإفراط في اشتراك وحدة المعالجة المركزية، يمكنك تحقيق زيادة في الأداء بمقدار 30 مرة.
