@@ -1,48 +1,41 @@
-torch.func Whirlwind Tour
-=========================
+torch.func جولة سريعة
+====================
 
-What is torch.func?
--------------------
+ما هو torch.func؟
+------------------
 
 .. currentmodule:: torch.func
 
-torch.func, previously known as functorch, is a library for
-`JAX <https://github.com/google/jax>`_-like composable function transforms in
+torch.func، المعروف سابقًا باسم functorch، هو مكتبة لـ
+`JAX <https://github.com/google/jax>`_-like composable function transforms في
 PyTorch.
 
-- A "function transform" is a higher-order function that accepts a numerical
-  function and returns a new function that computes a different quantity.
-- torch.func has auto-differentiation transforms (``grad(f)`` returns a function
-  that computes the gradient of ``f``), a vectorization/batching transform
-  (``vmap(f)`` returns a function that computes ``f`` over batches of inputs),
-  and others.
-- These function transforms can compose with each other arbitrarily. For
-  example, composing ``vmap(grad(f))`` computes a quantity called
-  per-sample-gradients that stock PyTorch cannot efficiently compute today.
+- "تحويل الدالة" هو دالة من الدرجة العليا تقبل دالة رقمية وتعيد دالة جديدة تحسب كمية مختلفة.
+- يحتوي torch.func على تحويلات التفاضل التلقائي (تعيد ``grad(f)`` دالة تحسب تدرج ``f``)، وتحويل vectorization/batching (تعيد ``vmap(f)`` دالة تحسب ``f`` عبر دفعات من المدخلات)، وغيرها.
+- يمكن لهذه الدوال التحويلية أن تتركب مع بعضها البعض بشكل تعسفي. على سبيل المثال، يحسب تكوين ``vmap(grad(f))`` كمية تسمى per-sample-gradients لا يمكن لبرنامج PyTorch الأساسي حسابها بكفاءة اليوم.
 
-Why composable function transforms?
------------------------------------
-There are a number of use cases that are tricky to do in PyTorch today:
-- computing per-sample-gradients (or other per-sample quantities)
+لماذا التحويلات الوظيفية القابلة للتكوين؟
+----------------------------
+هناك عدد من حالات الاستخدام التي يصعب تنفيذها في PyTorch اليوم:
+- حساب per-sample-gradients (أو غيرها من الكميات لكل عينة)
 
-- running ensembles of models on a single machine
-- efficiently batching together tasks in the inner-loop of MAML
-- efficiently computing Jacobians and Hessians
-- efficiently computing batched Jacobians and Hessians
+- تشغيل مجموعات من النماذج على آلة واحدة
+- تجميع المهام بكفاءة في الحلقة الداخلية لـ MAML
+- حساب المصفوفات المشتقة والهيسية بكفاءة
+- حساب المصفوفات المشتقة والهيسية المجمعة بكفاءة
 
-Composing :func:`vmap`, :func:`grad`, :func:`vjp`, and :func:`jvp` transforms
-allows us to express the above without designing a separate subsystem for each.
+يسمح تكوين تحويلات :func:`vmap` و :func:`grad` و :func:`vjp` و :func:`jvp` بالتعبير عن ما سبق دون تصميم نظام فرعي منفصل لكل منها.
 
-What are the transforms?
-------------------------
+ما هي التحويلات؟
+-------------
 
-:func:`grad` (gradient computation)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`grad` (حساب التدرج)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``grad(func)`` is our gradient computation transform. It returns a new function
-that computes the gradients of ``func``. It assumes ``func`` returns a single-element
-Tensor and by default it computes the gradients of the output of ``func`` w.r.t.
-to the first input.
+``grad(func)`` هو تحويل حساب التدرج لدينا. إنه يعيد دالة جديدة
+تحسب تدرجات ``func``. يفترض أن ``func`` تعيد Tensor ذو عنصر واحد
+وبشكل افتراضي يحسب تدرجات إخراج ``func`` فيما يتعلق
+بالمدخلات الأولى.
 
 .. code-block:: python
 
@@ -52,23 +45,23 @@ to the first input.
     cos_x = grad(lambda x: torch.sin(x))(x)
     assert torch.allclose(cos_x, x.cos())
 
-    # Second-order gradients
+    # تدرجات من الدرجة الثانية
     neg_sin_x = grad(grad(lambda x: torch.sin(x)))(x)
     assert torch.allclose(neg_sin_x, -x.sin())
 
 :func:`vmap` (auto-vectorization)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Note: :func:`vmap` imposes restrictions on the code that it can be used on. For more
-details, please see :ref:`ux-limitations`.
+ملاحظة: يفرض :func:`vmap` قيودًا على الكود الذي يمكن استخدامه. لمزيد من
+التفاصيل، يرجى الاطلاع على :ref:`ux-limitations`.
 
-``vmap(func)(*inputs)`` is a transform that adds a dimension to all Tensor
-operations in ``func``. ``vmap(func)`` returns a new function that maps ``func``
-over some dimension (default: 0) of each Tensor in inputs.
+``vmap(func)(*inputs)`` هو تحويل يضيف بُعدًا إلى جميع عمليات Tensor
+في ``func``. ``vmap(func)`` تعيد دالة جديدة تقوم بتعيين ``func``
+عبر بُعد (افتراضي: 0) لكل Tensor في المدخلات.
 
-vmap is useful for hiding batch dimensions: one can write a function func that
-runs on examples and then lift it to a function that can take batches of
-examples with ``vmap(func)``, leading to a simpler modeling experience:
+vmap مفيد لإخفاء أبعاد الدفعات: يمكن للمرء كتابة دالة func تعمل
+على أمثلة ثم رفعها إلى دالة يمكنها التعامل مع دفعات من
+الأمثلة باستخدام ``vmap(func)``، مما يؤدي إلى تجربة نمذجة أبسط:
 
 .. code-block:: python
 
@@ -78,14 +71,14 @@ examples with ``vmap(func)``, leading to a simpler modeling experience:
     weights = torch.randn(feature_size, requires_grad=True)
 
     def model(feature_vec):
-        # Very simple linear model with activation
+        # نموذج خطي بسيط جدًا مع تنشيط
         assert feature_vec.dim() == 1
         return feature_vec.dot(weights).relu()
 
     examples = torch.randn(batch_size, feature_size)
     result = vmap(model)(examples)
 
-When composed with :func:`grad`, :func:`vmap` can be used to compute per-sample-gradients:
+عند تكوينه مع :func:`grad`، يمكن استخدام :func:`vmap` لحساب per-sample-gradients:
 
 .. code-block:: python
 
@@ -93,7 +86,7 @@ When composed with :func:`grad`, :func:`vmap` can be used to compute per-sample-
     batch_size, feature_size = 3, 5
 
     def model(weights,feature_vec):
-        # Very simple linear model with activation
+        # نموذج خطي بسيط جدًا مع تنشيط
         assert feature_vec.dim() == 1
         return feature_vec.dot(weights).relu()
 
@@ -107,11 +100,11 @@ When composed with :func:`grad`, :func:`vmap` can be used to compute per-sample-
     inputs = (weights,examples, targets)
     grad_weight_per_example = vmap(grad(compute_loss), in_dims=(None, 0, 0))(*inputs)
 
-:func:`vjp` (vector-Jacobian product)
+:func:`vjp` (منتج المصفوفة المشتقة المتجهة)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`vjp` transform applies ``func`` to ``inputs`` and returns a new function
-that computes the vector-Jacobian product (vjp) given some ``cotangents`` Tensors.
+يطبق تحويل :func:`vjp` ``func`` على ``inputs`` ويعيد دالة جديدة
+تحسب منتج المصفوفة المشتقة المتجهة (vjp) نظرًا لبعض ``cotangents`` Tensors.
 
 .. code-block:: python
 
@@ -123,12 +116,12 @@ that computes the vector-Jacobian product (vjp) given some ``cotangents`` Tensor
 
     outputs, vjp_fn = vjp(func, inputs); vjps = vjp_fn(*cotangents)
 
-:func:`jvp` (Jacobian-vector product)
+:func:`jvp` (منتج المصفوفة المشتقة المتجهة)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`jvp` transforms computes Jacobian-vector-products and is also known as
-"forward-mode AD". It is not a higher-order function unlike most other transforms,
-but it returns the outputs of ``func(inputs)`` as well as the jvps.
+يحسب تحويل :func:`jvp` منتجات المصفوفة المشتقة المتجهة وهو معروف أيضًا باسم
+"التفاضل التلقائي للأمام". إنه ليس دالة من الدرجة العليا على عكس معظم التحويلات الأخرى،
+ولكنه يعيد مخرجات ``func(inputs)`` وكذلك jvps.
 
 .. code-block:: python
 
@@ -139,11 +132,11 @@ but it returns the outputs of ``func(inputs)`` as well as the jvps.
     _, out_tangent = jvp(f, (x, y), (torch.ones(5), torch.ones(5)))
     assert torch.allclose(out_tangent, x + y)
 
-:func:`jacrev`, :func:`jacfwd`, and :func:`hessian`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`jacrev` و :func:`jacfwd` و :func:`hessian`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`jacrev` transform returns a new function that takes in ``x`` and returns
-the Jacobian of the function with respect to ``x`` using reverse-mode AD.
+يعيد تحويل :func:`jacrev` دالة جديدة تأخذ ``x`` وتعيد
+المصفوفة المشتقة للدالة فيما يتعلق بـ ``x`` باستخدام التفاضل العكسي.
 
 .. code-block:: python
 
@@ -153,7 +146,7 @@ the Jacobian of the function with respect to ``x`` using reverse-mode AD.
     expected = torch.diag(torch.cos(x))
     assert torch.allclose(jacobian, expected)
 
-:func:`jacrev` can be composed with :func:`vmap` to produce batched jacobians:
+يمكن تكوين :func:`jacrev` مع :func:`vmap` لإنتاج المصفوفات المشتقة المجمعة:
 
 .. code-block:: python
 
@@ -161,8 +154,8 @@ the Jacobian of the function with respect to ``x`` using reverse-mode AD.
     jacobian = vmap(jacrev(torch.sin))(x)
     assert jacobian.shape == (64, 5, 5)
 
-:func:`jacfwd` is a drop-in replacement for jacrev that computes Jacobians using
-forward-mode AD:
+:func:`jacfwd` هو بديل مباشر لـ :func:`jacrev` يحسب المصفوفات المشتقة باستخدام
+التفاضل الأمامي:
 
 .. code-block:: python
 
@@ -172,7 +165,7 @@ forward-mode AD:
     expected = torch.diag(torch.cos(x))
     assert torch.allclose(jacobian, expected)
 
-Composing :func:`jacrev` with itself or :func:`jacfwd` can produce hessians:
+يمكن تكوين :func:`jacrev` مع نفسه أو :func:`jacfwd` لإنتاج الهيسية:
 
 .. code-block:: python
 
@@ -183,7 +176,7 @@ Composing :func:`jacrev` with itself or :func:`jacfwd` can produce hessians:
     hessian0 = jacrev(jacrev(f))(x)
     hessian1 = jacfwd(jacrev(f))(x)
 
-:func:`hessian` is a convenience function that combines jacfwd and jacrev:
+:func:`hessian` هو دالة ملائمة تجمع بين :func:`jacfwd` و :func:`jacrev`:
 
 .. code-block:: python
 
