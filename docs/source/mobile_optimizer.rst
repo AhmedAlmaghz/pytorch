@@ -1,25 +1,24 @@
 torch.utils.mobile_optimizer
-===================================
+==============================
 
 .. warning::
-    This API is in beta and may change in the near future.
+    هذا الـ API هو إصدار تجريبي Beta وقد يتغير في المستقبل القريب.
 
-Torch mobile supports ``torch.utils.mobile_optimizer.optimize_for_mobile`` utility to run a list of optimization pass with modules in eval mode.
-The method takes the following parameters: a torch.jit.ScriptModule object, a blocklisting optimization set, a preserved method list, and a backend.
+يدعم Torch mobile الأداة المساعدة "torch.utils.mobile_optimizer.optimize_for_mobile" لتشغيل قائمة من عمليات التحسين مع الوحدات النمطية في وضع التقييم.
+تأخذ الطريقة المعلمات التالية: كائن torch.jit.ScriptModule، ومجموعة تحسين blocklisting، وقائمة بالطرق المحفوظة، و backend.
 
-For CPU Backend, by default, if optimization blocklist is None or empty, ``optimize_for_mobile`` will run the following optimizations:
-    - **Conv2D + BatchNorm fusion** (blocklisting option `mobile_optimizer.MobileOptimizerType.CONV_BN_FUSION`):  This optimization pass folds ``Conv2d-BatchNorm2d`` into ``Conv2d`` in ``forward`` method of this module and all its submodules. The weight and bias of the ``Conv2d`` are correspondingly updated.
-    - **Insert and Fold prepacked ops** (blocklisting option `mobile_optimizer.MobileOptimizerType.INSERT_FOLD_PREPACK_OPS`): This optimization pass rewrites the graph to replace 2D convolutions and linear ops with their prepacked counterparts. Prepacked ops are stateful ops in that, they require some state to be created, such as weight prepacking and use this state, i.e. prepacked weights, during op execution. XNNPACK is one such backend that provides prepacked ops, with kernels optimized for mobile platforms (such as ARM CPUs). Prepacking of weight enables efficient memory access and thus faster kernel execution. At the moment ``optimize_for_mobile`` pass rewrites the graph to replace ``Conv2D/Linear`` with 1) op that pre-packs weight for XNNPACK conv2d/linear ops and 2) op that takes pre-packed weight and activation as input and generates output activations. Since 1 needs to be done only once, we fold the weight pre-packing such that it is done only once at model load time. This pass of the ``optimize_for_mobile`` does 1 and 2 and then folds, i.e. removes, weight pre-packing ops.
-    - **ReLU/Hardtanh fusion**: XNNPACK ops support fusion of clamping. That is clamping of output activation is done as part of the kernel, including for 2D convolution and linear op kernels. Thus clamping effectively comes for free. Thus any op that can be expressed as clamping op, such as ``ReLU`` or ``hardtanh``, can be fused with previous ``Conv2D`` or ``linear`` op in XNNPACK. This pass rewrites graph by finding ``ReLU/hardtanh`` ops that follow XNNPACK ``Conv2D/linear`` ops, written by the previous pass, and fuses them together.
-    - **Dropout removal** (blocklisting option `mobile_optimizer.MobileOptimizerType.REMOVE_DROPOUT`): This optimization pass removes ``dropout`` and ``dropout_`` nodes from this module when training is false.
-    - **Conv packed params hoisting** (blocklisting option `mobile_optimizer.MobileOptimizerType.HOIST_CONV_PACKED_PARAMS`): This optimization pass moves convolution packed params to the root module, so that the convolution structs can be deleted. This decreases model size without impacting numerics.
-    - **Add/ReLU fusion** (blocklisting option `mobile_optimizer.MobileOptimizerType.FUSE_ADD_RELU`): This pass finds instances of ``relu`` ops that follow ``add`` ops and fuses them into a single ``add_relu``.
+بالنسبة لـ CPU Backend، بشكل افتراضي، إذا كانت قائمة حظر التحسين (blocklist) فارغة أو None، فسيقوم "optimize_for_mobile" بتشغيل التحسينات التالية:
+    - **دمج Conv2D و BatchNorm** (خيار حظر blocklisting `mobile_optimizer.MobileOptimizerType.CONV_BN_FUSION`): تقوم عملية التحسين هذه بطي "Conv2d-BatchNorm2d" إلى "Conv2d" في طريقة "forward" لهذه الوحدة النمطية وجميع وحداتها الفرعية. ويتم تحديث وزن وتحيز "Conv2d" بشكل مناظر.
+    - **إدراج وطي العمليات المعبأة مسبقًا** (خيار حظر blocklisting `mobile_optimizer.MobileOptimizerType.INSERT_FOLD_PREPACK_OPS`): تقوم عملية التحسين هذه بإعادة كتابة الرسم البياني لاستبدال عمليات الضرب المعقدة 2D وعمليات الضرب الخطي بنظيراتها المعبأة مسبقًا. العمليات المعبأة مسبقًا هي عمليات ذات حالة، بمعنى أنها تتطلب بعض الحالات ليتم إنشاؤها، مثل تعبئة الوزن واستخدام هذه الحالة، أي الأوزان المعبأة مسبقًا، أثناء تنفيذ العملية. XNNPACK هو أحد backends التي توفر عمليات معبأة مسبقًا، مع نوى محسّنة لمنصات الأجهزة المحمولة (مثل معالجات ARM). يسمح تعبئة الوزن بالوصول إلى الذاكرة بكفاءة، وبالتالي تنفيذ نواة أسرع. في الوقت الحالي، تعيد عملية "optimize_for_mobile" كتابة الرسم البياني لاستبدال "Conv2D/Linear" بـ 1) عملية تعبئة الوزن لعمليات الضرب المعقدة 2D/linear في XNNPACK و 2) عملية تأخذ الوزن المعبأ مسبقًا والتنشيط كمدخلات وتولد تنشيطات الإخراج. نظرًا لأنه يلزم تنفيذ (1) مرة واحدة فقط، فإننا نطوي تعبئة الوزن بحيث يتم إجراؤها مرة واحدة فقط عند تحميل النموذج. تقوم هذه العملية من "optimize_for_mobile" بـ 1 و 2 ثم تطوي، أي إزالة، عمليات تعبئة الوزن.
+    - **دمج ReLU/Hardtanh**: تدعم عمليات XNNPACK دمج التقييد. أي أن تقييد تنشيط الإخراج يتم كجزء من النواة، بما في ذلك نوى الضرب المعقدة 2D والضرب الخطي. وبالتالي، فإن التقييد يكون مجانيًا بالفعل. وبالتالي، يمكن دمج أي عملية يمكن التعبير عنها كعملية تقييد، مثل "ReLU" أو "hardtanh"، مع عملية "Conv2D" أو "linear" السابقة في XNNPACK. تقوم هذه العملية بإعادة كتابة الرسم البياني عن طريق البحث عن عمليات "ReLU/hardtanh" التي تتبع عمليات "Conv2D/linear" في XNNPACK، والتي تمت كتابتها بواسطة المرور السابق، ودمجها معًا.
+    - **إزالة Dropout** (خيار حظر blocklisting `mobile_optimizer.MobileOptimizerType.REMOVE_DROPOUT`): تقوم عملية التحسين هذه بإزالة عقد "dropout" و "dropout_" من هذه الوحدة النمطية عندما يكون التدريب false.
+    - **رفع المعلمات المجمعة للضرب المعقدة** (خيار حظر blocklisting `mobile_optimizer.MobileOptimizerType.HOIST_CONV_PACKED_PARAMS`): تقوم عملية التحسين هذه بنقل المعلمات المجمعة للضرب المعقدة إلى الوحدة النمطية الجذرية، بحيث يمكن حذف هياكل الضرب المعقدة. وهذا يقلل من حجم النموذج دون التأثير على القيم العددية.
+    - **دمج Add/ReLU** (خيار حظر blocklisting `mobile_optimizer.MobileOptimizerType.FUSE_ADD_RELU`): تقوم هذه العملية بالبحث عن مثيلات عمليات "relu" التي تتبع عمليات "add" ودمجها في عملية "add_relu" واحدة.
 
-for Vulkan Backend, by default, if optimization blocklist is None or empty, ``optimize_for_mobile`` will run the following optimization:
-    - **Automatic GPU Transfer** (blocklisting option `mobile_optimizer.MobileOptimizerType.VULKAN_AUTOMATIC_GPU_TRANSFER`): This optimization pass rewrites the graph so that moving input and output data to and from the GPU becomes part of the model.
+بالنسبة لـ Vulkan Backend، بشكل افتراضي، إذا كانت قائمة حظر التحسين (blocklist) فارغة أو None، فسيقوم "optimize_for_mobile" بتشغيل التحسين التالي:
+    - **النقل التلقائي إلى وحدة معالجة الرسوميات GPU** (خيار حظر blocklisting `mobile_optimizer.MobileOptimizerType.VULKAN_AUTOMATIC_GPU_TRANSFER`): تقوم عملية التحسين هذه بإعادة كتابة الرسم البياني بحيث يصبح نقل بيانات الإدخال والإخراج إلى وحدة معالجة الرسوميات GPU ومنها جزءًا من النموذج.
 
-``optimize_for_mobile`` will also invoke freeze_module pass which only preserves ``forward`` method. If you have other method to that needed to be preserved, add them into the preserved method list and pass into the method.
-
+سيقوم "optimize_for_mobile" أيضًا باستدعاء تمرير freeze_module الذي يحافظ فقط على طريقة "forward". إذا كان لديك طريقة أخرى تحتاج إلى الحفاظ عليها، فقم بإضافتها إلى قائمة الطرق المحفوظة ومررها إلى الطريقة.
 
 .. currentmodule:: torch.utils.mobile_optimizer
 .. autofunction:: optimize_for_mobile
