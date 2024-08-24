@@ -1,6 +1,6 @@
 .. _custom-ops-landing-page:
 
-PyTorch Custom Operators Landing Page
+صفحة وصول المشغلين المخصصين في PyTorch
 =====================================
 
-`This page has moved. Click here for the new page. <https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html>`_
+"تم نقل هذه الصفحة. انقر هنا للانتقال إلى الصفحة الجديدة. <https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html>`_
