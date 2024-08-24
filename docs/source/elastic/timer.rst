@@ -1,46 +1,45 @@
-Expiration Timers
-==================
+مؤقتات انتهاء الصلاحية
+================
 
 .. automodule:: torch.distributed.elastic.timer
 .. currentmodule:: torch.distributed.elastic.timer
 
-Client Methods
----------------
+طرق العميل
+----------
 .. autofunction:: torch.distributed.elastic.timer.configure
 
 .. autofunction:: torch.distributed.elastic.timer.expires
 
-Server/Client Implementations
-------------------------------
-Below are the timer server and client pairs that are provided by torchelastic.
+تنفيذيات الخادم/العميل
+-----------------
+فيما يلي أزواج خادم المؤقت وعميله التي يوفرها torchelastic.
 
-.. note:: Timer server and clients always have to be implemented and used
-          in pairs since there is a messaging protocol between the server
-          and client.
+.. note:: يجب دائمًا تنفيذ خادم المؤقت والعملاء واستخدامها
+          في أزواج نظرًا لوجود بروتوكول رسائل بين الخادم
+          والعميل.
 
-Below is a pair of timer server and client that is implemented based on
-a ``multiprocess.Queue``.
+فيما يلي زوج من خادم المؤقت والعميل الذي يتم تنفيذه بناءً على
+``multiprocess.Queue``.
 
 .. autoclass:: LocalTimerServer
 
 .. autoclass:: LocalTimerClient
 
-Below is another pair of timer server and client that is implemented
-based on a named pipe.
+فيما يلي زوج آخر من خادم المؤقت والعميل الذي يتم تنفيذه
+بناءً على Pipe مسمى.
 
 .. autoclass:: FileTimerServer
 
 .. autoclass:: FileTimerClient
 
+كتابة خادم مؤقت/عميل مخصص
+----------------------
 
-Writing a custom timer server/client
---------------------------------------
-
-To write your own timer server and client extend the
-``torch.distributed.elastic.timer.TimerServer`` for the server and
-``torch.distributed.elastic.timer.TimerClient`` for the client. The
-``TimerRequest`` object is used to pass messages between
-the server and client.
+لإنشاء خادم مؤقت وعميل خاص بك، قم بتوسيع
+``torch.distributed.elastic.timer.TimerServer`` للخادم و
+``torch.distributed.elastic.timer.TimerClient`` للعميل. يتم استخدام كائن
+``TimerRequest`` لنقل الرسائل بين
+الخادم والعميل.
 
 .. autoclass:: TimerRequest
    :members:
@@ -51,8 +50,7 @@ the server and client.
 .. autoclass:: TimerClient
    :members:
 
-
-Debug info logging
+تسجيل معلومات التصحيح
 -------------------
 
 .. automodule:: torch.distributed.elastic.timer.debug_info_logging
