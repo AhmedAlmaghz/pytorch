@@ -1,164 +1,138 @@
 .. _hip-semantics:
 
-HIP (ROCm) semantics
+معاني HIP (ROCm)
 ====================
 
-ROCm\ |trade| is AMD’s open source software platform for GPU-accelerated high
-performance computing and machine learning. HIP is ROCm's C++ dialect designed
-to ease conversion of CUDA applications to portable C++ code. HIP is used when
-converting existing CUDA applications like PyTorch to portable C++ and for new
-projects that require portability between AMD and NVIDIA.
+ROCm\ |trade| هي منصة البرمجيات مفتوحة المصدر من AMD للحوسبة عالية الأداء والتعلم الآلي المعجل بواسطة GPU. تم تصميم HIP، وهي لهجة C++ الخاصة بـ ROCm، لتسهيل تحويل تطبيقات CUDA إلى كود C++ محمول. يتم استخدام HIP عند تحويل تطبيقات CUDA الحالية مثل PyTorch إلى C++ محمول وللمشاريع الجديدة التي تتطلب قابلية للتشغيل بين AMD و NVIDIA.
 
 .. _hip_as_cuda:
 
-HIP Interfaces Reuse the CUDA Interfaces
-----------------------------------------
+واجهات HIP تعيد استخدام واجهات CUDA
+-------------------------------
 
-PyTorch for HIP intentionally reuses the existing :mod:`torch.cuda` interfaces.
-This helps to accelerate the porting of existing PyTorch code and models because
-very few code changes are necessary, if any.
+تستخدم PyTorch لـ HIP عن قصد واجهات :mod:`torch.cuda` الحالية. يساعد ذلك في تسريع نقل كود PyTorch ونماذجه الحالية لأن التغييرات في الكود، إن وجدت، قليلة جدًا.
 
-The example from :ref:`cuda-semantics` will work exactly the same for HIP::
+سيتم تشغيل المثال من :ref:`cuda-semantics` بنفس الطريقة تمامًا لـ HIP::
 
-    cuda = torch.device('cuda')     # Default HIP device
-    cuda0 = torch.device('cuda:0')  # 'rocm' or 'hip' are not valid, use 'cuda'
-    cuda2 = torch.device('cuda:2')  # GPU 2 (these are 0-indexed)
+    cuda = torch.device('cuda')     # جهاز HIP الافتراضي
+    cuda0 = torch.device('cuda:0')  # 'rocm' أو 'hip' غير صالحين، استخدم 'cuda'
+    cuda2 = torch.device('cuda:2')  # المعالج الرسومي 2 (فهي مفهرسة من 0)
 
     x = torch.tensor([1., 2.], device=cuda0)
-    # x.device is device(type='cuda', index=0)
+    # x.device هي device(type='cuda', index=0)
     y = torch.tensor([1., 2.]).cuda()
-    # y.device is device(type='cuda', index=0)
+    # y.device هي device(type='cuda', index=0)
 
     with torch.cuda.device(1):
-        # allocates a tensor on GPU 1
+        # يقوم بتخصيص مصفوفة على المعالج الرسومي 1
         a = torch.tensor([1., 2.], device=cuda)
 
-        # transfers a tensor from CPU to GPU 1
+        # ينقل مصفوفة من وحدة المعالجة المركزية إلى المعالج الرسومي 1
         b = torch.tensor([1., 2.]).cuda()
-        # a.device and b.device are device(type='cuda', index=1)
+        # a.device و b.device هما device(type='cuda', index=1)
 
-        # You can also use ``Tensor.to`` to transfer a tensor:
+        # يمكنك أيضًا استخدام ``Tensor.to`` لنقل مصفوفة:
         b2 = torch.tensor([1., 2.]).to(device=cuda)
-        # b.device and b2.device are device(type='cuda', index=1)
+        # b.device و b2.device هما device(type='cuda', index=1)
 
         c = a + b
-        # c.device is device(type='cuda', index=1)
+        # c.device هي device(type='cuda', index=1)
 
         z = x + y
-        # z.device is device(type='cuda', index=0)
+        # z.device هي device(type='cuda', index=0)
 
-        # even within a context, you can specify the device
-        # (or give a GPU index to the .cuda call)
+        # حتى ضمن سياق، يمكنك تحديد الجهاز
+        # (أو إعطاء فهرس GPU لمكالمة .cuda)
         d = torch.randn(2, device=cuda2)
         e = torch.randn(2).to(cuda2)
         f = torch.randn(2).cuda(cuda2)
-        # d.device, e.device, and f.device are all device(type='cuda', index=2)
+        # d.device و e.device و f.device جميعها device(type='cuda', index=2)
 
 .. _checking_for_hip:
 
-Checking for HIP
+التحقق من وجود HIP
 ----------------
 
-Whether you are using PyTorch for CUDA or HIP, the result of calling
-:meth:`~torch.cuda.is_available` will be the same. If you are using a PyTorch
-that has been built with GPU support, it will return `True`. If you must check
-which version of PyTorch you are using, refer to this example below::
+سواء كنت تستخدم PyTorch لـ CUDA أو HIP، ستكون نتيجة استدعاء :meth:`~torch.cuda.is_available` هي نفسها. إذا كنت تستخدم PyTorch الذي تم بناؤه مع دعم GPU، فسيتم إرجاع `True`. إذا كنت بحاجة إلى التحقق من إصدار PyTorch الذي تستخدمه، فيمكنك الرجوع إلى هذا المثال أدناه::
 
     if torch.cuda.is_available() and torch.version.hip:
-        # do something specific for HIP
+        # قم بعمل شيء محدد لـ HIP
     elif torch.cuda.is_available() and torch.version.cuda:
-        # do something specific for CUDA
+        # قم بعمل شيء محدد لـ CUDA
 
 .. |trade|  unicode:: U+02122 .. TRADEMARK SIGN
    :ltrim:
 
 .. _tf32_on_rocm:
 
-TensorFloat-32(TF32) on ROCm
+TensorFloat-32(TF32) على ROCm
 ----------------------------
 
-TF32 is not supported on ROCm.
+TF32 غير مدعوم في ROCm.
 
 .. _rocm-memory-management:
 
-Memory management
+إدارة الذاكرة
 -----------------
 
-PyTorch uses a caching memory allocator to speed up memory allocations. This
-allows fast memory deallocation without device synchronizations. However, the
-unused memory managed by the allocator will still show as if used in
-``rocm-smi``. You can use :meth:`~torch.cuda.memory_allocated` and
-:meth:`~torch.cuda.max_memory_allocated` to monitor memory occupied by
-tensors, and use :meth:`~torch.cuda.memory_reserved` and
-:meth:`~torch.cuda.max_memory_reserved` to monitor the total amount of memory
-managed by the caching allocator. Calling :meth:`~torch.cuda.empty_cache`
-releases all **unused** cached memory from PyTorch so that those can be used
-by other GPU applications. However, the occupied GPU memory by tensors will not
-be freed so it can not increase the amount of GPU memory available for PyTorch.
+يستخدم PyTorch مخصص ذاكرة التخزين المؤقت لتسريع تخصيصات الذاكرة. يسمح ذلك بالإلغاء السريع لتخصيص الذاكرة دون عمليات مزامنة للجهاز. ومع ذلك، ستظل الذاكرة غير المستخدمة التي يديرها المخصص تظهر كما لو كانت مستخدمة في ``rocm-smi``. يمكنك استخدام :meth:`~torch.cuda.memory_allocated` و :meth:`~torch.cuda.max_memory_allocated` لمراقبة الذاكرة التي تشغلها المصفوفات، واستخدام :meth:`~torch.cuda.memory_reserved` و :meth:`~torch.cuda.max_memory_reserved` لمراقبة إجمالي مقدار الذاكرة التي يديرها مخصص التخزين المؤقت. يؤدي استدعاء :meth:`~torch.cuda.empty_cache` إلى تحرير كل الذاكرة **غير المستخدمة** المخزنة مؤقتًا من PyTorch بحيث يمكن استخدامها بواسطة تطبيقات GPU الأخرى. ومع ذلك، لن يتم تحرير ذاكرة GPU التي تشغلها المصفوفات، لذا لا يمكنها زيادة مقدار ذاكرة GPU المتاحة لـ PyTorch.
 
-For more advanced users, we offer more comprehensive memory benchmarking via
-:meth:`~torch.cuda.memory_stats`. We also offer the capability to capture a
-complete snapshot of the memory allocator state via
-:meth:`~torch.cuda.memory_snapshot`, which can help you understand the
-underlying allocation patterns produced by your code.
+بالنسبة للمستخدمين المتقدمين، نقدم معايير أكثر شمولاً لذاكرة التخزين المؤقت عبر :meth:`~torch.cuda.memory_stats`. كما نقدم القدرة على التقاط لقطة كاملة لحالة مخصص الذاكرة عبر :meth:`~torch.cuda.memory_snapshot`، والتي يمكن أن تساعدك في فهم أنماط التخصيص الأساسية التي ينتجها كودك.
 
-To debug memory errors, set
-``PYTORCH_NO_CUDA_MEMORY_CACHING=1`` in your environment to disable caching.
+لتصحيح أخطاء الذاكرة، قم بتعيين ``PYTORCH_NO_CUDA_MEMORY_CACHING=1`` في بيئتك لتعطيل التخزين المؤقت.
 
 .. _hipfft-plan-cache:
 
-hipFFT/rocFFT plan cache
-------------------------
+ذاكرة التخزين المؤقت لخطة hipFFT/rocFFT
+---------------------------------
 
-Setting the size of the cache for hipFFT/rocFFT plans is not supported.
+لا يتم دعم تحديد حجم ذاكرة التخزين المؤقت لخطط hipFFT/rocFFT.
 
 .. _torch-distributed-backends:
 
-torch.distributed backends
+خلفيات torch.distributed
 --------------------------
 
-Currently, only the "nccl" and "gloo" backends for torch.distributed are supported on ROCm.
+حاليًا، يتم دعم خلفيات "nccl" و "gloo" فقط لـ torch.distributed على ROCm.
 
 .. _cuda-api-to_hip-api-mappings:
 
-CUDA API to HIP API mappings in C++
+CUDA API إلى خرائط HIP API في C++
 -----------------------------------
 
-Please refer: https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html
+يرجى الرجوع إلى: https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html
 
-NOTE: The CUDA_VERSION macro, cudaRuntimeGetVersion and cudaDriverGetVersion APIs do not
-semantically map to the same values as HIP_VERSION macro, hipRuntimeGetVersion and
-hipDriverGetVersion APIs. Please do not use them interchangeably when doing version checks.
+ملاحظة: لا يتم رسميًا تعيين ماكرو CUDA_VERSION، وcudaRuntimeGetVersion وcudaDriverGetVersion APIs إلى نفس القيم مثل ماكرو HIP_VERSION، وhipRuntimeGetVersion وhipDriverGetVersion APIs. يرجى عدم استخدامها بشكل متبادل عند إجراء فحوصات الإصدار.
 
-For example: Instead of using
+على سبيل المثال: بدلاً من استخدام
 
-``#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000`` to implicitly exclude ROCm/HIP,
+``#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000`` لاستبعاد ROCm/HIP بشكل ضمني،
 
-use the following to not take the code path for ROCm/HIP:
+استخدم ما يلي لعدم اتخاذ مسار الكود لـ ROCm/HIP:
 
 ``#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000 && !defined(USE_ROCM)``
 
-Alternatively, if it is desired to take the code path for ROCm/HIP:
+بدلاً من ذلك، إذا كان من المرغوب فيه اتخاذ مسار الكود لـ ROCm/HIP:
 
 ``#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || defined(USE_ROCM)``
 
-Or if it is desired to take the code path for ROCm/HIP only for specific HIP versions:
+أو إذا كان من المرغوب فيه اتخاذ مسار الكود لـ ROCm/HIP فقط لإصدارات HIP المحددة:
 
 ``#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || (defined(USE_ROCM) && ROCM_VERSION >= 40300)``
 
 
-Refer to CUDA Semantics doc
----------------------------
+الرجوع إلى وثيقة معاني CUDA
+----------------------
 
-For any sections not listed here, please refer to the CUDA semantics doc: :ref:`cuda-semantics`
+بالنسبة لأي أقسام غير مدرجة هنا، يرجى الرجوع إلى وثيقة معاني CUDA: :ref:`cuda-semantics`
 
 
-Enabling kernel asserts
------------------------
+تمكين تأكيدات kernel
+------------------
 
-Kernel asserts are supported on ROCm, but they are disabled due to performance overhead. It can be enabled
-by recompiling the PyTorch from source.
+تأكيدات kernel مدعومة في ROCm، ولكنها معطلة بسبب عبء الأداء. يمكن تمكينها
+عن طريق إعادة تجميع PyTorch من المصدر.
 
-Please add below line as an argument to cmake command parameters::
+يرجى إضافة السطر التالي كحجة إلى معلمات أمر cmake::
 
     -DROCM_FORCE_ENABLE_GPU_ASSERTS:BOOL=ON
