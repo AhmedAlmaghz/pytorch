@@ -1,48 +1,48 @@
-Patching Batch Norm
-===================
+ترقيع Batch Norm
+==================
 
-What's happening?
+ماذا يحدث؟
 -----------------
-Batch Norm requires in-place updates to running_mean and running_var of the same size as the input.
-Functorch does not support inplace update to a regular tensor that takes in a batched tensor (i.e.
-``regular.add_(batched)`` is not allowed). So when vmapping over a batch of inputs to a single module,
-we end up with this error
+يتطلب Batch Norm تحديثات في المكان لـ running_mean و running_var بنفس حجم الإدخال.
+Functorch لا يدعم التحديث في المكان إلى Tensor عادي يأخذ Tensor مجمعة (أي
+"regular.add_ (batched)" غير مسموح به). لذلك عندما نقوم بالرسم فوق دفعة من الإدخالات إلى وحدة واحدة،
+نحصل على هذا الخطأ
 
-How to fix
+كيفية الإصلاح
 ----------
-One of the best supported ways is to switch BatchNorm for GroupNorm. Options 1 and 2 support this
+إحدى أفضل الطرق المدعومة هي التبديل من BatchNorm إلى GroupNorm. الخياران 1 و 2 يدعمان هذا
 
-All of these options assume that you don't need running stats. If you're using a module this means
-that it's assumed you won't use batch norm in evaluation mode. If you have a use case that involves
-running batch norm with vmap in evaluation mode, please file an issue
+تفترض جميع هذه الخيارات أنك لا تحتاج إلى الإحصائيات الجارية. إذا كنت تستخدم وحدة نمطية، فهذا يعني
+من المفترض أنك لن تستخدم المعيار المعياري للدفعة في وضع التقييم. إذا كانت لديك حالة استخدام تتضمن
+تشغيل معيار الدُفعة مع vmap في وضع التقييم، يرجى تقديم مشكلة
 
-Option 1: Change the BatchNorm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-If you want to change for GroupNorm, anywhere that you have BatchNorm, replace it with:
+الخيار 1: تغيير BatchNorm
+^^^^^^^^^^^^^^^^^^^^^^^^^
+إذا كنت تريد التغيير إلى GroupNorm، ففي أي مكان يوجد فيه BatchNorm، استبدله بما يلي:
 
 .. code-block:: python
 
     BatchNorm2d(C, G, track_running_stats=False)
 
-Here ``C`` is the same ``C`` as in the original BatchNorm. ``G`` is the number of groups to
-break ``C`` into. As such, ``C % G == 0`` and as a fallback, you can set ``C == G``, meaning
-each channel will be treated separately.
+هنا "C" هي نفسها "C" كما في BatchNorm الأصلي. "G" هو عدد المجموعات
+قم بتقسيم "C" إلى. وبالتالي، "C % G == 0" وكحل بديل، يمكنك تعيين "C == G"، مما يعني
+سيتم التعامل مع كل قناة بشكل منفصل.
 
-If you must use BatchNorm and you've built the module yourself, you can change the module to
-not use running stats. In other words, anywhere that there's a BatchNorm module, set the
-``track_running_stats`` flag to be False
+إذا كنت مضطرًا لاستخدام BatchNorm وقمت ببناء الوحدة النمطية بنفسك، فيمكنك تغيير الوحدة النمطية لعدم
+استخدام الإحصائيات الجارية. وبعبارة أخرى، في أي مكان يوجد فيه وحدة نمطية BatchNorm، قم بتعيين
+علم "track_running_stats" إلى False
 
 .. code-block:: python
 
     BatchNorm2d(64, track_running_stats=False)
 
 
-Option 2: torchvision parameter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Some torchvision models, like resnet and regnet, can take in a ``norm_layer`` parameter. These are
-often defaulted to be BatchNorm2d if they've been defaulted.
+الخيار 2: معلمة torchvision
+^^^^^^^^^^^^^^^^^^^^^^^^^
+يمكن لبعض نماذج torchvision، مثل resnet و regnet، أن تأخذ
+معلمة "norm_layer". غالبًا ما تكون هذه المعلمات الافتراضية هي BatchNorm2d إذا تم تعيينها كافتراضي.
 
-Instead you can set it to be GroupNorm.
+بدلاً من ذلك، يمكنك تعيينه إلى GroupNorm.
 
 .. code-block:: python
 
@@ -50,9 +50,9 @@ Instead you can set it to be GroupNorm.
     from functools import partial
     torchvision.models.resnet18(norm_layer=lambda c: GroupNorm(num_groups=g, c))
 
-Here, once again, ``c % g == 0`` so as a fallback, set ``g = c``.
+مرة أخرى، "c % g == 0" لذلك، كحل بديل، قم بتعيين "g = c".
 
-If you are attached to BatchNorm, be sure to use a version that doesn't use running stats
+إذا كنت مرتبطًا بـ BatchNorm، فتأكد من استخدام إصدار لا يستخدم الإحصائيات الجارية
 
 .. code-block:: python
 
@@ -60,21 +60,21 @@ If you are attached to BatchNorm, be sure to use a version that doesn't use runn
     from functools import partial
     torchvision.models.resnet18(norm_layer=partial(BatchNorm2d, track_running_stats=False))
 
-Option 3: functorch's patching
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-functorch has added some functionality to allow for quick, in-place patching of the module to not
-use running stats. Changing the norm layer is more fragile, so we have not offered that. If you
-have a net where you want the BatchNorm to not use running stats, you can run
-``replace_all_batch_norm_modules_`` to update the module in-place to not use running stats
+الخيار 3: ترقيع functorch
+^^^^^^^^^^^^^^^^^^^^^^^^
+أضاف functorch بعض الوظائف للسماح بالترقيع السريع في المكان للوحدة النمطية لعدم
+استخدام الإحصائيات الجارية. تغيير طبقة المعيار أكثر هشاشة، لذلك لم نقدم ذلك. إذا كان لديك
+شبكة حيث تريد أن لا يستخدم BatchNorm الإحصائيات الجارية، يمكنك تشغيل
+"replace_all_batch_norm_modules_" لتحديث الوحدة النمطية في المكان لعدم استخدام الإحصائيات الجارية
 
 .. code-block:: python
 
     from torch.func import replace_all_batch_norm_modules_
     replace_all_batch_norm_modules_(net)
 
-Option 4: eval mode
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When run under eval mode, the running_mean and running_var will not be updated. Therefore, vmap can support this mode
+الخيار 4: وضع التقييم
+^^^^^^^^^^^^^^^^
+عند التشغيل في وضع التقييم، لن يتم تحديث running_mean و running_var. لذلك، يمكن لـ vmap دعم هذا الوضع
 
 .. code-block:: python
 
