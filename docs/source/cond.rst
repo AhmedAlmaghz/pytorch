@@ -1,10 +1,10 @@
 .. _cond:
 
-Control Flow - Cond
+التحكم في التدفق - Cond
 ====================
 
-`torch.cond` is a structured control flow operator. It can be used to specify if-else like control flow
-and can logically be seen as implemented as follows.
+`torch.cond` هو مشغل تدفق تحكم منظم. يمكن استخدامه لتحديد تدفق التحكم الشبيه بـ if-else
+ويمكن أن يُنظر إليه منطقيًا على أنه مُنفذ على النحو التالي.
 
 .. code-block:: python
 
@@ -19,20 +19,20 @@ and can logically be seen as implemented as follows.
         else:
             return false_fn(*operands)
 
-Its unique power lies in its ability of expressing **data-dependent control flow**: it lowers to a conditional
-operator (`torch.ops.higher_order.cond`), which preserves predicate, true function and false functions.
-This unlocks great flexibility in writing and deploying models that change model architecture based on
-the **value** or **shape** of inputs or intermediate outputs of tensor operations.
+تكمن قوته الفريدة في قدرته على التعبير عن تدفق التحكم **الاعتماد على البيانات**: فهو يقلل من مشغل شرطي
+(`torch.ops.higher_order.cond`)، والذي يحافظ على القيمة التنبؤية، والدالة الصحيحة والدالة الخاطئة.
+هذا يفتح مرونة كبيرة في كتابة ونشر النماذج التي تغير بنية النموذج بناءً على
+**القيمة** أو **الشكل** لمدخلات أو المخرجات الوسيطة لعمليات tensor.
 
 .. warning::
-    `torch.cond` is a prototype feature in PyTorch. It has limited support for input and output types and
-    doesn't support training currently. Please look forward to a more stable implementation in a future version of PyTorch.
-    Read more about feature classification at: https://pytorch.org/blog/pytorch-feature-classification-changes/#prototype
+    `torch.cond` هو ميزة نموذجية في PyTorch. فهو يدعم أنواع الإدخال والإخراج المحدودة
+    ولا يدعم التدريب حاليًا. يرجى توقع تنفيذ أكثر استقرارًا في إصدار مستقبلي من PyTorch.
+    اقرأ المزيد حول تصنيف الميزات في: https://pytorch.org/blog/pytorch-feature-classification-changes/#prototype
 
-Examples
-~~~~~~~~
+أمثلة
+~~~~
 
-Below is an example that uses cond to branch based on input shape:
+فيما يلي مثال يستخدم "cond" للتفرع بناءً على شكل الإدخال:
 
 .. code-block:: python
 
@@ -46,7 +46,7 @@ Below is an example that uses cond to branch based on input shape:
 
     class DynamicShapeCondPredicate(torch.nn.Module):
         """
-        A basic usage of cond based on dynamic shape predicate.
+        استخدام أساسي لـ "cond" بناءً على معيار الشكل الديناميكي.
         """
 
         def __init__(self):
@@ -63,7 +63,7 @@ Below is an example that uses cond to branch based on input shape:
 
     dyn_shape_mod = DynamicShapeCondPredicate()
 
-We can eagerly run the model and expect the results vary based on input shape:
+يمكننا تشغيل النموذج بحماس ونتوقع أن تختلف النتائج بناءً على شكل الإدخال:
 
 .. code-block:: python
 
@@ -72,7 +72,7 @@ We can eagerly run the model and expect the results vary based on input shape:
     assert torch.equal(dyn_shape_mod(inp), false_fn(inp))
     assert torch.equal(dyn_shape_mod(inp2), true_fn(inp2))
 
-We can export the model for further transformations and deployment:
+يمكننا تصدير النموذج لإجراء المزيد من التحويلات والنشر:
 
 .. code-block:: python
 
@@ -81,7 +81,7 @@ We can export the model for further transformations and deployment:
     ep = torch.export.export(DynamicShapeCondPredicate(), (inp,), {}, dynamic_shapes={"x": {0: dim_batch}})
     print(ep)
 
-This gives us an exported program as shown below:
+هذا يعطينا برنامجًا مصدرًا كما هو موضح أدناه:
 
 .. code-block::
 
@@ -106,16 +106,16 @@ This gives us an exported program as shown below:
                 sin: f32[s0, 3] = torch.ops.aten.sin.default(arg0_1);  arg0_1 = None
                 return sin
 
-Notice that `torch.cond` is lowered to `torch.ops.higher_order.cond`, its predicate becomes a Symbolic expression over the shape of input,
-and branch functions becomes two sub-graph attributes of the top level graph module.
+لاحظ أن `torch.cond` تم تخفيضه إلى `torch.ops.higher_order.cond`، وأصبحت قيمته التنبؤية تعبيرًا رمزيًا على شكل الإدخال،
+وتصبح دالات الفروع رسوميًا فرعيًا لنمط وحدة الرسوم البيانية ذات المستوى الأعلى.
 
-Here is another example that showcases how to express a data-dependent control flow:
+هنا مثال آخر يوضح كيفية التعبير عن تدفق تحكم يعتمد على البيانات:
 
 .. code-block:: python
 
     class DataDependentCondPredicate(torch.nn.Module):
         """
-        A basic usage of cond based on data dependent predicate.
+        استخدام أساسي لـ "cond" بناءً على معيار تنبؤي يعتمد على البيانات.
         """
         def __init__(self):
             super().__init__()
@@ -123,7 +123,7 @@ Here is another example that showcases how to express a data-dependent control f
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             return torch.cond(x.sum() > 4.0, true_fn, false_fn, (x,))
 
-The exported program we get after export:
+البرنامج المصدر الذي نحصل عليه بعد التصدير:
 
 .. code-block::
 
@@ -150,27 +150,27 @@ The exported program we get after export:
                 return sin
 
 
-Invariants of torch.ops.higher_order.cond
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ثوابت "torch.ops.higher_order.cond"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are several useful invariants for `torch.ops.higher_order.cond`:
+هناك العديد من الثوابت المفيدة لـ `torch.ops.higher_order.cond`:
 
-- For predicate:
-    - Dynamicness of predicate is preserved (e.g. `gt` shown in the above example)
-    - If the predicate in user-program is constant (e.g. a python bool constant), the `pred` of the operator will be a constant.
+- بالنسبة للقيمة التنبؤية:
+    - يتم الحفاظ على ديناميكية القيمة التنبؤية (على سبيل المثال، `gt` الموضحة في المثال أعلاه)
+    - إذا كانت القيمة التنبؤية في برنامج المستخدم ثابتة (على سبيل المثال، ثابت منطقي Python)، فستكون `pred` للمشغل ثابتة.
 
-- For branches:
-    - The input and output signature will be a flattened tuple.
-    - They are `torch.fx.GraphModule`.
-    - Closures in original function becomes explicit inputs. No closures.
-    - No mutations on inputs or globals are allowed.
+- للفروع:
+    - ستكون توقيعات الإدخال والإخراج عبارة عن مجموعة فرعية مسطحة.
+    - إنها `torch.fx.GraphModule`.
+    - تصبح الإغلاقات في الدالة الأصلية إدخالات صريحة. لا توجد إغلاقات.
+    - لا يُسمح بإجراء أي طفرات على الإدخالات أو العموميات.
 
-- For operands:
-    - It will also be a flat tuple.
+- للوسائط:
+    - ستكون أيضًا مجموعة فرعية مسطحة.
 
-- Nesting of `torch.cond` in user program becomes nested graph modules.
+- يؤدي تعشيش `torch.cond` في برنامج المستخدم إلى تعشيق وحدات الرسوم البيانية.
 
 
-API Reference
--------------
+مرجع API
+---------
 .. autofunction:: torch._higher_order_ops.cond.cond
