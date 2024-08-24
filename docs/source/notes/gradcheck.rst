@@ -1,132 +1,132 @@
 .. _gradcheck-mechanics:
 
-Gradcheck mechanics
+آلية فحص التدرج
 ===================
 
-This note presents an overview of how the :meth:`~torch.autograd.gradcheck` and :meth:`~torch.autograd.gradgradcheck` functions work.
+تقدم هذه الملاحظة نظرة عامة على كيفية عمل دالتَي :meth:`~torch.autograd.gradcheck` و :meth:`~torch.autograd.gradgradcheck`.
 
-It will cover both forward and backward mode AD for both real and complex-valued functions as well as higher-order derivatives.
-This note also covers both the default behavior of gradcheck as well as the case where :code:`fast_mode=True` argument is passed (referred to as fast gradcheck below).
+ستغطي كل من الوضع الأمامي والخلفي لحساب المشتقات التلقائي لكل من الدوال ذات القيم الحقيقية والمعقدة، بالإضافة إلى المشتقات عالية الرتبة.
+تغطي هذه الملاحظة أيضًا السلوك الافتراضي لـ gradcheck بالإضافة إلى الحالة التي يتم فيها تمرير وسيط :code:`fast_mode=True` (يشار إليها باسم fast gradcheck أدناه).
 
 .. contents:: :local:
     :depth: 2
 
-Notations and background information
+العلامات والمعلومات الأساسية
 ------------------------------------
 
-Throughout this note, we will use the following convention:
+على مدار هذه الملاحظة، سنستخدم الاتفاقية التالية:
 
-1. :math:`x`, :math:`y`, :math:`a`, :math:`b`, :math:`v`, :math:`u`, :math:`ur` and :math:`ui` are real-valued vectors and :math:`z` is a complex-valued vector that can be rewritten in terms of two real-valued vectors as :math:`z = a + i b`.
+1. :math:`x`، :math:`y`، :math:`a`، :math:`b`، :math:`v`، :math:`u`، :math:`ur` و :math:`ui` هي متجهات ذات قيم حقيقية و :math:`z` هو متجه بقيم معقدة يمكن إعادة كتابته على أنه متجهين بقيم حقيقية :math:`z = a + i b`.
 
-2. :math:`N` and :math:`M` are two integers that we will use for the dimension of the input and output space respectively.
+2. :math:`N` و :math:`M` هما عددان صحيحان سنستخدمهما لأبعاد فضاء الإدخال والإخراج على التوالي.
 
-3. :math:`f: \mathcal{R}^N \to \mathcal{R}^M` is our basic real-to-real function such that :math:`y = f(x)`.
+3. :math:`f: \mathcal{R}^N \to \mathcal{R}^M` هي دالتنا الأساسية الحقيقية إلى الحقيقية بحيث :math:`y = f(x)`.
 
-4. :math:`g: \mathcal{C}^N \to \mathcal{R}^M` is our basic complex-to-real function such that :math:`y = g(z)`.
-
-
-For the simple real-to-real case, we write as :math:`J_f` the Jacobian matrix associated with :math:`f` of size :math:`M \times N`.
-This matrix contains all the partial derivatives such that the entry at position :math:`(i, j)` contains :math:`\frac{\partial y_i}{\partial x_j}`.
-Backward mode AD is then computing, for a given vector :math:`v` of size :math:`M`, the quantity :math:`v^T J_f`.
-Forward mode AD on the other hand is computing, for a given vector :math:`u` of size :math:`N`, the quantity :math:`J_f u`.
-
-For functions that contain complex values, the story is a lot more complex. We only provide the gist here and the full description can be found at :ref:`complex_autograd-doc`.
-
-The constraints to satisfy complex differentiability (Cauchy-Riemann equations) are too restrictive for all real-valued loss functions, so we instead opted to use Wirtinger calculus.
-In a basic setting of Wirtinger calculus, the chain rule requires access to both the Wirtinger derivative (called :math:`W` below) and the Conjugate Wirtinger derivative (called :math:`CW` below).
-Both :math:`W` and :math:`CW` need to be propagated because in general, despite their name, one is not the complex conjugate of the other.
-
-To avoid having to propagate both values, for backward mode AD, we always work under the assumption that the function whose derivative is being calculated is either a real-valued function or is part of a bigger real-valued function. This assumption means that all the intermediary gradients we compute during the backward pass are also associated with real-valued functions.
-In practice, this assumption is not restrictive when doing optimization as such problem require real-valued objectives (as there is no natural ordering of the complex numbers).
-
-Under this assumption, using :math:`W` and :math:`CW` definitions, we can show that :math:`W = CW^*` (we use :math:`*` to denote complex conjugation here) and so only one of the two values actually need to be "backwarded through the graph" as the other one can easily be recovered.
-To simplify internal computations, PyTorch uses :math:`2 * CW` as the value it backwards and returns when the user asks for gradients.
-Similarly to the real case, when the output is actually in :math:`\mathcal{R}^M`, backward mode AD does not compute :math:`2 * CW` but only :math:`v^T (2 * CW)` for a given vector :math:`v \in \mathcal{R}^M`.
-
-For forward mode AD, we use a similar logic, in this case, assuming that the function is part of a larger function whose input is in :math:`\mathcal{R}`. Under this assumption, we can make a similar claim that every intermediary result corresponds to a function whose input is in :math:`\mathcal{R}` and in this case, using :math:`W` and :math:`CW` definitions, we can show that :math:`W = CW` for the intermediary functions.
-To make sure the forward and backward mode compute the same quantities in the elementary case of a one dimensional function, the forward mode also computes :math:`2 * CW`.
-Similarly to the real case, when the input is actually in :math:`\mathcal{R}^N`, forward mode AD does not compute :math:`2 * CW` but only :math:`(2 * CW) u` for a given vector :math:`u \in \mathcal{R}^N`.
+4. :math:`g: \mathcal{C}^N \to \mathcal{R}^M` هي دالتنا الأساسية المعقدة إلى الحقيقية بحيث :math:`y = g(z)`.
 
 
-Default backward mode gradcheck behavior
-----------------------------------------
+بالنسبة للحالة البسيطة الحقيقية إلى الحقيقية، نكتب :math:`J_f` كمصفوفة جاكوبيانية المقترنة بـ :math:`f` من الحجم :math:`M \times N`.
+تحتوي هذه المصفوفة على جميع المشتقات الجزئية بحيث يحتوي الإدخال في الموضع :math:`(i, j)` على :math:`\frac{\partial y_i}{\partial x_j}`.
+يقوم الوضع الخلفي لحساب المشتقات التلقائي بحساب الكمية :math:`v^T J_f` لمتجه معطى :math:`v` من الحجم :math:`M`.
+من ناحية أخرى، يحسب الوضع الأمامي لحساب المشتقات التلقائي، لمتجه معطى :math:`u` من الحجم :math:`N`، الكمية :math:`J_f u`.
 
-Real-to-real functions
+بالنسبة للدوال التي تحتوي على قيم معقدة، فإن القصة أكثر تعقيدًا. نقدم هنا الفكرة الأساسية فقط ويمكن العثور على الوصف الكامل في :ref:`complex_autograd-doc`.
+
+إن القيود اللازمة لتلبية الاشتقاقية المعقدة (معادلات كوشي-ريمان) مقيدة للغاية بالنسبة لجميع دالات الخسارة ذات القيم الحقيقية، لذلك بدلاً من ذلك، اخترنا استخدام حساب ويرتنجر.
+في إعداد أساسي لحساب ويرتنجر، تتطلب قاعدة السلسلة الوصول إلى كل من مشتق ويرتنجر (يطلق عليه :math:`W` أدناه) ومشتق ويرتنجر المعقد (يطلق عليه :math:`CW` أدناه).
+يجب انتشار كل من :math:`W` و :math:`CW` لأنه بشكل عام، على الرغم من اسمهما، لا يكون أحدهما مرافقًا معقدًا للآخر.
+
+لتجنب الحاجة إلى انتشار كلا القيمتين، بالنسبة للوضع الخلفي لحساب المشتقات التلقائي، نفترض دائمًا أن الدالة التي يتم حساب مشتقها إما دالة ذات قيمة حقيقية أو جزء من دالة حقيقية أكبر. يعني هذا الافتراض أن جميع المشتقات الوسيطة التي نحسبها أثناء المرور الخلفي مرتبطة أيضًا بدوال ذات قيم حقيقية.
+في الممارسة العملية، لا يكون هذا الافتراض مقيدًا عند إجراء التحسين لأن مثل هذه المشكلات تتطلب أهدافًا ذات قيم حقيقية (نظرًا لعدم وجود ترتيب طبيعي للأعداد المركبة).
+
+بموجب هذا الافتراض، باستخدام تعريفات :math:`W` و :math:`CW`، يمكننا إظهار أن :math:`W = CW^*` (نستخدم :math:`*` للإشارة إلى الاقتران المركب هنا) وبالتالي فإن إحدى القيمتين فقط تحتاج إلى "الانتشار خلال الرسم البياني" حيث يمكن استرداد القيمة الأخرى بسهولة.
+لتبسيط الحسابات الداخلية، يستخدم PyTorch :math:`2 * CW` كقيمة يتم إرجاعها عند طلب المشتقات من قبل المستخدم.
+وبشكل مشابه للحالة الحقيقية، عندما يكون الإخراج في :math:`\mathcal{R}^M`، فإن الوضع الخلفي لحساب المشتقات التلقائي لا يحسب :math:`2 * CW` ولكن فقط :math:`v^T (2 * CW)` لمتجه معطى :math:`v \in \mathcal{R}^M`.
+
+بالنسبة للوضع الأمامي لحساب المشتقات التلقائي، نستخدم منطقًا مشابهًا، وفي هذه الحالة نفترض أن الدالة هي جزء من دالة أكبر يكون إدخالها في :math:`\mathcal{R}`. بموجب هذا الافتراض، يمكننا تقديم مطالبة مماثلة بأن كل نتيجة وسيطة تقابل دالة يكون إدخالها في :math:`\mathcal{R}` وفي هذه الحالة، باستخدام تعريفات :math:`W` و :math:`CW`، يمكننا إظهار أن :math:`W = CW` للدوال الوسيطة.
+للتأكد من أن الوضعين الأمامي والخلفي يحسبان نفس الكميات في الحالة الأساسية لدالة أحادية البعد، يحسب الوضع الأمامي أيضًا :math:`2 * CW`.
+وبشكل مشابه للحالة الحقيقية، عندما يكون الإدخال في :math:`\mathcal{R}^N`، فإن الوضع الأمامي لحساب المشتقات التلقائي لا يحسب :math:`2 * CW` ولكن فقط :math:`(2 * CW) u` لمتجه معطى :math:`u \in \mathcal{R}^N`.
+
+
+سلوك الوضع الخلفي الافتراضي لـ gradcheck
+-----------------------------------
+
+دوال القيم الحقيقية إلى القيم الحقيقية
 ^^^^^^^^^^^^^^^^^^^^^^
 
-To test a function :math:`f: \mathcal{R}^N \to \mathcal{R}^M, x \to y`, we reconstruct the full Jacobian matrix :math:`J_f` of size :math:`M \times N` in two ways: analytically and numerically.
-The analytical version uses our backward mode AD while the numerical version uses finite difference.
-The two reconstructed Jacobian matrices are then compared elementwise for equality.
+لاختبار دالة :math:`f: \mathcal{R}^N \to \mathcal{R}^M, x \to y`، نقوم بإعادة بناء مصفوفة جاكوبي :math:`J_f` الكاملة من الحجم :math:`M \times N` بطريقتين: تحليليًا وعدديًا.
+يستخدم الإصدار التحليلي الوضع الخلفي لحساب المشتقات التلقائي بينما يستخدم الإصدار العددي الفرق المحدود.
+ثم تتم مقارنة مصفوفتي جاكوبي المعاد بنائهما عنصرًا تلو الآخر للتساوي.
 
-Default real input numerical evaluation
-"""""""""""""""""""""""""""""""""""""""
+التقييم العددي الافتراضي للإدخال الحقيقي
+""""""""""""""""""""""""""
 
-If we consider the elementary case of a one-dimensional function (:math:`N = M = 1`), then we can use the basic finite difference formula from `the wikipedia article <https://en.wikipedia.org/wiki/Finite_difference>`_. We use the "central difference" for better numerical properties:
+إذا نظرنا في الحالة الأساسية لدالة أحادية البعد (:math:`N = M = 1`)، فيمكننا استخدام صيغة الفرق المحدود الأساسي من `مقالة ويكيبيديا <https://en.wikipedia.org/wiki/Finite_difference>`_. نستخدم "الفرق المركزي" للحصول على خصائص عددية أفضل:
 
 .. math::
     \frac{\partial y}{\partial x} \approx \frac{f(x + eps) - f(x - eps)}{2 * eps}
 
-This formula easily generalizes for multiple outputs (:math:`M \gt 1`) by having :math:`\frac{\partial y}{\partial x}` be a column vector of size :math:`M \times 1` like :math:`f(x + eps)`.
-In that case, the above formula can be re-used as-is and approximates the full Jacobian matrix with only two evaluations of the user function (namely :math:`f(x + eps)` and :math:`f(x - eps)`).
+تعمم هذه الصيغة بسهولة للعديد من المخرجات (:math:`M \gt 1`) عن طريق جعل :math:`\frac{\partial y}{\partial x}` متجهًا عموديًا من الحجم :math:`M \times 1` مثل :math:`f(x + eps)`.
+في هذه الحالة، يمكن إعادة استخدام الصيغة أعلاه كما هي وتقريب مصفوفة جاكوبي الكاملة بتقييمين فقط للدالة التي يستخدمها المستخدم (أي :math:`f(x + eps)` و :math:`f(x - eps)`).
 
-It is more computationally expensive to handle the case with multiple inputs (:math:`N \gt 1`). In this scenario, we loop over all the inputs one after the other and apply the :math:`eps` perturbation for each element of :math:`x` one after the other. This allows us to reconstruct the :math:`J_f` matrix column by column.
+من الأكثر تكلفة حسابياً التعامل مع الحالة ذات المدخلات المتعددة (:math:`N \gt 1`). في هذا السيناريو، نقوم بعمل حلقة حول جميع المدخلات واحدة تلو الأخرى وتطبيق اضطراب :math:`eps` لكل عنصر من :math:`x` واحدًا تلو الآخر. يسمح لنا هذا بإعادة بناء مصفوفة :math:`J_f` عمودًا تلو الآخر.
 
-Default real input analytical evaluation
-""""""""""""""""""""""""""""""""""""""""
+التقييم التحليلي الافتراضي للإدخال الحقيقي
+"""""""""""""""""""""""""""
 
-For the analytical evaluation, we use the fact, as described above, that backward mode AD computes :math:`v^T J_f`.
-For functions with a single output, we simply use :math:`v = 1` to recover the full Jacobian matrix with a single backward pass.
+بالنسبة للتقييم التحليلي، نستخدم الحقيقة، كما هو موضح أعلاه، بأن الوضع الخلفي لحساب المشتقات التلقائي يحسب :math:`v^T J_f`.
+بالنسبة للدوال ذات المخرج الأحادي، نستخدم ببساطة :math:`v = 1` لاسترداد مصفوفة جاكوبي الكاملة بتمرير خلفي واحد.
 
-For functions with more than one output, we resort to a for-loop which iterates over the outputs where each :math:`v` is a one-hot vector corresponding to each output one after the other. This allows to reconstruct the :math:`J_f` matrix row by row.
+بالنسبة للدوال التي تحتوي على أكثر من مخرج واحد، نلجأ إلى حلقة تكرارية تدور حول المخرجات حيث يكون كل متجه :math:`v` عبارة عن متجه ثنائي الأبعاد يقابل كل مخرج واحدًا تلو الآخر. يسمح هذا بإعادة بناء مصفوفة :math:`J_f` صفًا تلو الآخر.
 
-Complex-to-real functions
-^^^^^^^^^^^^^^^^^^^^^^^^^
+دوال القيم المعقدة إلى القيم الحقيقية
+^^^^^^^^^^^^^^^^^^^^^^
 
-To test a function :math:`g: \mathcal{C}^N \to \mathcal{R}^M, z \to y` with :math:`z = a + i b`, we reconstruct the (complex-valued) matrix that contains :math:`2 * CW`.
+لاختبار دالة :math:`g: \mathcal{C}^N \to \mathcal{R}^M, z \to y` مع :math:`z = a + i b`، نقوم بإعادة بناء المصفوفة (ذات القيمة المعقدة) التي تحتوي على :math:`2 * CW`.
 
-Default complex input numerical evaluation
-""""""""""""""""""""""""""""""""""""""""""
+التقييم العددي الافتراضي للإدخال المعقد
+""""""""""""""""""""""""""
 
-Consider the elementary case where :math:`N = M = 1` first. We know from (chapter 3 of) `this research paper <https://arxiv.org/pdf/1701.00392.pdf>`_ that:
+لنأخذ أولاً في الاعتبار الحالة الأساسية حيث :math:`N = M = 1`. نعلم من (الفصل 3 من) `هذه الورقة البحثية <https://arxiv.org/pdf/1701.00392.pdf>`_ أن:
 
 .. math::
     CW := \frac{\partial y}{\partial z^*} = \frac{1}{2} * (\frac{\partial y}{\partial a} + i \frac{\partial y}{\partial b})
 
-Note that :math:`\frac{\partial y}{\partial a}` and :math:`\frac{\partial y}{\partial b}`, in the above equation, are :math:`\mathcal{R} \to \mathcal{R}` derivatives.
-To evaluate these numerically, we use the method described above for the real-to-real case.
-This allows us to compute the :math:`CW` matrix and then multiply it by :math:`2`.
+لاحظ أن :math:`\frac{\partial y}{\partial a}` و :math:`\frac{\partial y}{\partial b}`، في المعادلة أعلاه، هما مشتقان من :math:`\mathcal{R} \to \mathcal{R}`.
+لحساب هذه القيم عدديًا، نستخدم الطريقة الموضحة أعلاه للحالة الحقيقية إلى الحقيقية.
+يسمح لنا هذا بحساب مصفوفة :math:`CW` ثم ضربها بـ :math:`2`.
 
-Note that the code, as of time of writing, computes this value in a slightly convoluted way:
+لاحظ أن الكود، في وقت الكتابة، يحسب هذه القيمة بطريقة ملتوية بعض الشيء:
 
 .. code:: python
 
     # Code from https://github.com/pytorch/pytorch/blob/58eb23378f2a376565a66ac32c93a316c45b6131/torch/autograd/gradcheck.py#L99-L105
-    # Notation changes in this code block:
-    # s here is y above
-    # x, y here are a, b above
+    # تغيير التدوين في كتلة التعليمات البرمجية هذه:
+    # s هنا هو y أعلاه
+    # x، y هنا a، b أعلاه
 
     ds_dx = compute_gradient(eps)
     ds_dy = compute_gradient(eps * 1j)
-    # conjugate wirtinger derivative
+    # مشتق ويرتنجر المعقد
     conj_w_d = 0.5 * (ds_dx + ds_dy * 1j)
-    # wirtinger derivative
+    # مشتق ويرتنجر
     w_d = 0.5 * (ds_dx - ds_dy * 1j)
     d[d_idx] = grad_out.conjugate() * conj_w_d + grad_out * w_d.conj()
 
-    # Since grad_out is always 1, and W and CW are complex conjugate of each other, the last line ends up computing exactly `conj_w_d + w_d.conj() = conj_w_d + conj_w_d = 2 * conj_w_d`.
+    # نظرًا لأن grad_out يساوي دائمًا 1، ونظرًا لأن W و CW هما مرافقان معقدان لبعضهما البعض، فإن السطر الأخير يحسب بالضبط `conj_w_d + w_d.conj() = conj_w_d + conj_w_d = 2 * conj_w_d`.
 
 
-Default complex input analytical evaluation
-"""""""""""""""""""""""""""""""""""""""""""
+التقييم التحليلي الافتراضي للإدخال المعقد
+"""""""""""""""""""""""""""
 
-Since backward mode AD computes exactly twice the :math:`CW` derivative already, we simply use the same trick as for the real-to-real case here and reconstruct the matrix row by row when there are multiple real outputs.
+نظرًا لأن الوضع الخلفي لحساب المشتقات التلقائي يحسب بالفعل ضعف مشتق :math:`CW`، فنحن ببساطة نستخدم نفس الحيلة كما في الحالة الحقيقية إلى الحقيقية هنا ونعيد بناء المصفوفة صفًا تلو الآخر عندما يكون هناك عدة مخرجات حقيقية.
 
-Functions with complex outputs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+دوال ذات مخرجات معقدة
+^^^^^^^^^^^^^^^^^^^
 
-In this case, the user-provided function does not follow the assumption from the autograd that the function we compute backward AD for is real-valued.
-This means that using autograd directly on this function is not well defined.
-To solve this, we will replace the test of the function :math:`h: \mathcal{P}^N \to \mathcal{C}^M` (where :math:`\mathcal{P}` can be either :math:`\mathcal{R}` or :math:`\mathcal{C}`), with two functions: :math:`hr` and :math:`hi` such that:
+في هذه الحالة، لا تتبع الدالة التي يوفرها المستخدم الافتراض من حساب المشتقات التلقائي بأن الدالة التي نحسب المشتق الخلفي لها ذات قيمة حقيقية.
+هذا يعني أن استخدام حساب المشتقات التلقائي مباشرة على هذه الدالة غير محدد جيدًا.
+لحل هذا، سنستبدل اختبار الدالة :math:`h: \mathcal{P}^N \to \mathcal{C}^M` (حيث يمكن أن يكون :math:`\mathcal{P}` إما :math:`\mathcal{R}` أو :math:`\mathcal{C}`)، بدالتين: :math:`hr` و :math:`hi` بحيث:
 
 .. math::
     \begin{aligned}
@@ -134,53 +134,51 @@ To solve this, we will replace the test of the function :math:`h: \mathcal{P}^N 
         hi(q) &:= imag(f(q))
     \end{aligned}
 
-where :math:`q \in \mathcal{P}`.
-We then do a basic gradcheck for both :math:`hr` and :math:`hi` using either the real-to-real or complex-to-real case described above, depending on :math:`\mathcal{P}`.
+حيث :math:`q \in \mathcal{P}`.
+بعد ذلك، نجري اختبارًا أساسيًا لكل من :math:`hr` و :math:`hi` باستخدام الحالة الحقيقية إلى الحقيقية أو المعقدة إلى الحقيقية الموضحة أعلاه، اعتمادًا على :math:`\mathcal{P}`.
 
-Note that, the code, as of time of writing, does not create these functions explicitly but perform the chain rule with the :math:`real` or :math:`imag` functions manually by passing the :math:`\text{grad\_out}` arguments to the different functions.
-When :math:`\text{grad\_out} = 1`, then we are considering :math:`hr`.
-When :math:`\text{grad\_out} = 1j`, then we are considering :math:`hi`.
+لاحظ أن الكود، في وقت الكتابة، لا يقوم بإنشاء هذه الدوال بشكل صريح ولكنه يؤدي قاعدة السلسلة باستخدام دالتَي :math:`real` أو :math:`imag` يدويًا عن طريق تمرير وسيط :math:`\text{grad\_out}` إلى الدوال المختلفة.
+عندما :math:`\text{grad\_out} = 1`، فإننا نعتبر :math:`hr`.
+عندما :math:`\text{grad\_out} = 1j`، فإننا نعتبر :math:`hi`.
 
 
-Fast backward mode gradcheck
-----------------------------
+الوضع الخلفي السريع لـ gradcheck
+بالرغم من أن الصيغة المذكورة أعلاه لـ "gradcheck" رائعة، سواء لضمان الدقة أو قابلية التصحيح، إلا أنها بطيئة للغاية لأنها تعيد بناء مصفوفات جاكوبي الكاملة.
+يقدم هذا القسم طريقة لأداء "gradcheck" بطريقة أسرع دون التأثير على دقتها.
+يمكن استعادة قابلية التصحيح عن طريق إضافة منطق خاص عند اكتشاف خطأ. في هذه الحالة، يمكننا تشغيل الإصدار الافتراضي الذي يعيد بناء المصفوفة الكاملة لتزويد المستخدم بجميع التفاصيل.
 
-While the above formulation of gradcheck is great, both, to ensure correctness and debuggability, it is very slow because it reconstructs the full Jacobian matrices.
-This section presents a way to perform gradcheck in a faster way without affecting its correctness.
-The debuggability can be recovered by adding special logic when we detect an error. In that case, we can run the default version that reconstructs the full matrix to give full details to the user.
+تتمثل الاستراتيجية العامة هنا في إيجاد كمية قياسية يمكن حسابها بكفاءة بواسطة الأساليب العددية والتحليلية، والتي تمثل المصفوفة الكاملة التي يحسبها "gradcheck" البطيء بما فيه الكفاية لضمان التقاط أي تباين في مصفوفات جاكوبي.
 
-The high level strategy here is to find a scalar quantity that can be computed efficiently by both the numerical and analytical methods and that represents the full matrix computed by the slow gradcheck well enough to ensure that it will catch any discrepancy in the Jacobians.
+التحقق السريع من التدرج للوظائف الحقيقية إلى الحقيقية
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fast gradcheck for real-to-real functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+الكمية القياسية التي نريد حسابها هنا هي :math:`v^T J_f u` بالنسبة إلى متجه عشوائي :math:`v \in \mathcal{R}^M` ومتجه وحدة عشوائي :math:`u \in \mathcal{R}^N`.
 
-The scalar quantity that we want to compute here is :math:`v^T J_f u` for a given random vector :math:`v \in \mathcal{R}^M` and a random unit norm vector :math:`u \in \mathcal{R}^N`.
-
-For the numerical evaluation, we can efficiently compute
+بالنسبة للتقييم العددي، يمكننا حساب ما يلي بكفاءة:
 
 .. math::
     J_f u \approx \frac{f(x + u * eps) - f(x - u * eps)}{2 * eps}.
 
-We then perform the dot product between this vector and :math:`v` to get the scalar value of interest.
+بعد ذلك، نقوم بحساب الضرب النقطي بين هذا المتجه و :math:`v` للحصول على القيمة القياسية المطلوبة.
 
-For the analytical version, we can use backward mode AD to compute :math:`v^T J_f` directly. We then perform the dot product with :math:`u` to get the expected value.
+بالنسبة للإصدار التحليلي، يمكننا استخدام طريقة "backward mode AD" لحساب :math:`v^T J_f` مباشرة. ثم نقوم بحساب الضرب النقطي مع :math:`u` للحصول على القيمة المتوقعة.
 
-Fast gradcheck for complex-to-real functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+التحقق السريع من التدرج للوظائف المعقدة إلى الحقيقية
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Similar to the real-to-real case, we want to perform a reduction of the full matrix. But the :math:`2 * CW` matrix is complex-valued and so in this case, we will compare to complex scalars.
+على غرار حالة الحقيقي إلى الحقيقي، نريد إجراء تقليل للمصفوفة الكاملة. ولكن مصفوفة :math:`2 * CW` هي ذات قيم معقدة، لذا في هذه الحالة، سنقارن بالقياسات المعقدة.
 
-Due to some constraints on what we can compute efficiently in the numerical case and to keep the number of numerical evaluations to a minimum, we compute the following (albeit surprising) scalar value:
+بسبب بعض القيود على ما يمكننا حسابه بكفاءة في الحالة العددية وللحفاظ على عدد التقييمات العددية عند الحد الأدنى، نحسب ما يلي (على الرغم من المفاجئ) القيمة القياسية:
 
 .. math::
     s := 2 * v^T (real(CW) ur + i * imag(CW) ui)
 
-where :math:`v \in \mathcal{R}^M`, :math:`ur \in \mathcal{R}^N` and :math:`ui \in \mathcal{R}^N`.
+حيث :math:`v \in \mathcal{R}^M`، :math:`ur \in \mathcal{R}^N` و :math:`ui \in \mathcal{R}^N`.
 
-Fast complex input numerical evaluation
-"""""""""""""""""""""""""""""""""""""""
+التقييم العددي السريع للإدخال المعقد
+""""""""""""""""""""""""""
 
-We first consider how to compute :math:`s` with a numerical method. To do so, keeping in mind that we're considering :math:`g: \mathcal{C}^N \to \mathcal{R}^M, z \to y` with :math:`z = a + i b`, and that :math:`CW = \frac{1}{2} * (\frac{\partial y}{\partial a} + i \frac{\partial y}{\partial b})`,  we rewrite it as follows:
+ننظر أولاً في كيفية حساب :math:`s` باستخدام طريقة عددية. للقيام بذلك، مع مراعاة أننا ننظر في :math:`g: \mathcal{C}^N \to \mathcal{R}^M, z \to y` مع :math:`z = a + i b`، وأن :math:`CW = \frac{1}{2} * (\frac{\partial y}{\partial a} + i \frac{\partial y}{\partial b})`، نعيد كتابتها على النحو التالي:
 
 .. math::
     \begin{aligned}
@@ -190,13 +188,13 @@ We first consider how to compute :math:`s` with a numerical method. To do so, ke
           &= v^T ((\frac{\partial y}{\partial a} ur) + i * (\frac{\partial y}{\partial b} ui))
     \end{aligned}
 
-In this formula, we can see that :math:`\frac{\partial y}{\partial a} ur` and :math:`\frac{\partial y}{\partial b} ui` can be evaluated the same way as the fast version for the real-to-real case.
-Once these real-valued quantities have been computed, we can reconstruct the complex vector on the right side and do a dot product with the real-valued :math:`v` vector.
+في هذه المعادلة، يمكننا أن نرى أن :math:`\frac{\partial y}{\partial a} ur` و :math:`\frac{\partial y}{\partial b} ui` يمكن تقييمها بنفس طريقة الإصدار السريع لحالة الحقيقي إلى الحقيقي.
+بمجرد حساب هذه الكميات ذات القيم الحقيقية، يمكننا إعادة بناء المتجه المعقد على الجانب الأيمن وإجراء ضرب نقطي مع المتجه :math:`v` ذي القيمة الحقيقية.
 
-Fast complex input analytical evaluation
-""""""""""""""""""""""""""""""""""""""""
+التقييم التحليلي السريع للإدخال المعقد
+""""""""""""""""""""""""
 
-For the analytical case, things are simpler and we rewrite the formula as:
+بالنسبة للحالة التحليلية، تكون الأمور أبسط، ونعيد كتابة المعادلة على النحو التالي:
 
 .. math::
     \begin{aligned}
@@ -205,14 +203,14 @@ For the analytical case, things are simpler and we rewrite the formula as:
           &= real(v^T (2 * CW)) ur + i * imag(v^T (2 * CW)) ui
     \end{aligned}
 
-We can thus use the fact that the backward mode AD provides us with an efficient way to compute :math:`v^T (2 * CW)` and then perform a dot product of the real part with :math:`ur` and the imaginary part with :math:`ui` before reconstructing the final complex scalar :math:`s`.
+لذلك، يمكننا استخدام حقيقة أن طريقة "backward mode AD" توفر لنا طريقة فعالة لحساب :math:`v^T (2 * CW)`، ثم نقوم بحساب الضرب النقطي للجزء الحقيقي مع :math:`ur` والجزء التخيلي مع :math:`ui` قبل إعادة بناء القيمة المعقدة القياسية النهائية :math:`s`.
 
-Why not use a complex :math:`u`
-"""""""""""""""""""""""""""""""
+لماذا لا نستخدم متجهًا معقدًا :math:`u`
+""""""""""""""""""""""""""""
 
-At this point, you might be wondering why we did not select a complex :math:`u` and just performed the reduction :math:`2 * v^T CW u'`.
-To dive into this, in this paragraph, we will use the complex version of :math:`u` noted :math:`u' = ur' + i ui'`.
-Using such complex :math:`u'`, the problem is that when doing the numerical evaluation, we would need to compute:
+في هذه المرحلة، قد تتساءل عن سبب عدم اختيار متجه معقد :math:`u` والقيام ببساطة بالتخفيض :math:`2 * v^T CW u'`.
+للغوص في هذا الموضوع، في هذه الفقرة، سنستخدم الإصدار المعقد من :math:`u` الملاحظ على أنه :math:`u' = ur' + i ui'`.
+باستخدام :math:`u` معقد، تكمن المشكلة في أنه عند إجراء التقييم العددي، سيتعين علينا حساب ما يلي:
 
 .. math::
     \begin{aligned}
@@ -220,21 +218,20 @@ Using such complex :math:`u'`, the problem is that when doing the numerical eval
                 &= \frac{\partial y}{\partial a} ur' + i \frac{\partial y}{\partial a} ui' + i \frac{\partial y}{\partial b} ur' - \frac{\partial y}{\partial b} ui'
     \end{aligned}
 
-Which would require four evaluations of real-to-real finite difference (twice as much compared to the approached proposed above).
-Since this approach does not have more degrees of freedom (same number of real valued variables) and we try to get the fastest possible evaluation here, we use the other formulation above.
+والذي سيتطلب أربعة تقييمات للفرق المحدود الحقيقي إلى الحقيقي (ضعف ما هو مقترح أعلاه).
+نظرًا لأن هذا النهج لا يحتوي على درجات حرية أكثر (نفس عدد المتغيرات ذات القيم الحقيقية) ونحاول الحصول على أسرع تقييم ممكن هنا، فإننا نستخدم الصيغة الأخرى المذكورة أعلاه.
 
+التحقق السريع من التدرج للوظائف ذات المخرجات المعقدة
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fast gradcheck for functions with complex outputs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+تمامًا كما هو الحال في الحالة البطيئة، نأخذ دالتين ذواتي قيم حقيقية ونستخدم القاعدة المناسبة من الأعلى لكل دالة.
 
-Just like in the slow case, we consider two real-valued functions and use the appropriate rule from above for each function.
-
-Gradgradcheck implementation
+تنفيذ "Gradgradcheck"
 -----------------------------
 
-PyTorch also provide a utility to verify second order gradients. The goal here is to make sure that the backward implementation is also properly differentiable and computes the right thing.
+يوفر PyTorch أيضًا أداة مساعدة للتحقق من تدرجات الرتبة الثانية. الهدف هنا هو التأكد من أن التنفيذ العكسي قابل للاشتقاق أيضًا ويحسب الشيء الصحيح.
 
-This feature is implemented by considering the function :math:`F: x, v \to v^T J_f` and use the gradcheck defined above on this function.
-Note that :math:`v` in this case is just a random vector with the same type as :math:`f(x)`.
+تم تنفيذ هذه الميزة من خلال النظر في الدالة :math:`F: x, v \to v^T J_f` واستخدام "gradcheck" المحدد أعلاه على هذه الدالة.
+لاحظ أن :math:`v` في هذه الحالة هو مجرد متجه عشوائي من نفس نوع :math:`f(x)`.
 
-The fast version of gradgradcheck is implemented by using the fast version of gradcheck on that same function :math:`F`.
+يتم تنفيذ الإصدار السريع من "gradgradcheck" من خلال استخدام الإصدار السريع من "gradcheck" على نفس الدالة :math:`F`.
