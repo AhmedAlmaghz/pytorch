@@ -6,8 +6,8 @@ torch.nn.attention
 
 .. automodule:: torch.nn.attention
 
-Utils
--------------------
+الأدوات المساعدة
+-----------
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -15,7 +15,7 @@ Utils
     sdpa_kernel
     SDPBackend
 
-Submodules
+الوحدات الفرعية
 ----------
 .. autosummary::
     :nosignatures:
