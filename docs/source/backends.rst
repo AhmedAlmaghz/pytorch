@@ -5,9 +5,9 @@ torch.backends
 ==============
 .. automodule:: torch.backends
 
-`torch.backends` controls the behavior of various backends that PyTorch supports.
+تحكم ``torch.backends`` في سلوك العديد من الواجهات الخلفية التي تدعمها PyTorch.
 
-These backends include:
+تشمل هذه الواجهات الخلفية ما يلي:
 
 - ``torch.backends.cpu``
 - ``torch.backends.cuda``
@@ -37,35 +37,37 @@ torch.backends.cuda
 .. currentmodule:: torch.backends.cuda.matmul
 .. attribute::  allow_tf32
 
-    A :class:`bool` that controls whether TensorFloat-32 tensor cores may be used in matrix
-    multiplications on Ampere or newer GPUs. See :ref:`tf32_on_ampere`.
+    قيمة منطقية ``bool`` تتحكم فيما إذا كان يمكن استخدام TensorFloat-32 tensor cores في عمليات الضرب
+    المصفوفي على معالجات Ampere الرسومية أو الأحدث. راجع: :ref:`tf32_on_ampere`.
 
 .. attribute::  allow_fp16_reduced_precision_reduction
 
-    A :class:`bool` that controls whether reduced precision reductions (e.g., with fp16 accumulation type) are allowed with fp16 GEMMs.
+    قيمة منطقية ``bool`` تتحكم فيما إذا كان مسموحًا بالتخفيضات ذات الدقة المنخفضة (على سبيل المثال، مع نوع
+    التراكم fp16) مع عمليات الضرب المصفوفي fp16.
 
 .. attribute::  allow_bf16_reduced_precision_reduction
 
-    A :class:`bool` that controls whether reduced precision reductions are allowed with bf16 GEMMs.
+    قيمة منطقية ``bool`` تتحكم فيما إذا كان مسموحًا بالتخفيضات ذات الدقة المنخفضة مع عمليات الضرب المصفوفي
+    bf16.
 
 .. currentmodule:: torch.backends.cuda
 .. attribute::  cufft_plan_cache
 
-    ``cufft_plan_cache`` contains the cuFFT plan caches for each CUDA device.
-    Query a specific device `i`'s cache via `torch.backends.cuda.cufft_plan_cache[i]`.
+    تحتوي ``cufft_plan_cache`` على ذاكرة التخزين المؤقت لخطة cuFFT لكل جهاز CUDA. يمكنك الاستعلام عن ذاكرة
+    التخزين المؤقت لجهاز محدد 'i' عبر ``torch.backends.cuda.cufft_plan_cache[i]``.
 
     .. currentmodule:: torch.backends.cuda.cufft_plan_cache
     .. attribute::  size
 
-        A readonly :class:`int` that shows the number of plans currently in a cuFFT plan cache.
+        عدد صحيح ``int`` للقراءة فقط يظهر عدد الخطط حاليًا في ذاكرة التخزين المؤقت لـ cuFFT.
 
     .. attribute::  max_size
 
-        A :class:`int` that controls the capacity of a cuFFT plan cache.
+        عدد صحيح ``int`` يتحكم في سعة ذاكرة التخزين المؤقت لـ cuFFT.
 
     .. method::  clear()
 
-        Clears a cuFFT plan cache.
+        مسح ذاكرة التخزين المؤقت لـ cuFFT.
 
 .. autofunction:: torch.backends.cuda.preferred_blas_library
 
@@ -109,30 +111,30 @@ torch.backends.cudnn
 
 .. attribute::  enabled
 
-    A :class:`bool` that controls whether cuDNN is enabled.
+    قيمة منطقية ``bool`` تتحكم فيما إذا كان cuDNN ممكّنًا.
 
 .. attribute::  allow_tf32
 
-    A :class:`bool` that controls where TensorFloat-32 tensor cores may be used in cuDNN
-    convolutions on Ampere or newer GPUs. See :ref:`tf32_on_ampere`.
+    قيمة منطقية ``bool`` تتحكم فيما إذا كان يمكن استخدام TensorFloat-32 tensor cores في عمليات الضرب
+    المصفوفي لـ cuDNN على معالجات Ampere الرسومية أو الأحدث. راجع: :ref:`tf32_on_ampere`.
 
 .. attribute::  deterministic
 
-    A :class:`bool` that, if True, causes cuDNN to only use deterministic convolution algorithms.
-    See also :func:`torch.are_deterministic_algorithms_enabled` and
-    :func:`torch.use_deterministic_algorithms`.
+    قيمة منطقية ``bool``، إذا كانت ``True``، ستتسبب في استخدام cuDNN لخوارزميات الضرب المصفوفي
+    المحددة فقط. راجع أيضًا: ``torch.are_deterministic_algorithms_enabled`` و
+    ``torch.use_deterministic_algorithms``.
 
 .. attribute::  benchmark
 
-    A :class:`bool` that, if True, causes cuDNN to benchmark multiple convolution algorithms
-    and select the fastest.
+    قيمة منطقية ``bool``، إذا كانت ``True``، ستتسبب في قيام cuDNN باختبار خوارزميات الضرب المصفوفي
+    المتعددة واختيار الأسرع.
 
 .. attribute::  benchmark_limit
 
-    A :class:`int` that specifies the maximum number of cuDNN convolution algorithms to try when
-    `torch.backends.cudnn.benchmark` is True. Set `benchmark_limit` to zero to try every
-    available algorithm. Note that this setting only affects convolutions dispatched via the
-    cuDNN v8 API.
+    عدد صحيح ``int`` يحدد الحد الأقصى لعدد خوارزميات الضرب المصفوفي لـ cuDNN لمحاولة عندما يكون
+    ``torch.backends.cudnn.benchmark`` هو ``True``. قم بتعيين ``benchmark_limit`` إلى الصفر لتجربة
+    كل خوارزمية متاحة. لاحظ أن هذا الإعداد يؤثر فقط على عمليات الضرب المصفوفي التي يتم إرسالها
+    عبر واجهة برمجة التطبيقات cuDNN v8.
 
 .. py:module:: torch.backends.cudnn.rnn
 
@@ -194,9 +196,9 @@ torch.backends.openmp
 
 .. autofunction::  torch.backends.openmp.is_available
 
-.. Docs for other backends need to be added here.
-.. Automodules are just here to ensure checks run but they don't actually
-.. add anything to the rendered page for now.
+.. يجب إضافة وثائق الواجهات الخلفية الأخرى هنا.
+.. يتم تضمين الوحدات النمطية التلقائية فقط للتأكد من تشغيل الفحوصات ولكنها لا تضيف
+.. أي شيء إلى الصفحة المقدمة حاليًا.
 .. py:module:: torch.backends.quantized
 .. py:module:: torch.backends.xnnpack
 
@@ -211,19 +213,21 @@ torch.backends.opt_einsum
 
 .. attribute::  enabled
 
-    A :class:``bool`` that controls whether opt_einsum is enabled (``True`` by default). If so,
-    torch.einsum will use opt_einsum (https://optimized-einsum.readthedocs.io/en/stable/path_finding.html)
-    if available to calculate an optimal path of contraction for faster performance.
+    قيمة منطقية ``bool`` تتحكم فيما إذا كان opt_einsum ممكّنًا (``True`` بشكل افتراضي). إذا كان
+    الأمر كذلك، فسيستخدم ``torch.einsum`` opt_einsum
+    (https://optimized-einsum.readthedocs.io/en/stable/path_finding.html) إذا كان متاحًا لحساب
+    مسار تعاقدي أمثل للأداء الأسرع.
 
-    If opt_einsum is not available, torch.einsum will fall back to the default contraction path
-    of left to right.
+    إذا لم يكن opt_einsum متاحًا، فسيستخدم ``torch.einsum`` مسار التعاقد الافتراضي من اليسار إلى
+    اليمين.
 
 .. attribute::  strategy
 
-    A :class:``str`` that specifies which strategies to try when ``torch.backends.opt_einsum.enabled``
-    is ``True``. By default, torch.einsum will try the "auto" strategy, but the "greedy" and "optimal"
-    strategies are also supported. Note that the "optimal" strategy is factorial on the number of
-    inputs as it tries all possible paths. See more details in opt_einsum's docs
+    سلسلة ``str`` تحدد الاستراتيجيات التي يجب تجربتها عندما يكون
+    ``torch.backends.opt_einsum.enabled`` هو ``True``. بشكل افتراضي، سيحاول ``torch.einsum``
+    استراتيجية "auto"، ولكن يتم أيضًا دعم استراتيجيتي "greedy" و "optimal". لاحظ أن الاستراتيجية
+    "optimal" تكون فئوية على عدد الإدخالات حيث أنها تجرب جميع المسارات الممكنة. راجع المزيد من
+    التفاصيل في وثائق opt_einsum
     (https://optimized-einsum.readthedocs.io/en/stable/path_finding.html).
 
 
